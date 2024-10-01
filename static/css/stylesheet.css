@@ -1,0 +1,59 @@
+body {
+  display: inline;
+  background-color: #16132e;
+  color: rgb(240, 233, 221);
+  font-family: "Kanit", sans-serif;
+  font-style: normal;
+  font-weight: 100;
+}
+
+#main {
+  display: flex;
+  /* padding-top: 2rem; */
+  min-height: 80vh;
+}
+
+#doc-list {
+  margin-left: 2rem;
+  padding-left: 2rem;
+  border: 2px solid rgb(240, 233, 221);
+  border-radius: 1rem;
+  width: 100vh;
+}
+
+#sidebar {
+  width: 25%;
+  background-color: rgb(20, 56, 88);
+  border: 2px solid rgb(240, 233, 221);
+  text-align: center;
+  margin-left: 2rem;
+  border-radius: 1rem;
+}
+
+#title {
+  text-align: center;
+}
+
+h1 {
+  font-size: 250%;
+  font-weight: lighter;
+}
+
+h2 {
+  font-weight: lighter;
+}
+
+#searchbar {
+  display: block;
+  text-align: center;
+}
+
+/* #footer {
+position: absolute;
+bottom: 0;
+  width: 100%;
+  height: 50px;
+  font: black;
+  margin-left: -10px;
+  background: orangered;
+} */
