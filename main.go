@@ -7,9 +7,7 @@ import (
 	routes "filmPackager/internal/handlers"
 )
 
-
 func main() {
-
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/", routes.Homepage)
 	log.Print("Listening on port 9090...")
