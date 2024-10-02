@@ -1,10 +1,10 @@
 package access
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	// "github.com/golang-jwt/jwt/v5"
 )
 
 type User struct {
@@ -74,4 +74,26 @@ func CheckAccess(userID, orgID int, requiredTier string) (bool, error) {
 	return false, nil
 }
 
+// MIDDLEWARE FOR AUTH???
+func RequireAccess(requiredTier string, orgID int, next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Extract the user information from the JWT token or session
+			userID := getUserIDFromContext(r)
 
+			// Check if the user has the required access
+			hasAccess, err := CheckAccess(userID, orgID, requiredTier)
+			if err != nil || !hasAccess {
+					http.Error(w, "Forbidden", http.StatusForbidden)
+					return
+			}
+
+			// If access is granted, proceed to the next handler
+			next.ServeHTTP(w, r)
+	})
+}
+
+// Dummy function to extract user ID (assuming it's stored in the context)
+func getUserIDFromContext(r *http.Request) int {
+	// Extract the user ID from the request's context (set in authentication middleware)
+	return 123 // Replace this with actual logic to extract the user ID
+}
