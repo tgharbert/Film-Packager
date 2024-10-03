@@ -85,3 +85,8 @@ h2 {
 #login-input {
   margin-bottom: 1rem;
 }
+
+#link-text {
+  text-decoration: underline;
+  font-weight: bold;
+}

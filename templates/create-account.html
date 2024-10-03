@@ -23,19 +23,18 @@
   </head>
   <body>
     <div id="login">
-      <form
-        hx-post="/post-login/"
-        hx-trigger="submit"
-        hx-target="body"
-        hx-swap="outerHTML"
-      >
-        <h2 id="subheader">Login:</h2>
+      <form hx-post="/post-login/">
+        <h2 id="subheader">Create Account:</h2>
         <div id="login-input">
           <label>Username: </label>
           <input type="text" name="username" />
         </div>
         <div id="login-input">
           <label>Password: </label>
+          <input type="text" name="password" />
+        </div>
+        <div id="login-input">
+          <label>Verify Password: </label>
           <input type="text" name="password" />
         </div>
         <div>
