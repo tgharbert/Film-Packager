@@ -16,10 +16,10 @@
   </head>
   <h1 id="title">Film Packager</h1>
   <body>
+    {{block "main" .}}
     <div id="main">
-      {{template "loginHTML" .}}
-
-      <!-- {{template "sidebarHTML" .}} -->
-      <!-- {{template "docListHTML" .}} -->
-  </body>
-</html>
+      {{template "sidebarHTML" .}}
+      {{template "docListHTML" .}}
+    </body>
+    {{end}}
+    </html>

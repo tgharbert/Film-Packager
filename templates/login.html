@@ -1,6 +1,10 @@
 {{define "loginHTML"}}
 <div id="login">
-  <form>
+  <form
+    hx-post="/login/"
+    hx-delete="#login"
+    hx-on::after-request="this.reset()"
+  >
     <h2 id="subheader">Login:</h2>
     <div id="login-input">
       <label>Username: </label>
