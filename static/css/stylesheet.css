@@ -83,10 +83,21 @@ h2 {
 }
 
 #login-input {
+  text-align: right;
+  margin-right: 4rem;
   margin-bottom: 1rem;
+}
+
+#form-inputs {
+  display: inline;
+  align-items: right;
 }
 
 #link-text {
   text-decoration: underline;
   font-weight: bold;
+}
+
+#link-text:hover {
+  cursor: pointer;
 }
