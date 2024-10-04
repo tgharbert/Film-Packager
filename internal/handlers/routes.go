@@ -12,6 +12,18 @@ func setAuthTrue () {
 	auth = true
 }
 
+// sets up the route multiplexer
+func RegisterRoutes() *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	mux.HandleFunc("/", Homepage)
+	mux.HandleFunc("/login/", Login)
+	mux.HandleFunc("/post-login/", DirectHome)
+	mux.HandleFunc("/get-create-account/", DirectToCreateAccount)
+	mux.HandleFunc("/create-account/", CreateAccount)
+	return mux
+}
+
 func Homepage(w http.ResponseWriter, r *http.Request) {
 	// TEMP AUTH REDIRECT
 	if !auth {
@@ -37,6 +49,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func DirectHome(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("HIT THIS")
 	// Here we will check if the user has an account, if they don't then sign up?
 	// Check if the request is an HTMX request
 	if r.Header.Get("HX-Request") == "true" {
