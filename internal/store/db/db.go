@@ -58,3 +58,27 @@ func CreateUser(c *pgx.Conn, name string, email string, password string) (User, 
 	}
 	return user, nil
 }
+
+func GetUser(c *pgx.Conn, email string) (User, error) {
+	query := `SELECT email, name, role FROM users where email = $1`
+	var user User
+	rows, err := c.Query(context.Background(), query, email)
+	if err != nil {
+		return user, err
+	}
+	defer rows.Close()
+	if !rows.Next() {
+		fmt.Println("No rows found for email:", email)
+		return user, fmt.Errorf("no user found with email: %s", email)
+	}
+	err = rows.Scan(&user.Email, &user.Name, &user.Role)
+	if err != nil {
+		fmt.Println("Error scanning row:", err)
+		return user, fmt.Errorf("error scanning row: %v", err)
+	}
+	if rows.Err() != nil {
+		fmt.Println("Error after rows loop:", rows.Err())
+		return user, rows.Err()
+	}
+	return user, nil
+}

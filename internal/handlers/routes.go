@@ -46,6 +46,10 @@ func Homepage(w http.ResponseWriter, r *http.Request) {
 func Login(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFiles("templates/login-form.html"))
 	err := tmpl.Execute(w, nil)
+
+	// db.Connect()
+	// get the password and the email from the template,
+	// pass them to the function to get the user, if the user password doesn't equal the hashed pw, kill, else proceed
 	if err != nil {
 		fmt.Println("error executing the fucking template")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -53,7 +57,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func DirectHome(w http.ResponseWriter, r *http.Request) {
-
 	username := r.PostFormValue("username")
 	email := r.PostFormValue("email")
 	password := r.PostFormValue("password")
@@ -64,24 +67,18 @@ func DirectHome(w http.ResponseWriter, r *http.Request) {
 	}
 	conn := db.Connect()
 	defer conn.Close(context.Background())
-	// db work
-	// fmt.Println("data: ", username, email, password, secondPassword)
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		fmt.Println("error with password")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-
-	user, err := db.CreateUser(conn, username, email, string(hash))
+	hashedStr := string(hash)
+	user, err := db.CreateUser(conn, username, email, hashedStr)
+	// SEND THE USER WITH THE HTML
 	fmt.Println(user)
-
 	if err != nil {
 		panic(err)
 	}
-
-
-
-
 	// Here we will check if the user has an account, if they don't then sign up?
 	// Check if the request is an HTMX request
 	if r.Header.Get("HX-Request") == "true" {
@@ -107,21 +104,4 @@ func GetCreateAccount(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-}
-
-func CreateAccount(w http.ResponseWriter, r *http.Request) {
-	username := r.PostFormValue("username")
-	email := r.PostFormValue("email")
-	secondEmail := r.PostFormValue("secondEmail")
-
-	if email != secondEmail {
-		fmt.Println("email and second email do not match!")
-		// return appropriate html...
-	}
-
-	conn := db.Connect()
-	defer conn.Close(context.Background())
-
-	// db work
-	fmt.Println("data: ", username, email, secondEmail)
 }
