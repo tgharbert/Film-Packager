@@ -1,9 +1,13 @@
 package routes
 
 import (
+	"context"
+	"filmPackager/internal/store/db"
 	"fmt"
 	"html/template"
 	"net/http"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // TEMP AUTH TEST FOR REDIRECT
@@ -20,7 +24,7 @@ func RegisterRoutes() *http.ServeMux {
 	mux.HandleFunc("/login/", Login)
 	mux.HandleFunc("/post-login/", DirectHome)
 	mux.HandleFunc("/get-create-account/", DirectToCreateAccount)
-	mux.HandleFunc("/create-account/", CreateAccount)
+	mux.HandleFunc("/create-account/", GetCreateAccount)
 	return mux
 }
 
@@ -49,7 +53,30 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func DirectHome(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("HIT THIS")
+
+	username := r.PostFormValue("username")
+	email := r.PostFormValue("email")
+	password := r.PostFormValue("password")
+	secondPassword := r.PostFormValue("secondPassword")
+	if password != secondPassword {
+		fmt.Println("email and second email do not match!")
+		// return appropriate html...
+	}
+	conn := db.Connect()
+	defer conn.Close(context.Background())
+	// db work
+	// fmt.Println("data: ", username, email, password, secondPassword)
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	user, err := db.CreateUser(conn, username, email, hash)
+	fmt.Println(user)
+
+	if err != nil {
+		panic(err)
+	}
+
+
+
+
 	// Here we will check if the user has an account, if they don't then sign up?
 	// Check if the request is an HTMX request
 	if r.Header.Get("HX-Request") == "true" {
@@ -69,10 +96,27 @@ func DirectToCreateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func CreateAccount(w http.ResponseWriter, r *http.Request) {
+func GetCreateAccount(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFiles("templates/create-account.html"))
 	err := tmpl.Execute(w, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func CreateAccount(w http.ResponseWriter, r *http.Request) {
+	username := r.PostFormValue("username")
+	email := r.PostFormValue("email")
+	secondEmail := r.PostFormValue("secondEmail")
+
+	if email != secondEmail {
+		fmt.Println("email and second email do not match!")
+		// return appropriate html...
+	}
+
+	conn := db.Connect()
+	defer conn.Close(context.Background())
+
+	// db work
+	fmt.Println("data: ", username, email, secondEmail)
 }
