@@ -67,7 +67,12 @@ func DirectHome(w http.ResponseWriter, r *http.Request) {
 	// db work
 	// fmt.Println("data: ", username, email, password, secondPassword)
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	user, err := db.CreateUser(conn, username, email, hash)
+	if err != nil {
+		fmt.Println("error with password")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	user, err := db.CreateUser(conn, username, email, string(hash))
 	fmt.Println(user)
 
 	if err != nil {
