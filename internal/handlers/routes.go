@@ -67,33 +67,30 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 	// w.Header().Set("Content-type", "application/json")
 	fmt.Println("hit the homepage!")
 
-		// Retrieve JWT from the "Authorization" cookie
-		cookie, err := r.Cookie("Authorization")
-		if err != nil {
-			fmt.Println("no token cookie at the index")
-			GetLoginPage(w, r) // Redirect to login page if cookie is missing
-			return
-		}
+	// Retrieve JWT from the "Authorization" cookie
+	cookie, err := r.Cookie("Authorization")
+	if err != nil {
+		fmt.Println("no token cookie at the Home Page")
+		GetLoginPage(w, r) // Redirect to login page if cookie is missing
+		return
+	}
+	// Extract the JWT token from the cookie value
+	tokenString := cookie.Value[len("Bearer "):]
+	fmt.Println("token string on homepage: ", tokenString)
 
-		// Extract the JWT token from the cookie value
-		tokenString := cookie.Value[len("Bearer "):]
-
-
-	// tokenString := r.Header.Get("Authorization")
 	if tokenString == "" {
-		fmt.Println("no token string 1")
 		w.WriteHeader(http.StatusUnauthorized)
-		// fmt.Fprint(w, "Missing authorization header")
+		fmt.Fprint(w, "Missing authorization header")
 		return
 	}
 
 	// tokenString = tokenString[len("Bearer "):]
-	// err = access.VerifyToken(tokenString)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusUnauthorized)
-	// 	fmt.Fprint(w, "Invalid token")
-	// 	return
-	// }
+	err = access.VerifyToken(tokenString)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(w, "Invalid token")
+		return
+	}
 	// fmt.Fprint(w, "Welcome to the forbidden zone")
 	tmpl := template.Must(template.ParseFiles("templates/index.html",
 	"templates/doc-list.html", "templates/file-upload.html", "templates/sidebar.html",
@@ -135,8 +132,8 @@ func PostLoginSubmit(w http.ResponseWriter, r *http.Request) {
 		Path: "/",
 	})
 	if r.Header.Get("HX-Request") == "true" {
-		// http.Redirect(w, r, "/", http.StatusFound)
-		HomePage(w, r)
+		http.Redirect(w, r, "/", http.StatusFound)
+		// HomePage(w, r)
 		// w.WriteHeader(http.StatusOK)
 		// fmt.Fprintf(w, tokenString)
 		// return
