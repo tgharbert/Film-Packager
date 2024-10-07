@@ -7,12 +7,17 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
 	Name string
 	Email string
 	Role string
+}
+
+func CheckPasswordHash(hashedPassword string, password string) error {
+		return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
 func Connect() *pgx.Conn {
@@ -59,8 +64,8 @@ func CreateUser(c *pgx.Conn, name string, email string, password string) (User, 
 	return user, nil
 }
 
-func GetUser(c *pgx.Conn, email string) (User, error) {
-	query := `SELECT email, name, role FROM users where email = $1`
+func GetUser(c *pgx.Conn, email string, password string) (User, error) {
+	query := `SELECT email, name, role, password FROM users where email = $1`
 	var user User
 	rows, err := c.Query(context.Background(), query, email)
 	if err != nil {
@@ -71,11 +76,22 @@ func GetUser(c *pgx.Conn, email string) (User, error) {
 		fmt.Println("No rows found for email:", email)
 		return user, fmt.Errorf("no user found with email: %s", email)
 	}
-	err = rows.Scan(&user.Email, &user.Name, &user.Role)
+	var storedPassword string
+	err = rows.Scan(&user.Email, &user.Name, &user.Role, &storedPassword)
 	if err != nil {
 		fmt.Println("Error scanning row:", err)
 		return user, fmt.Errorf("error scanning row: %v", err)
 	}
+
+
+	err = CheckPasswordHash(storedPassword, password)
+	if err != nil {
+		return user, fmt.Errorf("invalid password")
+	}
+	// if password != storedPassword {
+	// 	fmt.Println("WRONG PASSWORD - ADD LOGIC")
+	// 	return user, err
+	// }
 	if rows.Err() != nil {
 		fmt.Println("Error after rows loop:", rows.Err())
 		return user, rows.Err()
