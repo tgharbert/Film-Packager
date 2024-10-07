@@ -2,6 +2,7 @@ package routes
 
 import (
 	"context"
+	access "filmPackager/internal/auth"
 	"filmPackager/internal/store/db"
 	"fmt"
 	"html/template"
@@ -10,12 +11,6 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 )
-
-// TEMP AUTH TEST FOR REDIRECT
-var auth = false
-func setAuthTrue () {
-	auth = true
-}
 
 func isValidEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
@@ -26,7 +21,7 @@ func isValidEmail(email string) bool {
 func RegisterRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	mux.HandleFunc("/", Homepage)
+	mux.HandleFunc("/", IndexPage)
 	mux.HandleFunc("/login/", GetLoginPage)
 	mux.HandleFunc("/post-login/", PostLoginSubmit)
 	mux.HandleFunc("/post-create/", PostCreateAccount)
@@ -35,18 +30,136 @@ func RegisterRoutes() *http.ServeMux {
 	return mux
 }
 
-func Homepage(w http.ResponseWriter, r *http.Request) {
-	if !auth {
-		http.Redirect(w, r, "/login/", http.StatusFound)
+func IndexPage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-type", "text/html; charset=utf-8")
+	// tokenString := r.Header.Get("Authorization")
+
+		// Retrieve JWT from the "Authorization" cookie
+	cookie, err := r.Cookie("Authorization")
+	if err != nil {
+		fmt.Println("no token cookie at the index")
+		GetLoginPage(w, r) // Redirect to login page if cookie is missing
+		return
 	}
+
+		// Extract the JWT token from the cookie value
+	tokenString := cookie.Value[len("Bearer "):]
+	fmt.Println("token string retrived from cookie: ", tokenString)
+
+	if tokenString == "" {
+		fmt.Println("no token string at the index")
+		GetLoginPage(w, r)
+		// w.WriteHeader(http.StatusUnauthorized)
+		// fmt.Fprint(w, "Missing authorization header")
+		return
+	}
+	err = access.VerifyToken(tokenString)
+	if err != nil {
+		fmt.Println("token string passed to verify token: ",tokenString)
+		w.WriteHeader(http.StatusUnauthorized)
+		GetLoginPage(w, r)
+		return
+	}
+	HomePage(w, r)
+}
+
+func HomePage(w http.ResponseWriter, r *http.Request) {
+	// w.Header().Set("Content-type", "application/json")
+	fmt.Println("hit the homepage!")
+
+		// Retrieve JWT from the "Authorization" cookie
+		cookie, err := r.Cookie("Authorization")
+		if err != nil {
+			fmt.Println("no token cookie at the index")
+			GetLoginPage(w, r) // Redirect to login page if cookie is missing
+			return
+		}
+
+		// Extract the JWT token from the cookie value
+		tokenString := cookie.Value[len("Bearer "):]
+
+
+	// tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		fmt.Println("no token string 1")
+		w.WriteHeader(http.StatusUnauthorized)
+		// fmt.Fprint(w, "Missing authorization header")
+		return
+	}
+
+	// tokenString = tokenString[len("Bearer "):]
+	// err = access.VerifyToken(tokenString)
+	// if err != nil {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	fmt.Fprint(w, "Invalid token")
+	// 	return
+	// }
+	// fmt.Fprint(w, "Welcome to the forbidden zone")
 	tmpl := template.Must(template.ParseFiles("templates/index.html",
 	"templates/doc-list.html", "templates/file-upload.html", "templates/sidebar.html",
 	))
 	// REPLACE THE NIL WITH DATA from DB
-	err := tmpl.Execute(w, nil)
+	err = tmpl.Execute(w, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func PostLoginSubmit(w http.ResponseWriter, r *http.Request) {
+	email := r.PostFormValue("email")
+	password := r.PostFormValue("password")
+	conn := db.Connect()
+	defer conn.Close(context.Background())
+	user, err := db.GetUser(conn, email, password)
+	if err != nil {
+		fmt.Println("HIT THIS PANIC")
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(w, "Invalid credentials")
+		// return that no user is found, please check email and pw
+		// panic(err)
+		return
+	}
+	// fmt.Println("logged in: ", user)
+	// w.Header().Set("Content-type", "application/json")
+	tokenString, err := access.GenerateJWT(user.Email, user.Role)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, "Error generating JWT")
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name: "Authorization",
+		Value: "Bearer " + tokenString,
+		HttpOnly: true,
+		Path: "/",
+	})
+	if r.Header.Get("HX-Request") == "true" {
+		// http.Redirect(w, r, "/", http.StatusFound)
+		HomePage(w, r)
+		// w.WriteHeader(http.StatusOK)
+		// fmt.Fprintf(w, tokenString)
+		// return
+	}
+
+
+	// OLD
+	// if r.Header.Get("HX-Request") == "true" {
+	// 	// token work
+	// 	tokenString, err := access.GenerateJWT(user.Email, user.Role)
+	// 	if err != nil {
+	// 		w.WriteHeader(http.StatusInternalServerError)
+	// 		fmt.Errorf("No username found")
+	// 	}
+	// 	w.WriteHeader(http.StatusOK)
+	// 	fmt.Fprintf(w, tokenString)
+	// 	HomePage(w, r)
+
+	// 	// HTMX request, use HX-Redirect to tell HTMX to redirect
+	// 	// w.Header().Set("HX-Redirect", "/")
+	// 	return
+	// }
+	// get the user with the email and hash...
 }
 
 func GetLoginPage(w http.ResponseWriter, r *http.Request) {
@@ -57,27 +170,7 @@ func GetLoginPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func PostLoginSubmit(w http.ResponseWriter, r *http.Request) {
-	email := r.PostFormValue("email")
-	password := r.PostFormValue("password")
-	fmt.Println(email, password)
-	conn := db.Connect()
-	defer conn.Close(context.Background())
-	user, err := db.GetUser(conn, email, password)
-	if err != nil {
-		fmt.Println("HIT THIS PANIC")
-		// return that no user is found, please check email and pw
-		panic(err)
-	}
-	fmt.Println("logged in: ", user)
-	if r.Header.Get("HX-Request") == "true" {
-		setAuthTrue()
-		// HTMX request, use HX-Redirect to tell HTMX to redirect
-		w.Header().Set("HX-Redirect", "/")
-		return
-	}
-	// get the user with the email and hash...
-}
+
 
 func PostCreateAccount(w http.ResponseWriter, r *http.Request) {
 	username := r.PostFormValue("username")
@@ -108,7 +201,7 @@ func PostCreateAccount(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	if r.Header.Get("HX-Request") == "true" {
-		setAuthTrue()
+		// setAuthTrue()
 		w.Header().Set("HX-Redirect", "/")
 		return
 	}
@@ -116,7 +209,7 @@ func PostCreateAccount(w http.ResponseWriter, r *http.Request) {
 
 func DirectToCreateAccount(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("HX-Request") == "true" {
-		setAuthTrue()
+		// setAuthTrue()
 		// HTMX request, use HX-Redirect to tell HTMX to redirect
 		w.Header().Set("HX-Redirect", "/create-account/")
 		return
@@ -130,3 +223,4 @@ func GetCreateAccount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+
