@@ -1,2 +1,3 @@
 # Film-Packager
-SPA to manage film documents for projects in development
+
+## An SPA to manage documents for film projects in development

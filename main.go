@@ -5,13 +5,13 @@ import (
 	"net/http"
 
 	routes "filmPackager/internal/handlers"
+	db "filmPackager/internal/store/db"
 )
 
-
 func main() {
-
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	http.HandleFunc("/", routes.Homepage)
-	log.Print("Listening on port 9090...")
-	log.Fatal(http.ListenAndServe(":9090", nil))
+  db.Connect()
+	// acct := access.CreateAccount("tgharbert3@gmail.com", )
+	mux := routes.RegisterRoutes()
+	log.Print("Listening on port 3000...")
+	log.Fatal(http.ListenAndServe(":3000", mux))
 }

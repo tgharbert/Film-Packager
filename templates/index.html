@@ -16,8 +16,10 @@
   </head>
   <h1 id="title">Film Packager</h1>
   <body>
+    {{block "main" .}}
     <div id="main">
       {{template "sidebarHTML" .}}
       {{template "docListHTML" .}}
-  </body>
-</html>
+    </body>
+    {{end}}
+    </html>
