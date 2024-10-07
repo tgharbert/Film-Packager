@@ -32,9 +32,8 @@ func RegisterRoutes() *http.ServeMux {
 
 func IndexPage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "text/html; charset=utf-8")
-	// tokenString := r.Header.Get("Authorization")
 
-		// Retrieve JWT from the "Authorization" cookie
+	// Retrieve JWT from the "Authorization" cookie
 	cookie, err := r.Cookie("Authorization")
 	if err != nil {
 		fmt.Println("no token cookie at the index")
@@ -49,8 +48,6 @@ func IndexPage(w http.ResponseWriter, r *http.Request) {
 	if tokenString == "" {
 		fmt.Println("no token string at the index")
 		GetLoginPage(w, r)
-		// w.WriteHeader(http.StatusUnauthorized)
-		// fmt.Fprint(w, "Missing authorization header")
 		return
 	}
 	err = access.VerifyToken(tokenString)
@@ -64,9 +61,6 @@ func IndexPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func HomePage(w http.ResponseWriter, r *http.Request) {
-	// w.Header().Set("Content-type", "application/json")
-	fmt.Println("hit the homepage!")
-
 	// Retrieve JWT from the "Authorization" cookie
 	cookie, err := r.Cookie("Authorization")
 	if err != nil {
@@ -84,14 +78,12 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// tokenString = tokenString[len("Bearer "):]
 	err = access.VerifyToken(tokenString)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprint(w, "Invalid token")
 		return
 	}
-	// fmt.Fprint(w, "Welcome to the forbidden zone")
 	tmpl := template.Must(template.ParseFiles("templates/index.html",
 	"templates/doc-list.html", "templates/file-upload.html", "templates/sidebar.html",
 	))
@@ -133,30 +125,8 @@ func PostLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	})
 	if r.Header.Get("HX-Request") == "true" {
 		http.Redirect(w, r, "/", http.StatusFound)
-		// HomePage(w, r)
-		// w.WriteHeader(http.StatusOK)
-		// fmt.Fprintf(w, tokenString)
-		// return
+		return
 	}
-
-
-	// OLD
-	// if r.Header.Get("HX-Request") == "true" {
-	// 	// token work
-	// 	tokenString, err := access.GenerateJWT(user.Email, user.Role)
-	// 	if err != nil {
-	// 		w.WriteHeader(http.StatusInternalServerError)
-	// 		fmt.Errorf("No username found")
-	// 	}
-	// 	w.WriteHeader(http.StatusOK)
-	// 	fmt.Fprintf(w, tokenString)
-	// 	HomePage(w, r)
-
-	// 	// HTMX request, use HX-Redirect to tell HTMX to redirect
-	// 	// w.Header().Set("HX-Redirect", "/")
-	// 	return
-	// }
-	// get the user with the email and hash...
 }
 
 func GetLoginPage(w http.ResponseWriter, r *http.Request) {
@@ -166,8 +136,6 @@ func GetLoginPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
-
-
 
 func PostCreateAccount(w http.ResponseWriter, r *http.Request) {
 	username := r.PostFormValue("username")
@@ -206,7 +174,6 @@ func PostCreateAccount(w http.ResponseWriter, r *http.Request) {
 
 func DirectToCreateAccount(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("HX-Request") == "true" {
-		// setAuthTrue()
 		// HTMX request, use HX-Redirect to tell HTMX to redirect
 		w.Header().Set("HX-Redirect", "/create-account/")
 		return

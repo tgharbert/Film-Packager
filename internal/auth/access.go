@@ -67,43 +67,6 @@ func VerifyToken(tokenString string) error {
 	return nil
 }
 
-
-// VerifyToken verifies the given JWT token and ensures it's valid
-// func VerifyToken(tokenString string) (error) {
-// 	// Parse the JWT token
-// 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-// 		// Check the signing method
-// 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-// 				return nil, errors.New("unexpected signing method")
-// 		}
-// 		return jwtKey, nil
-// 	})
-
-// 	// Check if there was an error in parsing the token
-// 	if err != nil {
-// 		return fmt.Errorf("error parsing token: %v", err)
-// 	}
-
-// 	// Validate the token claims
-// 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-// 		// Token is valid, check expiration
-// 		fmt.Println("claims: ", claims)
-// 		// if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
-// 		// 	return errors.New("token has expired")
-// 		// }
-
-// 		// You can also validate custom claims like user role or email here
-// 		// For example, you could restrict access based on user role:
-// 		if claims.Role != "admin" {
-// 			return errors.New("unauthorized: insufficient permissions")
-// 		}
-
-// 		return nil // Token is valid and user is authorized
-// 	} else {
-// 		return errors.New("invalid token")
-// 	}
-// }
-
 func CheckAccess(userID, orgID int, requiredTier string) (bool, error) {
 	var membership Membership
 	// query db for access...
@@ -124,27 +87,3 @@ func CheckAccess(userID, orgID int, requiredTier string) (bool, error) {
 	}
 	return false, nil
 }
-
-// // MIDDLEWARE FOR AUTH???
-// func RequireAccess(requiredTier string, orgID int, next http.HandlerFunc) http.HandlerFunc {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 			// Extract the user information from the JWT token or session
-// 			userID := getUserIDFromContext(r)
-
-// 			// Check if the user has the required access
-// 			hasAccess, err := CheckAccess(userID, orgID, requiredTier)
-// 			if err != nil || !hasAccess {
-// 					http.Error(w, "Forbidden", http.StatusForbidden)
-// 					return
-// 			}
-
-// 			// If access is granted, proceed to the next handler
-// 			next.ServeHTTP(w, r)
-// 	})
-// }
-
-// // Dummy function to extract user ID (assuming it's stored in the context)
-// func getUserIDFromContext(r *http.Request) int {
-// 	// Extract the user ID from the request's context (set in authentication middleware)
-// 	return 123 // Replace this with actual logic to extract the user ID
-// }
