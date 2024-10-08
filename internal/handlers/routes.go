@@ -32,10 +32,18 @@ func RegisterRoutes() *http.ServeMux {
 	mux.HandleFunc("/post-login/", PostLoginSubmit)
 	mux.HandleFunc("/post-create/", PostCreateAccount)
 	mux.HandleFunc("/get-create-account/", DirectToCreateAccount)
-	mux.HandleFunc("/create-account/", GetCreateAccount)
+	// mux.HandleFunc("/create-account/", GetCreateAccount)
 	mux.HandleFunc("/logout/", Logout)
 	return mux
 }
+
+// var tmpl *template.Template
+
+// func init() {
+//     // Parse all templates once during initialization
+//     tmpl = template.Must(template.ParseGlob("templates/*.html"))
+// }
+
 
 func isValidEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
@@ -48,7 +56,6 @@ func IndexPage(w http.ResponseWriter, r *http.Request) {
 	// Retrieve JWT from the "Authorization" cookie
 	cookie, err := r.Cookie("Authorization")
 	if err != nil {
-		fmt.Println("no token cookie at the index")
 		GetLoginPage(w, r) // Redirect to login page if cookie is missing
 		return
 	}
@@ -97,7 +104,6 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 		fmt.Errorf("Failed extracting user from token: %v", err)
 		return
 	}
-	fmt.Println("user Info: ", userInfo)
 	data := HomeData{
 		User: userInfo,
 	}
@@ -106,7 +112,6 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 	"templates/doc-list.html", "templates/file-upload.html", "templates/sidebar.html", "templates/header.html",
 	))
 	// REPLACE THE NIL WITH DATA from DB
-	fmt.Println("data: ", data)
 	err = tmpl.Execute(w, data)
 
 	if err != nil {
@@ -147,7 +152,7 @@ func PostLoginSubmit(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetLoginPage(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("templates/login-form.html"))
+	tmpl := template.Must(template.ParseFiles("templates/login-form.html", "templates/login-form-template.html", "templates/create-account-template.html"))
 	err := tmpl.Execute(w, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -189,20 +194,25 @@ func PostCreateAccount(w http.ResponseWriter, r *http.Request) {
 }
 
 func DirectToCreateAccount(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("HX-Request") == "true" {
-		// HTMX request, use HX-Redirect to tell HTMX to redirect
-		w.Header().Set("HX-Redirect", "/create-account/")
-		return
-	}
-}
-
-func GetCreateAccount(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("templates/create-account.html"))
-	err := tmpl.Execute(w, nil)
+	tmpl := template.Must(template.ParseFiles("templates/create-account-template.html"))
+	err := tmpl.ExecuteTemplate(w, "create-accountHTML", nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+
+// func GetCreateAccount(w http.ResponseWriter, r *http.Request) {
+// 	tmpl := template.Must(template.ParseFiles("templates/create-account.html", "templates/create-account-template.html"))
+// 	// err := tmpl.Execute(w, nil)
+// 	// if err != nil {
+// 	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+// 	// }
+// 	// tmpl := template.Must(template.ParseGlob("templates/create-account.html"))
+// 	err := tmpl.ExecuteTemplate(w, "create-account", nil)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 	}
+// }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
@@ -214,5 +224,5 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure: true,
 	})
-	IndexPage(w, r)
+	GetLoginPage(w, r)
 }

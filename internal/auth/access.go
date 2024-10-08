@@ -95,7 +95,6 @@ func GetUserNameFromToken(tokenString string) (*UserInfo, error) {
 		Email: claims.Email,
 		Role:  claims.Role,
 	}
-	fmt.Println(userInfo)
 	return userInfo, nil
 }
 
