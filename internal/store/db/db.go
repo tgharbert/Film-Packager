@@ -98,3 +98,5 @@ func GetUser(c *pgx.Conn, email string, password string) (User, error) {
 	}
 	return user, nil
 }
+
+// func GetHomeData(c *pgx.Conn, )

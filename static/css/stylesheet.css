@@ -26,7 +26,7 @@ body {
   background-color: rgb(20, 56, 88);
   border: 2px solid rgb(240, 233, 221);
   text-align: center;
-  margin-left: 2rem;
+  /* margin-left: 2rem; */
   border-radius: 1rem;
 }
 
@@ -62,10 +62,32 @@ h2 {
   padding: 0.4rem;
   background-color: rgb(90, 71, 106);
 }
-
 #button-std:hover {
   background-color: rgb(118, 102, 131);
   cursor: pointer;
+}
+
+#logout-button {
+  position: fixed;
+  right: 10px;
+  top: 5px;
+  font-weight: bold;
+  border: none;
+  color: rgb(240, 233, 221);
+  border-radius: 0.5rem;
+  padding: 0.4rem;
+  background-color: #16132e;
+}
+#logout-button:hover {
+  background-color: rgb(118, 102, 131);
+  cursor: pointer;
+}
+
+#user-name {
+  position: fixed;
+  left: 10px;
+  top: 0px;
+  font-weight: bold;
 }
 
 #login {

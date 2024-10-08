@@ -8,13 +8,19 @@ import (
 	"html/template"
 	"net/http"
 	"net/mail"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-func isValidEmail(email string) bool {
-	_, err := mail.ParseAddress(email)
-	return err == nil
+type User struct {
+	Name string
+	Email string
+	Role string
+}
+
+type HomeData struct {
+	User *access.UserInfo
 }
 
 // sets up the route multiplexer
@@ -27,7 +33,13 @@ func RegisterRoutes() *http.ServeMux {
 	mux.HandleFunc("/post-create/", PostCreateAccount)
 	mux.HandleFunc("/get-create-account/", DirectToCreateAccount)
 	mux.HandleFunc("/create-account/", GetCreateAccount)
+	mux.HandleFunc("/logout/", Logout)
 	return mux
+}
+
+func isValidEmail(email string) bool {
+	_, err := mail.ParseAddress(email)
+	return err == nil
 }
 
 func IndexPage(w http.ResponseWriter, r *http.Request) {
@@ -43,10 +55,8 @@ func IndexPage(w http.ResponseWriter, r *http.Request) {
 
 		// Extract the JWT token from the cookie value
 	tokenString := cookie.Value[len("Bearer "):]
-	fmt.Println("token string retrived from cookie: ", tokenString)
 
 	if tokenString == "" {
-		fmt.Println("no token string at the index")
 		GetLoginPage(w, r)
 		return
 	}
@@ -64,14 +74,12 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 	// Retrieve JWT from the "Authorization" cookie
 	cookie, err := r.Cookie("Authorization")
 	if err != nil {
-		fmt.Println("no token cookie at the Home Page")
-		GetLoginPage(w, r) // Redirect to login page if cookie is missing
+		// Redirect to login page if cookie is missing
+		GetLoginPage(w, r)
 		return
 	}
 	// Extract the JWT token from the cookie value
 	tokenString := cookie.Value[len("Bearer "):]
-	fmt.Println("token string on homepage: ", tokenString)
-
 	if tokenString == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprint(w, "Missing authorization header")
@@ -84,11 +92,23 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Invalid token")
 		return
 	}
+	userInfo, err := access.GetUserNameFromToken(tokenString)
+	if err != nil {
+		fmt.Errorf("Failed extracting user from token: %v", err)
+		return
+	}
+	fmt.Println("user Info: ", userInfo)
+	data := HomeData{
+		User: userInfo,
+	}
+
 	tmpl := template.Must(template.ParseFiles("templates/index.html",
-	"templates/doc-list.html", "templates/file-upload.html", "templates/sidebar.html",
+	"templates/doc-list.html", "templates/file-upload.html", "templates/sidebar.html", "templates/header.html",
 	))
 	// REPLACE THE NIL WITH DATA from DB
-	err = tmpl.Execute(w, nil)
+	fmt.Println("data: ", data)
+	err = tmpl.Execute(w, data)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -101,16 +121,13 @@ func PostLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close(context.Background())
 	user, err := db.GetUser(conn, email, password)
 	if err != nil {
-		fmt.Println("HIT THIS PANIC")
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprint(w, "Invalid credentials")
 		// return that no user is found, please check email and pw
 		// panic(err)
 		return
 	}
-	// fmt.Println("logged in: ", user)
-	// w.Header().Set("Content-type", "application/json")
-	tokenString, err := access.GenerateJWT(user.Email, user.Role)
+	tokenString, err := access.GenerateJWT(user.Name, user.Email, user.Role)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "Error generating JWT")
@@ -166,7 +183,6 @@ func PostCreateAccount(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	if r.Header.Get("HX-Request") == "true" {
-		// setAuthTrue()
 		w.Header().Set("HX-Redirect", "/")
 		return
 	}
@@ -188,3 +204,15 @@ func GetCreateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func Logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name: "Authorization",
+		Value: "",
+		Expires: time.Unix(0, 0),
+		Path: "/",
+		MaxAge: -1,
+		HttpOnly: true,
+		Secure: true,
+	})
+	IndexPage(w, r)
+}
