@@ -22,36 +22,6 @@
     />
   </head>
   <body>
-    <div id="login">
-      {{template "create-accountHTML" .}}
-      <!-- <form hx-post="/post-create/">
-        <h2 id="subheader">Create Account:</h2>
-        <div id="login-input">
-          <label>Username: </label>
-          <input type="text" name="username" />
-        </div>
-        <div id="login-input">
-          <label>Email: </label>
-          <input type="text" name="email" />
-        </div>
-        <div id="login-input">
-          <label>Password: </label>
-          <input type="text" name="password" />
-        </div>
-        <div id="login-input">
-          <label>Verify Password: </label>
-          <input type="text" name="secondPassword" />
-        </div>
-        <div>
-          <p>
-            Already have an account? Log in
-            <span id="link-text" hx-post="/login/" hx-delete="#login"
-              >here</span
-            >
-          </p>
-          <button id="button-std">Create Account</button>
-        </div>
-      </form> -->
-    </div>
+    <div id="login">{{template "create-accountHTML" .}}</div>
   </body>
 </html>

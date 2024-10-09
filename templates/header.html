@@ -1,7 +1,7 @@
 {{define "headerHTML"}}
 <div id="topbar">
   <h2 id="title">Film Packager</h2>
-  <button id="logout-button" hx-post="/logout/" hx-target="body" hx-swap="main">
+  <button id="logout-button" hx-get="/logout/" hx-target="body" hx-swap="main">
     Logout
   </button>
   <p id="user-name">{{ .User.Name }}</p>

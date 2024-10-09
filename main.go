@@ -2,9 +2,9 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/template/html/v2"
 
 	routes "filmPackager/internal/handlers"
 	db "filmPackager/internal/store/db"
@@ -12,10 +12,12 @@ import (
 
 func main() {
   db.Connect()
-
-	app := fiber.New()
-
-	mux := routes.RegisterRoutes()
+	engine := html.New("./templates", ".html")
+	app := fiber.New(fiber.Config{
+		Views: engine,
+	})
+	app.Static("/static", "./static")
+	routes.RegisterRoutes(app)
 	log.Print("Listening on port 3000...")
-	log.Fatal(http.ListenAndServe(":3000", mux))
+	log.Fatal(app.Listen(":3000"))
 }
