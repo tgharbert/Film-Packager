@@ -28,6 +28,7 @@ type Membership struct {
 }
 
 type UserInfo struct {
+	Id int
 	Name  string
 	Email string
 	Role  string
@@ -37,16 +38,17 @@ type UserInfo struct {
 var jwtKey = []byte(os.Getenv("DEV_DATABASE_URL"))
 
 type Claims struct {
+	UserID int
 	Name string
 	Email string
 	Role string
 	jwt.StandardClaims
 }
 
-func GenerateJWT(name string, email string, role string) (string, error) {
+func GenerateJWT(userID int, name string, email string, role string) (string, error) {
 	expirationTime := time.Now().Add(48 * time.Hour) // valid for 48 hours
 	claims := &Claims{
-		// UserID: userID,
+		UserID: userID,
 		Name: name,
 		Email: email,
 		Role: role,
@@ -91,6 +93,7 @@ func GetUserNameFromToken(tokenString string) (*UserInfo, error) {
 		return nil, fmt.Errorf("invalid token")
 	}
 	userInfo := &UserInfo{
+		Id: claims.UserID,
 		Name:  claims.Name,
 		Email: claims.Email,
 		Role:  claims.Role,

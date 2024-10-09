@@ -17,13 +17,8 @@
       rel="stylesheet"
     />
   </head>
-  <!-- <h1 id="title">Film Packager</h1> -->
   {{template "headerHTML" .}}
   <body>
-    {{block "main" .}}
-    <div id="main">
-      {{template "sidebarHTML" .}} {{template "docListHTML" .}}
-    </div>
+    <div id="main">{{template "selectOrgHTML" .}}</div>
   </body>
-  {{end}}
 </html>

@@ -11,6 +11,7 @@ import (
 )
 
 type User struct {
+	Id int
 	Name string
 	Email string
 	Role string
@@ -20,6 +21,7 @@ type User struct {
 type Org struct {
 	Id string
 	Name string
+	Role string
 }
 
 func CheckPasswordHash(hashedPassword string, password string) error {
@@ -71,7 +73,7 @@ func CreateUser(c *pgx.Conn, name string, email string, password string) (User, 
 }
 
 func GetUser(c *pgx.Conn, email string, password string) (User, error) {
-	query := `SELECT email, name, role, password FROM users where email = $1`
+	query := `SELECT id, email, name, role, password FROM users where email = $1`
 	var user User
 	rows, err := c.Query(context.Background(), query, email)
 	if err != nil {
@@ -83,7 +85,7 @@ func GetUser(c *pgx.Conn, email string, password string) (User, error) {
 		return user, fmt.Errorf("no user found with email: %s", email)
 	}
 	// var storedPassword string
-	err = rows.Scan(&user.Email, &user.Name, &user.Role, &user.Password)
+	err = rows.Scan(&user.Id, &user.Email, &user.Name, &user.Role, &user.Password)
 	if err != nil {
 		fmt.Println("Error scanning row:", err)
 		return user, fmt.Errorf("error scanning row: %v", err)
@@ -105,7 +107,29 @@ func GetUser(c *pgx.Conn, email string, password string) (User, error) {
 	return user, nil
 }
 
-// create organization
+// ORG WORK
+func GetProjects(c *pgx.Conn, userId int) ([]Org, error) {
+	query := `SELECT o.id, o.name, m.access_tier FROM organizations o JOIN memberships m ON o.id = m.organization_id WHERE m.user_id = $1;`
+	var orgs []Org
+	rows, err := c.Query(context.Background(), query, userId)
+	if err != nil {
+		return nil, fmt.Errorf("initial query failed: %v ", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var org Org
+		err := rows.Scan(&org.Id, &org.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning row %v", err)
+		}
+		orgs = append(orgs, org)
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return orgs, nil
+}
+
 func CreateProject(c *pgx.Conn, name string, ownerId string) (Org, error) {
 	orgQuery := `INSERT INTO organizations (name) VALUES ($1) RETURNING id`
 	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier) VALUES ($1, $2, $3)`
@@ -120,5 +144,3 @@ func CreateProject(c *pgx.Conn, name string, ownerId string) (Org, error) {
 	}
 	return org, nil
 }
-
-// func GetHomeData(c *pgx.Conn, )
