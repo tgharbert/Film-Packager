@@ -13,6 +13,24 @@ body {
   min-height: 80vh;
 }
 
+#topbar {
+  height: 50px;
+}
+
+#table {
+  display: flex;
+  justify-content: center;
+  padding-right: 2rem;
+  margin-top: 1rem;
+}
+
+#table-header {
+  border: 1px solid rgb(240, 233, 221);
+  font-size: smaller;
+  font-weight: 300;
+  width: 80px;
+}
+
 #doc-list {
   margin-left: 2rem;
   padding-left: 2rem;

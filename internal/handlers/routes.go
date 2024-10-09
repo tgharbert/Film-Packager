@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/mail"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -23,6 +24,10 @@ type HomeData struct {
 	User *access.UserInfo
 }
 
+type Message struct {
+	Error string
+}
+
 // sets up the route multiplexer
 func RegisterRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
@@ -32,18 +37,9 @@ func RegisterRoutes() *http.ServeMux {
 	mux.HandleFunc("/post-login/", PostLoginSubmit)
 	mux.HandleFunc("/post-create/", PostCreateAccount)
 	mux.HandleFunc("/get-create-account/", DirectToCreateAccount)
-	// mux.HandleFunc("/create-account/", GetCreateAccount)
 	mux.HandleFunc("/logout/", Logout)
 	return mux
 }
-
-// var tmpl *template.Template
-
-// func init() {
-//     // Parse all templates once during initialization
-//     tmpl = template.Must(template.ParseGlob("templates/*.html"))
-// }
-
 
 func isValidEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
@@ -69,7 +65,6 @@ func IndexPage(w http.ResponseWriter, r *http.Request) {
 	}
 	err = access.VerifyToken(tokenString)
 	if err != nil {
-		fmt.Println("token string passed to verify token: ",tokenString)
 		w.WriteHeader(http.StatusUnauthorized)
 		GetLoginPage(w, r)
 		return
@@ -120,14 +115,38 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostLoginSubmit(w http.ResponseWriter, r *http.Request) {
-	email := r.PostFormValue("email")
-	password := r.PostFormValue("password")
+	email := strings.Trim(r.PostFormValue("email"), " ")
+	password := strings.Trim(r.PostFormValue("password"), " ")
+	if email == "" || password == "" {
+		return
+	}
 	conn := db.Connect()
 	defer conn.Close(context.Background())
 	user, err := db.GetUser(conn, email, password)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, "Invalid credentials")
+		fmt.Fprint(w, "Error retrieving user")
+	}
+	var mess Message
+	if user.Password == "" {
+		fmt.Println("HERE")
+		mess.Error = "Incorrect Password"
+		tmpl := template.Must(template.ParseFiles("templates/login-error.html"))
+		err := tmpl.ExecuteTemplate(w, "loginErrorHTML", mess)
+		if err != nil {
+			return
+			// http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+		// w.Header.Set("")
+	}
+	// if err != nil {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	fmt.Fprint(w, "Invalid credentials")
+
+	// }
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		// return that no user is found, please check email and pw
 		// panic(err)
 		return
@@ -160,17 +179,27 @@ func GetLoginPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostCreateAccount(w http.ResponseWriter, r *http.Request) {
-	username := r.PostFormValue("username")
-	email := r.PostFormValue("email")
-	password := r.PostFormValue("password")
-	secondPassword := r.PostFormValue("secondPassword")
+	username := strings.Trim(r.PostFormValue("username"), " ")
+	email := strings.Trim(r.PostFormValue("email"), " ")
+	password := strings.Trim(r.PostFormValue("password"), " ")
+	secondPassword := strings.Trim(r.PostFormValue("secondPassword"), " ")
+	if username == "" {
+		return
+	}
+	if email == "" {
+		return
+	}
 	if password != secondPassword {
 		fmt.Println("password and second password do not match!")
 		// return appropriate html...
 	}
+	if len(password) < 6 || len(secondPassword) < 6 {
+		fmt.Println("password is too short!")
+	}
 	if !isValidEmail(email) {
 		fmt.Println("email is not valid!")
 		// return appropriate email html...
+		return
 	}
 
 	conn := db.Connect()
@@ -200,19 +229,6 @@ func DirectToCreateAccount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
-
-// func GetCreateAccount(w http.ResponseWriter, r *http.Request) {
-// 	tmpl := template.Must(template.ParseFiles("templates/create-account.html", "templates/create-account-template.html"))
-// 	// err := tmpl.Execute(w, nil)
-// 	// if err != nil {
-// 	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	// }
-// 	// tmpl := template.Must(template.ParseGlob("templates/create-account.html"))
-// 	err := tmpl.ExecuteTemplate(w, "create-account", nil)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	}
-// }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
