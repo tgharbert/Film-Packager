@@ -14,12 +14,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// type User struct {
-// 	Name string
-// 	Email string
-// 	Role string
-// }
-
 type HomeData struct {
 	User *access.UserInfo
 	Orgs []db.Org
@@ -35,6 +29,8 @@ func RegisterRoutes(app *fiber.App) {
 	app.Post("/post-login/", PostLoginSubmit)
 	app.Post("/post-create-account", PostCreateAccount)
 	app.Get("/get-create-account/", DirectToCreateAccount)
+	app.Get("/create-project/", CreateProject)
+	app.Get("/get-project/:id", GetProject)
 	app.Get("/logout/", Logout)
 }
 
@@ -62,7 +58,6 @@ func HomePage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
-	fmt.Println("orgs: ", orgs)
 	data := HomeData{User: userInfo, Orgs: orgs,}
 	return c.Render("index", data)
 }
@@ -174,6 +169,33 @@ func Logout(c *fiber.Ctx) error {
 		HTTPOnly: true,                       // Ensure other flags match those of the original cookie
 		Secure:   true,                       // Set to true if the original cookie was secure
 	})
-
 	return c.Redirect("/login/")
+}
+
+func CreateProject(c *fiber.Ctx) error {
+	// send the project list updated with new project data...
+	projectName := c.FormValue("project-name")
+	tokenString := c.Cookies("Authorization")
+	if tokenString == "" {
+		return c.Redirect("/login/")
+	}
+	tokenString = tokenString[len("Bearer "):]
+	userInfo, err := access.GetUserNameFromToken(tokenString)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+	}
+	conn := db.Connect()
+	defer conn.Close(context.Background())
+	org, err := db.CreateProject(conn, projectName, userInfo.Id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving org")
+	}
+	return c.Render("project-list-item", org)
+}
+
+func GetProject(c *fiber.Ctx) error {
+	// will need to get all the project information for a given project
+	fmt.Println(c.Params("id"))
+	// get the values for the project - personnel, docs, etc
+	return nil
 }

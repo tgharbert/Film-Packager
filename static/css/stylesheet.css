@@ -31,10 +31,10 @@ body {
   width: 80px;
 }
 
-#project-list {
-  display: flex;
+#project-list-items {
+  /* display: flex;
   justify-content: center;
-  min-height: 80vh;
+  min-height: 80vh; */
   margin-left: 2rem;
   padding-left: 2rem;
   border: 2px solid rgb(240, 233, 221);

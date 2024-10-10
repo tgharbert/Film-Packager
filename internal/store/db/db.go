@@ -19,7 +19,7 @@ type User struct {
 }
 
 type Org struct {
-	Id string
+	Id int
 	Name string
 	Role string
 }
@@ -50,7 +50,7 @@ func CreateUser(c *pgx.Conn, name string, email string, password string) (User, 
 	if err != nil {
 		return user, fmt.Errorf("failed to insert user into users table: %v", err)
 	}
-	getNewUserQuery := `SELECT email, name, role FROM users WHERE email = $1`
+	getNewUserQuery := `SELECT id, email, name, role FROM users WHERE email = $1`
 	rows, err := c.Query(context.Background(), getNewUserQuery, email)
 	if err != nil {
 		return user, err
@@ -60,7 +60,7 @@ func CreateUser(c *pgx.Conn, name string, email string, password string) (User, 
 		fmt.Println("No rows found for email:", email)
 		return user, fmt.Errorf("no user found with email: %s", email)
 	}
-	err = rows.Scan(&user.Email, &user.Name, &user.Role)
+	err = rows.Scan(&user.Id, &user.Email, &user.Name, &user.Role)
 	if err != nil {
 		fmt.Println("Error scanning row:", err)
 		return user, fmt.Errorf("error scanning row: %v", err)
@@ -118,7 +118,7 @@ func GetProjects(c *pgx.Conn, userId int) ([]Org, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var org Org
-		err := rows.Scan(&org.Id, &org.Name)
+		err := rows.Scan(&org.Id, &org.Name, &org.Role)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning row %v", err)
 		}
@@ -130,17 +130,32 @@ func GetProjects(c *pgx.Conn, userId int) ([]Org, error) {
 	return orgs, nil
 }
 
-func CreateProject(c *pgx.Conn, name string, ownerId string) (Org, error) {
-	orgQuery := `INSERT INTO organizations (name) VALUES ($1) RETURNING id`
-	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier) VALUES ($1, $2, $3)`
+func CreateProject(c *pgx.Conn, name string, ownerId int) (Org, error) {
+	// Begin transaction
+	tx, err := c.Begin(context.Background())
+	if err != nil {
+		return Org{}, fmt.Errorf("could not begin transaction: %v", err)
+	}
+	defer tx.Rollback(context.Background()) // Rollback if any step fails
+	// Insert organization
+	orgQuery := `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
 	var org Org
-	err := c.QueryRow(context.Background(), orgQuery, name).Scan(&org.Id)
+	err = tx.QueryRow(context.Background(), orgQuery, name).Scan(&org.Id, &org.Name)
 	if err != nil {
-		return org, err
+		return org, fmt.Errorf("failed to insert into organizations: %v", err)
 	}
-	_, err = c.Exec(context.Background(), memberQuery, ownerId, org.Id, "owner")
+	// Insert into memberships with the role "owner"
+	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier) VALUES ($1, $2, $3) RETURNING access_tier`
+	err = tx.QueryRow(context.Background(), memberQuery, ownerId, org.Id, "owner").Scan(&org.Role)
 	if err != nil {
-		return org, err
+		fmt.Println("hit this error: ", err)
+		return org, fmt.Errorf("failed to insert into memberships: %v", err)
 	}
+	// Commit transaction
+	err = tx.Commit(context.Background())
+	if err != nil {
+		return org, fmt.Errorf("failed to commit transaction: %v", err)
+	}
+	fmt.Println("created: ", org)
 	return org, nil
 }
