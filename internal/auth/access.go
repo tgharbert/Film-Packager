@@ -27,19 +27,27 @@ type Membership struct {
 	AccessTier     string // Access level like "read", "write", "admin" -- can alter roles & push from 'staging area', "owner" - creator
 }
 
+type UserInfo struct {
+	Name  string
+	Email string
+	Role  string
+}
+
 // Potential issue here in not reading the env first??
 var jwtKey = []byte(os.Getenv("DEV_DATABASE_URL"))
 
 type Claims struct {
+	Name string
 	Email string
 	Role string
 	jwt.StandardClaims
 }
 
-func GenerateJWT(email string, role string) (string, error) {
+func GenerateJWT(name string, email string, role string) (string, error) {
 	expirationTime := time.Now().Add(48 * time.Hour) // valid for 48 hours
 	claims := &Claims{
 		// UserID: userID,
+		Name: name,
 		Email: email,
 		Role: role,
 		StandardClaims: jwt.StandardClaims{
@@ -67,23 +75,35 @@ func VerifyToken(tokenString string) error {
 	return nil
 }
 
-func CheckAccess(userID, orgID int, requiredTier string) (bool, error) {
-	var membership Membership
-	// query db for access...
-	// err := db.QueryRow("SELECT access_tier FROM memberships WHERE user_id = ? AND organization_id = ?", userID, orgID).Scan(&membership.AccessTier)
-	// if err != nil {
-	// 	return false, err
-	// }
-	accessHierarchy := map[string]int{
-		"read": 1,
-		"write": 2,
-		"admin": 3,
-		"owner": 4,
+func GetUserNameFromToken(tokenString string) (*UserInfo, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		// Check token signing method etc. here
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtKey, nil // Return the key used for signing
+	})
+	if err != nil {
+		return nil, err
 	}
-	userAccessLevel := accessHierarchy[membership.AccessTier]
-	requiredAccessLevel := accessHierarchy[requiredTier]
-	if userAccessLevel >= requiredAccessLevel {
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+	userInfo := &UserInfo{
+		Name:  claims.Name,
+		Email: claims.Email,
+		Role:  claims.Role,
+	}
+	return userInfo, nil
+}
+
+func CheckAccess(role string, orgID int, requiredTier string) (bool, error) {
+	if role == "owner" {
 		return true, nil
+	}
+	if role != requiredTier {
+		return false, nil
 	}
 	return false, nil
 }

@@ -4,187 +4,168 @@ import (
 	"context"
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/store/db"
-	"fmt"
-	"html/template"
-	"net/http"
 	"net/mail"
+	"strings"
+	"time"
+
+	"github.com/gofiber/fiber/v2"
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+type User struct {
+	Name string
+	Email string
+	Role string
+}
+
+type HomeData struct {
+	User *access.UserInfo
+}
+
+type Message struct {
+	Error string
+}
+
+func RegisterRoutes(app *fiber.App) {
+	app.Get("/", HomePage)
+	app.Get("/login/", GetLoginPage)
+	app.Post("/post-login/", PostLoginSubmit)
+	app.Post("/post-create-account", PostCreateAccount)
+	app.Get("/get-create-account/", DirectToCreateAccount)
+	app.Get("/logout/", Logout)
+}
 
 func isValidEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil
 }
 
-// sets up the route multiplexer
-func RegisterRoutes() *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	mux.HandleFunc("/", IndexPage)
-	mux.HandleFunc("/login/", GetLoginPage)
-	mux.HandleFunc("/post-login/", PostLoginSubmit)
-	mux.HandleFunc("/post-create/", PostCreateAccount)
-	mux.HandleFunc("/get-create-account/", DirectToCreateAccount)
-	mux.HandleFunc("/create-account/", GetCreateAccount)
-	return mux
-}
-
-func IndexPage(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-type", "text/html; charset=utf-8")
-
-	// Retrieve JWT from the "Authorization" cookie
-	cookie, err := r.Cookie("Authorization")
-	if err != nil {
-		fmt.Println("no token cookie at the index")
-		GetLoginPage(w, r) // Redirect to login page if cookie is missing
-		return
+func HomePage(c *fiber.Ctx) error {
+	tokenString := c.Cookies("Authorization")
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Redirect", "/") // Redirect to homepage or desired URL
+		return nil
 	}
-
-		// Extract the JWT token from the cookie value
-	tokenString := cookie.Value[len("Bearer "):]
-	fmt.Println("token string retrived from cookie: ", tokenString)
-
 	if tokenString == "" {
-		fmt.Println("no token string at the index")
-		GetLoginPage(w, r)
-		return
+		return c.Redirect("/login/")
 	}
-	err = access.VerifyToken(tokenString)
+	tokenString = tokenString[len("Bearer "):]
+	userInfo, err := access.GetUserNameFromToken(tokenString)
 	if err != nil {
-		fmt.Println("token string passed to verify token: ",tokenString)
-		w.WriteHeader(http.StatusUnauthorized)
-		GetLoginPage(w, r)
-		return
+		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 	}
-	HomePage(w, r)
+	data := HomeData{User: userInfo}
+	return c.Render("index", data)
 }
 
-func HomePage(w http.ResponseWriter, r *http.Request) {
-	// Retrieve JWT from the "Authorization" cookie
-	cookie, err := r.Cookie("Authorization")
-	if err != nil {
-		fmt.Println("no token cookie at the Home Page")
-		GetLoginPage(w, r) // Redirect to login page if cookie is missing
-		return
+func PostLoginSubmit(c *fiber.Ctx) error {
+	email := strings.TrimSpace(c.FormValue("email"))
+	password := strings.TrimSpace(c.FormValue("password"))
+	if email == "" || password == "" {
+		return c.Status(fiber.StatusBadRequest).SendString("Email or password cannot be empty")
 	}
-	// Extract the JWT token from the cookie value
-	tokenString := cookie.Value[len("Bearer "):]
-	fmt.Println("token string on homepage: ", tokenString)
-
-	if tokenString == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, "Missing authorization header")
-		return
-	}
-
-	err = access.VerifyToken(tokenString)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, "Invalid token")
-		return
-	}
-	tmpl := template.Must(template.ParseFiles("templates/index.html",
-	"templates/doc-list.html", "templates/file-upload.html", "templates/sidebar.html",
-	))
-	// REPLACE THE NIL WITH DATA from DB
-	err = tmpl.Execute(w, nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func PostLoginSubmit(w http.ResponseWriter, r *http.Request) {
-	email := r.PostFormValue("email")
-	password := r.PostFormValue("password")
 	conn := db.Connect()
 	defer conn.Close(context.Background())
 	user, err := db.GetUser(conn, email, password)
 	if err != nil {
-		fmt.Println("HIT THIS PANIC")
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, "Invalid credentials")
-		// return that no user is found, please check email and pw
-		// panic(err)
-		return
+		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving user")
 	}
-	// fmt.Println("logged in: ", user)
-	// w.Header().Set("Content-type", "application/json")
-	tokenString, err := access.GenerateJWT(user.Email, user.Role)
+	if user.Password == "" {
+		mess := Message{Error: "Incorrect Password"}
+		return c.Render("login-error", mess) // Fiber automatically handles the template rendering
+	}
+	tokenString, err := access.GenerateJWT(user.Name, user.Email, user.Role)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, "Error generating JWT")
-		return
+		return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name: "Authorization",
+	c.Cookie(&fiber.Cookie{
+		Name:  "Authorization",
 		Value: "Bearer " + tokenString,
-		HttpOnly: true,
-		Path: "/",
+		HTTPOnly: true,
+		Path:  "/",
+		Expires: time.Now().Add(48 * time.Hour),
 	})
-	if r.Header.Get("HX-Request") == "true" {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
+	return c.Redirect("/")
 }
 
-func GetLoginPage(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("templates/login-form.html"))
-	err := tmpl.Execute(w, nil)
+func GetLoginPage(c *fiber.Ctx) error {
+	tokenString := c.Cookies("Authorization")
+	if tokenString == "" {
+		return c.Render("login-form", nil)
+	}
+	tokenString = tokenString[len("Bearer "):]
+	err := access.VerifyToken(tokenString)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return c.Render("login-form", nil)
 	}
+	return c.Redirect("/")
 }
 
-func PostCreateAccount(w http.ResponseWriter, r *http.Request) {
-	username := r.PostFormValue("username")
-	email := r.PostFormValue("email")
-	password := r.PostFormValue("password")
-	secondPassword := r.PostFormValue("secondPassword")
+func PostCreateAccount(c *fiber.Ctx) error {
+	username := strings.Trim(c.FormValue("username"), " ")
+	email := strings.Trim(c.FormValue("email"), " ")
+	password := strings.Trim(c.FormValue("password"), " ")
+	secondPassword := strings.Trim(c.FormValue("secondPassword"), " ")
+	var mess Message
+	if username == "" {
+		mess.Error = "blank username"
+		return c.Render("login-error", mess)
+	}
+	if email == "" {
+		mess.Error = "blank email"
+		return c.Render("login-error", mess)
+	}
 	if password != secondPassword {
-		fmt.Println("password and second password do not match!")
-		// return appropriate html...
+		mess.Error = "passwords do not match"
+		return c.Render("login-error", mess)
+	}
+	if len(password) < 6 || len(secondPassword) < 6 {
+		mess.Error = "password is too short"
+		return c.Render("login-error", mess)
 	}
 	if !isValidEmail(email) {
-		fmt.Println("email is not valid!")
-		// return appropriate email html...
+		mess.Error = "invalid email"
+		return c.Render("login-error", mess)
 	}
-
 	conn := db.Connect()
 	defer conn.Close(context.Background())
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		fmt.Println("error with password")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return c.Status(fiber.StatusInternalServerError).SendString("error hashing password")
 	}
 	hashedStr := string(hash)
 	user, err := db.CreateUser(conn, username, email, hashedStr)
-	// SEND THE USER WITH THE HTML
-	fmt.Println("created user: ", user)
 	if err != nil {
 		panic(err)
 	}
-	if r.Header.Get("HX-Request") == "true" {
-		// setAuthTrue()
-		w.Header().Set("HX-Redirect", "/")
-		return
-	}
-}
-
-func DirectToCreateAccount(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("HX-Request") == "true" {
-		// HTMX request, use HX-Redirect to tell HTMX to redirect
-		w.Header().Set("HX-Redirect", "/create-account/")
-		return
-	}
-}
-
-func GetCreateAccount(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("templates/create-account.html"))
-	err := tmpl.Execute(w, nil)
+	tokenString, err := access.GenerateJWT(user.Name, user.Email, user.Role)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 	}
+	c.Cookie(&fiber.Cookie{
+		Name:  "Authorization",
+		Value: "Bearer " + tokenString,
+		HTTPOnly: true,
+		Path:  "/",
+		Expires: time.Now().Add(48 * time.Hour),
+	})
+	return c.Redirect("/")
 }
 
+func DirectToCreateAccount(c *fiber.Ctx) error {
+	return c.Render("create-account", nil)
+}
+
+func Logout(c *fiber.Ctx) error {
+	c.Cookie(&fiber.Cookie{
+		Name:     "Authorization",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour), // Set expiration to the past to delete the cookie
+		Path:     "/",                        // Ensure the path is the same as when the cookie was set
+		HTTPOnly: true,                       // Ensure other flags match those of the original cookie
+		Secure:   true,                       // Set to true if the original cookie was secure
+	})
+
+	return c.Redirect("/login/")
+}

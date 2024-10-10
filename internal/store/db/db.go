@@ -14,10 +14,16 @@ type User struct {
 	Name string
 	Email string
 	Role string
+	Password string
+}
+
+type Org struct {
+	Id string
+	Name string
 }
 
 func CheckPasswordHash(hashedPassword string, password string) error {
-		return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
 func Connect() *pgx.Conn {
@@ -76,20 +82,20 @@ func GetUser(c *pgx.Conn, email string, password string) (User, error) {
 		fmt.Println("No rows found for email:", email)
 		return user, fmt.Errorf("no user found with email: %s", email)
 	}
-	var storedPassword string
-	err = rows.Scan(&user.Email, &user.Name, &user.Role, &storedPassword)
+	// var storedPassword string
+	err = rows.Scan(&user.Email, &user.Name, &user.Role, &user.Password)
 	if err != nil {
 		fmt.Println("Error scanning row:", err)
 		return user, fmt.Errorf("error scanning row: %v", err)
 	}
-
-
-	err = CheckPasswordHash(storedPassword, password)
+	err = CheckPasswordHash(user.Password, password)
 	if err != nil {
+		user.Password = ""
 		return user, fmt.Errorf("invalid password")
 	}
-	// if password != storedPassword {
+	// if password != user.Password {
 	// 	fmt.Println("WRONG PASSWORD - ADD LOGIC")
+	// 	user.Email = "false"
 	// 	return user, err
 	// }
 	if rows.Err() != nil {
@@ -98,3 +104,21 @@ func GetUser(c *pgx.Conn, email string, password string) (User, error) {
 	}
 	return user, nil
 }
+
+// create organization
+func CreateProject(c *pgx.Conn, name string, ownerId string) (Org, error) {
+	orgQuery := `INSERT INTO organizations (name) VALUES ($1) RETURNING id`
+	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier) VALUES ($1, $2, $3)`
+	var org Org
+	err := c.QueryRow(context.Background(), orgQuery, name).Scan(&org.Id)
+	if err != nil {
+		return org, err
+	}
+	_, err = c.Exec(context.Background(), memberQuery, ownerId, org.Id, "owner")
+	if err != nil {
+		return org, err
+	}
+	return org, nil
+}
+
+// func GetHomeData(c *pgx.Conn, )
