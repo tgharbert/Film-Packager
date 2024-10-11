@@ -14,7 +14,14 @@
   {{block "project-list" .}}
   <ul id="project-list-items">
     {{ range .Orgs }} {{block "project-list-item" .}}
-    <li id="{{.Id}}" hx-get="/get-project/{{.Id}}">{{.Name}}</li>
+    <li
+      id="{{.Id}}"
+      hx-get="/get-project/{{.Id}}"
+      hx-target="#project-list"
+      hx-swap="innerHTML"
+    >
+      {{.Name}}
+    </li>
     {{end}}{{end}}
   </ul>
   {{end}}

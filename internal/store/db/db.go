@@ -2,8 +2,10 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
@@ -22,6 +24,34 @@ type Org struct {
 	Id int
 	Name string
 	Role string
+}
+
+type Project struct {
+	Id int
+	Name string
+	Script DocInfo
+	Logline DocInfo
+	Synopsis DocInfo
+	PitchDeck DocInfo
+	Schedule DocInfo
+	Budget DocInfo
+	DirectorStatement DocInfo
+	Shotlist DocInfo
+	Lookbook DocInfo
+	Bios DocInfo
+}
+
+type DocInfo struct {
+	Id int
+	Name string
+	Date time.Time
+	Author int // user id of author??
+	Color string
+}
+
+type ProjectPageData struct {
+	Project Project
+	Members []User
 }
 
 func CheckPasswordHash(hashedPassword string, password string) error {
@@ -107,7 +137,6 @@ func GetUser(c *pgx.Conn, email string, password string) (User, error) {
 	return user, nil
 }
 
-// ORG WORK
 func GetProjects(c *pgx.Conn, userId int) ([]Org, error) {
 	query := `SELECT o.id, o.name, m.access_tier FROM organizations o JOIN memberships m ON o.id = m.organization_id WHERE m.user_id = $1;`
 	var orgs []Org
@@ -156,6 +185,124 @@ func CreateProject(c *pgx.Conn, name string, ownerId int) (Org, error) {
 	if err != nil {
 		return org, fmt.Errorf("failed to commit transaction: %v", err)
 	}
-	fmt.Println("created: ", org)
 	return org, nil
+}
+
+// THIS IS WHERE I'M AT
+func GetProjectPageData(c *pgx.Conn, projectId int) (ProjectPageData, error) {
+	// I want to return all users attached to a project, all docs attached to the project -- not really too difficult
+	query := `WITH doc_types AS (
+    SELECT
+        organization_id,
+        user_id,
+        name,
+        date,
+        color,
+        address,
+        CASE
+            WHEN name = 'Script' THEN 'Script'
+            WHEN name = 'Logline' THEN 'Logline'
+            WHEN name = 'Synopsis' THEN 'Synopsis'
+            WHEN name = 'Pitch Deck' THEN 'Pitch Deck'
+            WHEN name = 'Schedule' THEN 'Schedule'
+            WHEN name = 'Budget' THEN 'Budget'
+            WHEN name = 'Director Statement' THEN 'DirectorStatement'
+            WHEN name = 'Shotlist' THEN 'Shotlist'
+            WHEN name = 'Lookbook' THEN 'Lookbook'
+            WHEN name = 'Bios' THEN 'Bios'
+            ELSE NULL
+        END AS doc_type
+    FROM documents
+)
+SELECT
+    o.id AS project_id,
+    o.name AS project_name,
+    d.address AS doc_address,
+    d.user_id AS doc_author,
+    d.name AS doc_name,
+    d.date AS doc_date,
+    d.color AS doc_color,
+    m.user_id,
+    u.name AS user_name,
+    u.email AS user_email,
+    d.doc_type
+FROM organizations o
+LEFT JOIN memberships m ON o.id = m.organization_id
+LEFT JOIN users u ON m.user_id = u.id
+LEFT JOIN doc_types d ON o.id = d.organization_id
+WHERE o.id = $1 -- assuming you're passing the organization ID as a parameter
+ORDER BY o.id;
+	`
+	rows, err := c.Query(context.Background(), query, projectId)
+	if err != nil {
+		return ProjectPageData{}, err
+	}
+	defer rows.Close()
+
+	var projectData ProjectPageData
+	projectMap := make(map[string]DocInfo)
+
+	for rows.Next() {
+		var docName, userName, userEmail, docType sql.NullString
+		var docAddress, docColor sql.NullString
+		var userId, docAuthor sql.NullInt32
+		// projectId int
+		var docDate sql.NullTime
+
+		err := rows.Scan(
+			&projectData.Project.Id,
+			&projectData.Project.Name,
+			&docAddress,
+			&docAuthor,
+			&docName,
+			&docDate,
+			&docColor,
+			&userId,
+			&userName,
+			&userEmail,
+			&docType,
+		)
+		if err != nil {
+			fmt.Println("here: ", err)
+			return projectData, err
+		}
+
+		if userName.Valid && userEmail.Valid {
+			// Add members
+			projectData.Members = append(projectData.Members, User{
+				Id:    int(userId.Int32),  // Convert sql.NullInt32 to int
+				Name:  userName.String,
+				Email: userEmail.String,
+			})
+		}
+
+		if docType.Valid && docName.Valid && docDate.Valid {
+			// Map documents to the project by their docType
+			projectMap[docType.String] = DocInfo{
+				Id:     int(docAuthor.Int32),  // Convert sql.NullInt32 to int
+				Name:   docName.String,
+				Date:   docDate.Time,
+				Author: int(docAuthor.Int32),  // Convert sql.NullInt32 to int
+				Color:  docColor.String,
+			}
+		}
+	}
+
+	// Assign each document type to the project struct
+	projectData.Project.Script = projectMap["Script"]
+	projectData.Project.Logline = projectMap["Logline"]
+	projectData.Project.Synopsis = projectMap["Synopsis"]
+	projectData.Project.PitchDeck = projectMap["Pitch Deck"]
+	projectData.Project.Schedule = projectMap["Schedule"]
+	projectData.Project.Budget = projectMap["Budget"]
+	projectData.Project.DirectorStatement = projectMap["DirectorStatement"]
+	projectData.Project.Shotlist = projectMap["Shotlist"]
+	projectData.Project.Lookbook = projectMap["Lookbook"]
+	projectData.Project.Bios = projectMap["Bios"]
+
+	if rows.Err() != nil {
+		return projectData, rows.Err()
+	}
+
+	return projectData, nil
 }

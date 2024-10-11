@@ -6,6 +6,7 @@ import (
 	"filmPackager/internal/store/db"
 	"fmt"
 	"net/mail"
+	"strconv"
 	"strings"
 	"time"
 
@@ -194,8 +195,17 @@ func CreateProject(c *fiber.Ctx) error {
 }
 
 func GetProject(c *fiber.Ctx) error {
-	// will need to get all the project information for a given project
-	fmt.Println(c.Params("id"))
-	// get the values for the project - personnel, docs, etc
-	return nil
+	id := c.Params("id")
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+	conn := db.Connect()
+	defer conn.Close(context.Background())
+	projectPageData, err := db.GetProjectPageData(conn, idInt)
+	if err != nil {
+		fmt.Println("HERE: ", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
+	}
+	return c.Render("film-page", projectPageData)
 }
