@@ -4,7 +4,6 @@ import (
 	"context"
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/store/db"
-	"fmt"
 	"net/mail"
 	"strconv"
 	"strings"
@@ -204,7 +203,6 @@ func GetProject(c *fiber.Ctx) error {
 	defer conn.Close(context.Background())
 	projectPageData, err := db.GetProjectPageData(conn, idInt)
 	if err != nil {
-		fmt.Println("HERE: ", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
 	}
 	return c.Render("film-page", projectPageData)

@@ -50,6 +50,11 @@ body {
   width: 100vh;
 }
 
+#doc-input {
+  color: rgb(240, 233, 221);
+  padding: 0.4rem;
+}
+
 #sidebar {
   width: 25%;
   background-color: rgb(20, 56, 88);
@@ -152,4 +157,9 @@ h2 {
 
 #link-text:hover {
   cursor: pointer;
+}
+
+#back-to-projects {
+  margin-left: 2rem;
+  margin-bottom: 1rem;
 }

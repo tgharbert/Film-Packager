@@ -1,6 +1,16 @@
 {{define "fileUploadHTML" }}
-<div>
-  <input type="file" id="doc-input" name="new doc" />
+<div id="doc-input">
+  <input type="file" name="new doc" />
+  <select>
+    <option value="script">Script</option>
+    <option value="lookbook">Lookbook</option>
+    <option value="shotlist">Shotlist</option>
+    <option value="Budget">Budget</option>
+    <option value="schedule">Schedule</option>
+    <option value="synopsis">Synopsis</option>
+    <option value="logline">Logline</option>
+    <option value="story">Story</option>
+  </select>
   <input id="button-std" type="submit" />
 </div>
 {{end}}
