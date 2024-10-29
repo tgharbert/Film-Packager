@@ -225,6 +225,7 @@ SELECT
     m.user_id,
     u.name AS user_name,
     u.email AS user_email,
+		m.access_tier AS user_role,
     d.doc_type
 FROM organizations o
 LEFT JOIN memberships m ON o.id = m.organization_id
@@ -246,6 +247,7 @@ ORDER BY o.id;
 		var docName, userName, userEmail, docType sql.NullString
 		var docAddress, docColor sql.NullString
 		var userId, docAuthor sql.NullInt32
+		var userRole sql.NullString
 		// projectId int
 		var docDate sql.NullTime
 
@@ -260,6 +262,7 @@ ORDER BY o.id;
 			&userId,
 			&userName,
 			&userEmail,
+			&userRole,
 			&docType,
 		)
 		if err != nil {
@@ -273,6 +276,7 @@ ORDER BY o.id;
 				Id:    int(userId.Int32),  // Convert sql.NullInt32 to int
 				Name:  userName.String,
 				Email: userEmail.String,
+				Role: userRole.String,
 			})
 		}
 
