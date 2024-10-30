@@ -2,9 +2,7 @@
 <div id="sidebar">
   <h2 id="sub-header">Members</h2>
   {{range .Members}}
-  <li id="{{.Id}}">{{.Name}} {{.Role}}</li>
+  <li id="{{.Id}}">{{.Name}} <i>{{.Role}}</i></li>
   {{end}}
-  <p>This is where the access list will be</p>
-  <p>Their will be a list of users with their roles/levels of access</p>
 </div>
 {{end}}

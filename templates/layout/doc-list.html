@@ -1,10 +1,9 @@
 {{define "docListHTML"}}
 <div id="doc-list">
-  <h2 id="sub-header" >Production Documents</h2>
-  <p>This will include:</p>
+  <h2 id="sub-header" ><i>{{.Project.Name}}</i> Production Documents</h2>
   {{template "fileUploadHTML" .}}
 
-  <h3 id="table-title">Locked Documents</h3>
+  <h3 id="table-title">Locked Documents:</h3>
   <table id="table">
     <tr>
       <th id="table-header">Script</th>
@@ -19,7 +18,7 @@
     </tr>
   </table>
 
-  <h3 id="table-title">Documents Staged</h3>
+  <h3 id="table-title">Staged Documents:</h3>
   <table id="table">
     <tr>
       <th id="table-header">Script</th>

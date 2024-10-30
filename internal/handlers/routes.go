@@ -4,6 +4,7 @@ import (
 	"context"
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/store/db"
+	"fmt"
 	"net/mail"
 	"strconv"
 	"strings"
@@ -32,6 +33,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/create-project/", CreateProject)
 	app.Get("/get-project/:id", GetProject)
 	app.Get("/logout/", Logout)
+	app.Post("/file-submit/", PostDocument)
 }
 
 func isValidEmail(email string) bool {
@@ -206,4 +208,14 @@ func GetProject(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
 	}
 	return c.Render("film-page", projectPageData)
+}
+
+func PostDocument(c *fiber.Ctx) error {
+	// hit the thang?
+	file := c.FormValue("file")
+	fileType := c.FormValue("file-type")
+	fmt.Println("HIT")
+	fmt.Println(file)
+	fmt.Println(fileType)
+	return nil
 }
