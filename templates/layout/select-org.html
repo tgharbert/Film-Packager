@@ -1,0 +1,29 @@
+{{define "selectOrgHTML"}}
+<div id="project-list">
+  <form
+    id="create-project"
+    hx-get="/create-project/"
+    hx-target="#project-list-items"
+    hx-swap="beforeend"
+    hx-on::after-request="this.reset()"
+  >
+    <input type="text" placeholder="enter project title" name="project-name" />
+    <button>Create Project</button>
+  </form>
+  <h2 id="sub-title">Projects that you're a member of:</h2>
+  {{block "project-list" .}}
+  <ul id="project-list-items">
+    {{ range .Orgs }} {{block "project-list-item" .}}
+    <li
+      id="{{.Id}}"
+      hx-get="/get-project/{{.Id}}"
+      hx-target="#project-list"
+      hx-swap="innerHTML"
+    >
+      <b>{{.Name}}: </b> {{.Role}}
+    </li>
+    {{end}}{{end}}
+  </ul>
+  {{end}}
+</div>
+{{end}}

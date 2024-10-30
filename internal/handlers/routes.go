@@ -4,7 +4,9 @@ import (
 	"context"
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/store/db"
+	"fmt"
 	"net/mail"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,14 +15,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type User struct {
-	Name string
-	Email string
-	Role string
-}
-
 type HomeData struct {
 	User *access.UserInfo
+	Orgs []db.Org
 }
 
 type Message struct {
@@ -33,7 +30,10 @@ func RegisterRoutes(app *fiber.App) {
 	app.Post("/post-login/", PostLoginSubmit)
 	app.Post("/post-create-account", PostCreateAccount)
 	app.Get("/get-create-account/", DirectToCreateAccount)
+	app.Get("/create-project/", CreateProject)
+	app.Get("/get-project/:id", GetProject)
 	app.Get("/logout/", Logout)
+	app.Post("/file-submit/", PostDocument)
 }
 
 func isValidEmail(email string) bool {
@@ -55,7 +55,12 @@ func HomePage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 	}
-	data := HomeData{User: userInfo}
+	conn := db.Connect()
+	orgs, err := db.GetProjects(conn, userInfo.Id)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
+	}
+	data := HomeData{User: userInfo, Orgs: orgs,}
 	return c.Render("index", data)
 }
 
@@ -75,7 +80,7 @@ func PostLoginSubmit(c *fiber.Ctx) error {
 		mess := Message{Error: "Incorrect Password"}
 		return c.Render("login-error", mess) // Fiber automatically handles the template rendering
 	}
-	tokenString, err := access.GenerateJWT(user.Name, user.Email, user.Role)
+	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email, user.Role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 	}
@@ -139,7 +144,7 @@ func PostCreateAccount(c *fiber.Ctx) error {
 	if err != nil {
 		panic(err)
 	}
-	tokenString, err := access.GenerateJWT(user.Name, user.Email, user.Role)
+	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email, user.Role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 	}
@@ -166,6 +171,51 @@ func Logout(c *fiber.Ctx) error {
 		HTTPOnly: true,                       // Ensure other flags match those of the original cookie
 		Secure:   true,                       // Set to true if the original cookie was secure
 	})
-
 	return c.Redirect("/login/")
+}
+
+func CreateProject(c *fiber.Ctx) error {
+	// send the project list updated with new project data...
+	projectName := c.FormValue("project-name")
+	tokenString := c.Cookies("Authorization")
+	if tokenString == "" {
+		return c.Redirect("/login/")
+	}
+	tokenString = tokenString[len("Bearer "):]
+	userInfo, err := access.GetUserNameFromToken(tokenString)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+	}
+	conn := db.Connect()
+	defer conn.Close(context.Background())
+	org, err := db.CreateProject(conn, projectName, userInfo.Id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving org")
+	}
+	return c.Render("project-list-item", org)
+}
+
+func GetProject(c *fiber.Ctx) error {
+	id := c.Params("id")
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+	conn := db.Connect()
+	defer conn.Close(context.Background())
+	projectPageData, err := db.GetProjectPageData(conn, idInt)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
+	}
+	return c.Render("film-page", projectPageData)
+}
+
+func PostDocument(c *fiber.Ctx) error {
+	// hit the thang?
+	file := c.FormValue("file")
+	fileType := c.FormValue("file-type")
+	fmt.Println("HIT")
+	fmt.Println(file)
+	fmt.Println(fileType)
+	return nil
 }
