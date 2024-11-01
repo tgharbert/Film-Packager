@@ -38,7 +38,9 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/get-project/:id", GetProject)
 	app.Get("/logout/", Logout)
 	app.Post("/file-submit/", PostDocument)
-	app.Post("/search-users/", SearchUsers)
+	app.Post("/search-users/:id", SearchUsers)
+	// FIX THIS!
+	app.Post("/add-member/:id", AddMember)
 }
 
 func isValidEmail(email string) bool {
@@ -113,10 +115,13 @@ func GetLoginPage(c *fiber.Ctx) error {
 }
 
 func PostCreateAccount(c *fiber.Ctx) error {
-	username := strings.Trim(c.FormValue("username"), " ")
+	firstName := strings.Trim(c.FormValue("firstName"), " ")
+	lastName := strings.Trim(c.FormValue("lastName"), " ")
 	email := strings.Trim(c.FormValue("email"), " ")
 	password := strings.Trim(c.FormValue("password"), " ")
 	secondPassword := strings.Trim(c.FormValue("secondPassword"), " ")
+	// concat the first and last names
+	username := fmt.Sprintf("%s %s", firstName, lastName)
 	var mess Message
 	if username == "" {
 		mess.Error = "blank username"
@@ -259,15 +264,27 @@ func PostDocument(c *fiber.Ctx) error {
 
 func SearchUsers(c *fiber.Ctx) error {
 	username := c.FormValue("username")
+	id := c.Params("id")
+	fmt.Println(id)
+
 	conn := db.Connect()
 	users, err := db.SearchForUsers(conn, username)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
 	}
-	fmt.Println(users)
-	// return c.Render("search-members", users)
-	return c.Render("search-membersHTML", fiber.Map{
+	// NOT SENDING THE PROJECT ID BACK...
+	return c.Render("search-resultsHTML", fiber.Map{
+		"ProjectId": id,
 		"FoundUsers": users,
 	})
-	// return nil
+}
+
+func AddMember(c *fiber.Ctx) error {
+	memberId := c.Params("id")
+	role := c.FormValue("role")
+	projectId := c.Params("project_id")
+
+	fmt.Println("Project Id: ", projectId)
+	fmt.Println("member id and role: ", memberId, role)
+	return nil
 }

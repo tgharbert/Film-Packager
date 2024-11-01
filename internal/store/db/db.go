@@ -333,3 +333,9 @@ func SearchForUsers(c *pgx.Conn, queryString string) ([]User, error) {
 	}
 	return users, nil
 }
+
+// func AddUserToOrg(c *pgx.Conn, memberId int, role string) ([]User, error) {
+// 	query := `INSERT INTO memberships`
+
+// 	// `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
+// }
