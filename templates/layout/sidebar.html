@@ -1,7 +1,7 @@
 {{define "sidebarHTML"}}
 <div id="sidebar">
   <h2 id="sub-header">Members</h2>
-  {{range .Members}}
+  {{template "search-membersHTML" .}} {{range .Members}}
   <li id="{{.Id}}">{{.Name}} <i>{{.Role}}</i></li>
   {{end}}
 </div>

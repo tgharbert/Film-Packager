@@ -52,6 +52,7 @@ type DocInfo struct {
 type ProjectPageData struct {
 	Project Project
 	Members []User
+	FoundUsers []User
 }
 
 func CheckPasswordHash(hashedPassword string, password string) error {
@@ -309,4 +310,26 @@ ORDER BY o.id;
 	}
 
 	return projectData, nil
+}
+
+func SearchForUsers(c *pgx.Conn, queryString string) ([]User, error) {
+	query := `SELECT id, name FROM users WHERE name ILIKE '%' || $1 || '%'`
+	rows, err := c.Query(context.Background(), query, queryString)
+	var users []User
+	if err != nil {
+		return users, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.Id, &user.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning user row %v", err)
+		}
+		users = append(users, user)
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return users, nil
 }

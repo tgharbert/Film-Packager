@@ -5,11 +5,15 @@ import (
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/store/db"
 	"fmt"
+	"log"
 	"net/mail"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gofiber/fiber/v2"
 
 	"golang.org/x/crypto/bcrypt"
@@ -34,6 +38,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/get-project/:id", GetProject)
 	app.Get("/logout/", Logout)
 	app.Post("/file-submit/", PostDocument)
+	app.Post("/search-users/", SearchUsers)
 }
 
 func isValidEmail(email string) bool {
@@ -210,12 +215,59 @@ func GetProject(c *fiber.Ctx) error {
 	return c.Render("film-page", projectPageData)
 }
 
+func getS3Session() *s3.S3 {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-west-2"), // replace with my region
+	})
+	if err != nil {
+		log.Fatalf("Failed to create session: %v", err)
+	}
+	return s3.New(sess)
+}
+
 func PostDocument(c *fiber.Ctx) error {
 	// hit the thang?
-	file := c.FormValue("file")
-	fileType := c.FormValue("file-type")
-	fmt.Println("HIT")
-	fmt.Println(file)
-	fmt.Println(fileType)
+	file, err := c.FormFile("file")
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error uploading file")
+	}
+	// FIX THIS LATER TO STORE THE VALUES
+	// fileType := c.FormValue("file-type")
+	f, err := file.Open()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open file")
+	}
+	defer f.Close()
+
+	// intialize the s3 client
+	s3Client := getS3Session()
+	bucket := "bucket-name" // replace with my bucket name
+	key := file.Filename
+
+	_, err = s3Client.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key: aws.String(key),
+		Body: f,
+		ACL: aws.String("public-read"),
+	})
+	if err != nil {
+		log.Printf("Error uploading file: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
+	}
 	return nil
+}
+
+func SearchUsers(c *fiber.Ctx) error {
+	username := c.FormValue("username")
+	conn := db.Connect()
+	users, err := db.SearchForUsers(conn, username)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
+	}
+	fmt.Println(users)
+	// return c.Render("search-members", users)
+	return c.Render("search-membersHTML", fiber.Map{
+		"FoundUsers": users,
+	})
+	// return nil
 }
