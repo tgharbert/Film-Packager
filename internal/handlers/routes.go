@@ -282,7 +282,6 @@ func AddMember(c *fiber.Ctx) error {
 	role := c.FormValue("role")
 	projectId := c.Params("project_id")
 	conn := db.Connect()
-
 	memIdInt, err := strconv.Atoi(memberId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
@@ -291,12 +290,9 @@ func AddMember(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-
 	user, err := db.AddUserToOrg(conn, memIdInt, projIdInt, role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error adding user to db")
 	}
-	// return the user value in html with the data
 	return c.Render("search-membersHTML", user)
-	// return nil
 }
