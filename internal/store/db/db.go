@@ -334,8 +334,14 @@ func SearchForUsers(c *pgx.Conn, queryString string) ([]User, error) {
 	return users, nil
 }
 
-// func AddUserToOrg(c *pgx.Conn, memberId int, role string) ([]User, error) {
-// 	query := `INSERT INTO memberships`
-
-// 	// `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
-// }
+func AddUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string) (User, error) {
+	var user User
+	query := `INSERT INTO memberships (user_id, organization_id, access_tier) VALUES ($1, $2, $3) RETURNING memberships.user_id, memberships.organization_id, memberships.role, users.name, users.email FROM users WHERE users.id = memberships.user_id`;
+	err := c.QueryRow(context.Background(), query, memberId, organizationId, role).Scan(&user.Id, &user.Email, &user.Role)
+	if err != nil {
+		return user, fmt.Errorf("error querying memberships: %v", err)
+	}
+	fmt.Println(user)
+	return user, nil
+	// `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
+}

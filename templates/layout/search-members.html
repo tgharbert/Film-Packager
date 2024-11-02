@@ -14,13 +14,11 @@
   <div id="search-results">
     {{block "search-resultsHTML" .}} {{if .FoundUsers}}
     <h2 id="sub-header">Search Results:</h2>
-    <p>here?? {{.ProjectId}}</p>
     <ul id="list-found-users">
       {{range .FoundUsers}}
       <li>
         {{.Name}}
         <form hx-post="/add-member/{{.Id}}/{{$.ProjectId}}">
-          <p>{{$.ProjectId}}</p>
           <select name="role">
             <option>writer</option>
             <option>producer</option>
