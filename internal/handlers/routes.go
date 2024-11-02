@@ -265,8 +265,6 @@ func PostDocument(c *fiber.Ctx) error {
 func SearchUsers(c *fiber.Ctx) error {
 	username := c.FormValue("username")
 	id := c.Params("id")
-	fmt.Println(id)
-
 	conn := db.Connect()
 	users, err := db.SearchForUsers(conn, username)
 	if err != nil {
@@ -283,8 +281,22 @@ func AddMember(c *fiber.Ctx) error {
 	memberId := c.Params("id")
 	role := c.FormValue("role")
 	projectId := c.Params("project_id")
+	conn := db.Connect()
 
-	fmt.Println("Project Id: ", projectId)
-	fmt.Println("member id and role: ", memberId, role)
-	return nil
+	memIdInt, err := strconv.Atoi(memberId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+	projIdInt, err := strconv.Atoi(projectId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+
+	user, err := db.AddUserToOrg(conn, memIdInt, projIdInt, role)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error adding user to db")
+	}
+	// return the user value in html with the data
+	return c.Render("search-membersHTML", user)
+	// return nil
 }
