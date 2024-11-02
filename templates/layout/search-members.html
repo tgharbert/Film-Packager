@@ -19,7 +19,7 @@
       {{range .FoundUsers}}
       <li>
         {{.Name}}
-        <form hx-post="/add-member/{{.Id}}?project_id={{$.ProjectId}}">
+        <form hx-post="/add-member/{{.Id}}/{{$.ProjectId}}">
           <p>{{$.ProjectId}}</p>
           <select name="role">
             <option>writer</option>

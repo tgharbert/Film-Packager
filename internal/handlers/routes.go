@@ -40,7 +40,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Post("/file-submit/", PostDocument)
 	app.Post("/search-users/:id", SearchUsers)
 	// FIX THIS!
-	app.Post("/add-member/:id", AddMember)
+	app.Post("/add-member/:id/:project_id", AddMember)
 }
 
 func isValidEmail(email string) bool {
