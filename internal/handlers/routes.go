@@ -21,7 +21,7 @@ import (
 
 type HomeData struct {
 	User *access.UserInfo
-	Orgs []db.Org
+	Orgs db.SelectProject
 }
 
 type Message struct {
@@ -66,6 +66,7 @@ func HomePage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
+	fmt.Println("orgs: ", orgs.Pending)
 	data := HomeData{User: userInfo, Orgs: orgs,}
 	return c.Render("index", data)
 }

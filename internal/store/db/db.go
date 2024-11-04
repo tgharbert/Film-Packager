@@ -25,6 +25,7 @@ type Org struct {
 	Id int
 	Name string
 	Role string
+	InviteStatus string
 }
 
 type Project struct {
@@ -54,6 +55,11 @@ type ProjectPageData struct {
 	Project Project
 	Members []User
 	FoundUsers []User
+}
+
+type SelectProject struct {
+	Memberships []Org
+	Pending []Org
 }
 
 func CheckPasswordHash(hashedPassword string, password string) error {
@@ -139,26 +145,31 @@ func GetUser(c *pgx.Conn, email string, password string) (User, error) {
 	return user, nil
 }
 
-func GetProjects(c *pgx.Conn, userId int) ([]Org, error) {
+// MODIFY THIS QUERY TO RETURN SELECTPROJECT STRUCT TO SEPERATE MEMBERSHIPS - INCLUDE ACCESS TIERS
+func GetProjects(c *pgx.Conn, userId int) (SelectProject, error) {
 	query := `SELECT o.id, o.name, m.access_tier, m.invite_status FROM organizations o JOIN memberships m ON o.id = m.organization_id WHERE m.user_id = $1;`
-	var orgs []Org
+	var selectProject SelectProject
 	rows, err := c.Query(context.Background(), query, userId)
 	if err != nil {
-		return nil, fmt.Errorf("initial query failed: %v ", err)
+		return selectProject, fmt.Errorf("initial query failed: %v ", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var org Org
-		err := rows.Scan(&org.Id, &org.Name, &org.Role)
+		err := rows.Scan(&org.Id, &org.Name, &org.Role, &org.InviteStatus)
 		if err != nil {
-			return nil, fmt.Errorf("error scanning row %v", err)
+			return selectProject, fmt.Errorf("error scanning row %v", err)
 		}
-		orgs = append(orgs, org)
+		if org.InviteStatus == "pending" {
+			selectProject.Pending = append(selectProject.Pending, org)
+		} else if org.InviteStatus == "accepted" {
+			selectProject.Memberships = append(selectProject.Memberships, org)
+		}
 	}
 	if rows.Err() != nil {
-		return nil, rows.Err()
+		return selectProject, rows.Err()
 	}
-	return orgs, nil
+	return selectProject, nil
 }
 
 func CreateProject(c *pgx.Conn, name string, ownerId int) (Org, error) {
@@ -176,10 +187,9 @@ func CreateProject(c *pgx.Conn, name string, ownerId int) (Org, error) {
 		return org, fmt.Errorf("failed to insert into organizations: %v", err)
 	}
 	// Insert into memberships with the role "owner"
-	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier) VALUES ($1, $2, $3) RETURNING access_tier`
-	err = tx.QueryRow(context.Background(), memberQuery, ownerId, org.Id, "owner").Scan(&org.Role)
+	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier, invite_status) VALUES ($1, $2, $3, $4) RETURNING access_tier`
+	err = tx.QueryRow(context.Background(), memberQuery, ownerId, org.Id, "owner", "accepted").Scan(&org.Role)
 	if err != nil {
-		fmt.Println("hit this error: ", err)
 		return org, fmt.Errorf("failed to insert into memberships: %v", err)
 	}
 	// Commit transaction
