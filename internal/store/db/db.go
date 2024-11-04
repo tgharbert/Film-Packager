@@ -375,8 +375,6 @@ func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string)
 			users ON users.id = memberships.user_id
 	WHERE
 			memberships.organization_id = $2;`
-
-	// err := c.QueryRow(context.Background(), query, memberId, organizationId, role).Scan(&user.Id, &user.Email, &user.Role)
 	var users []User
 	rows, err := c.Query(context.Background(), query, memberId, organizationId, role, "pending")
 	if err != nil {
@@ -384,7 +382,7 @@ func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string)
 	}
 	for rows.Next() {
 		var user User
-		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.InviteStatus, &user.Role)
+		err := rows.Scan(&user.Id, &user.Role, &user.InviteStatus, &user.Name, &user.Email)
 		if err != nil {
 			return users, fmt.Errorf("error scanning row %v", err)
 		}
@@ -393,31 +391,30 @@ func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string)
 	if rows.Err() != nil {
 		return users, rows.Err()
 	}
-	fmt.Println("at the database for inviting: ", users)
 	return users, nil
 }
 
-func GetProjectUsers(c *pgx.Conn, orgId int) ([]User, error) {
-	query := `SELECT users.id, users.name, users.email, memberships.access_tier, memberships.invite_status
-	FROM users
-	JOIN memberships ON users.id = memberships.user_id
-	WHERE memberships.organization_id = $1;
-	`
-	rows, err := c.Query(context.Background(), query, orgId)
-	var users []User
-	if err != nil {
-		return users, fmt.Errorf("error with query: %v", err)
-	}
-	for rows.Next() {
-		var user User
-		err := rows.Scan(&user.Id, &user.Name, &user.Email)
-		if err != nil {
-			return users, fmt.Errorf("error scanning row %v", err)
-		}
-		users = append(users, user)
-	}
-	if rows.Err() != nil {
-		return users, rows.Err()
-	}
-	return users, nil
-}
+// func GetProjectUsers(c *pgx.Conn, orgId int) ([]User, error) {
+// 	query := `SELECT users.id, users.name, users.email, memberships.access_tier, memberships.invite_status
+// 	FROM users
+// 	JOIN memberships ON users.id = memberships.user_id
+// 	WHERE memberships.organization_id = $1;
+// 	`
+// 	rows, err := c.Query(context.Background(), query, orgId)
+// 	var users []User
+// 	if err != nil {
+// 		return users, fmt.Errorf("error with query: %v", err)
+// 	}
+// 	for rows.Next() {
+// 		var user User
+// 		err := rows.Scan(&user.Id, &user.Name, &user.Email)
+// 		if err != nil {
+// 			return users, fmt.Errorf("error scanning row %v", err)
+// 		}
+// 		users = append(users, user)
+// 	}
+// 	if rows.Err() != nil {
+// 		return users, rows.Err()
+// 	}
+// 	return users, nil
+// }

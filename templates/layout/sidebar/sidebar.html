@@ -1,7 +1,6 @@
 {{define "sidebarHTML"}}
 <div id="sidebar">
   <h2 id="sub-header">Members</h2>
-  {{template "search-membersHTML" .}}
   <div id="list-of-accepted-members">
     <ul>
       {{range .Members}} {{if eq .InviteStatus "accepted"}}
@@ -10,7 +9,8 @@
     </ul>
   </div>
 
-  <div>
+  <div id="invites">
+    {{template "search-membersHTML" .}}
     <h2 id="sub-header">Invited</h2>
     <ul>
       {{range .Members}} {{if eq .InviteStatus "pending"}}

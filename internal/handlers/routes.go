@@ -275,10 +275,6 @@ func SearchUsers(c *fiber.Ctx) error {
 	})
 }
 
-// ALTER THIS WITH "INVITES ADDED"
-// should I alter this to return all project users then re-render the list of members?
-// Also include the new "invited members" (db edit)
-// do the invite and then get all users?
 func InviteMember(c *fiber.Ctx) error {
 	memberId := c.Params("id")
 	role := c.FormValue("role")
@@ -297,9 +293,7 @@ func InviteMember(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error adding user to db")
 	}
-
-	// fmt.Println("after inviting users: ", users)
-	return c.Render("members-listHTML", fiber.Map{
+	return c.Render("new-list-of-invitesHTML", fiber.Map{
 		"Members": users,
 	})
 }
