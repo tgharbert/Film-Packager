@@ -394,27 +394,56 @@ func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string)
 	return users, nil
 }
 
-// func GetProjectUsers(c *pgx.Conn, orgId int) ([]User, error) {
-// 	query := `SELECT users.id, users.name, users.email, memberships.access_tier, memberships.invite_status
-// 	FROM users
-// 	JOIN memberships ON users.id = memberships.user_id
-// 	WHERE memberships.organization_id = $1;
-// 	`
-// 	rows, err := c.Query(context.Background(), query, orgId)
-// 	var users []User
-// 	if err != nil {
-// 		return users, fmt.Errorf("error with query: %v", err)
-// 	}
-// 	for rows.Next() {
-// 		var user User
-// 		err := rows.Scan(&user.Id, &user.Name, &user.Email)
-// 		if err != nil {
-// 			return users, fmt.Errorf("error scanning row %v", err)
-// 		}
-// 		users = append(users, user)
-// 	}
-// 	if rows.Err() != nil {
-// 		return users, rows.Err()
-// 	}
-// 	return users, nil
-// }
+func JoinOrg(c *pgx.Conn, projectId int, memberId int) (SelectProject, error) {
+	var projects SelectProject
+	updateQuery := `
+		UPDATE memberships
+		SET invite_status = 'accepted'
+		WHERE organization_id = $1 AND user_id = $2;
+	`
+	_, err := c.Exec(context.Background(), updateQuery, projectId, memberId)
+	if err != nil {
+		return projects, fmt.Errorf("error updating membership status: %v", err)
+	}
+	// Step 2: Retrieve all projects for the user
+	selectQuery := `
+		SELECT
+			o.id AS organization_id,
+			o.name AS organization_name,
+			m.access_tier,
+			m.invite_status
+		FROM
+			organizations o
+		JOIN
+			memberships m
+		ON
+			o.id = m.organization_id
+		WHERE
+			m.user_id = $1;
+	`
+	rows, err := c.Query(context.Background(), selectQuery, memberId)
+	if err != nil {
+		return SelectProject{}, fmt.Errorf("error querying projects: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var project Org
+		err := rows.Scan(&project.Id, &project.Name, &project.Role, &project.InviteStatus)
+		if err != nil {
+			return projects, fmt.Errorf("error scanning row: %v", err)
+		}
+		// adjust for status
+		if project.InviteStatus == "pending" {
+			projects.Pending = append(projects.Pending, project)
+		}
+		if project.InviteStatus == "accepted" {
+			projects.Memberships = append(projects.Memberships, project)
+		}
+	}
+	if rows.Err() != nil {
+		return projects, rows.Err()
+	}
+	fmt.Println(projects)
+	return projects, nil
+}

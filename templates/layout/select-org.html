@@ -29,14 +29,11 @@
   <h2 id="sub-title">Projects Invites:</h2>
   <ul id="pending-list">
     {{ range .Orgs.Pending }}
-    <li
-      id="{{.Id}}"
-      hx-get="/get-project/{{.Id}}"
-      hx-target="#project-list"
-      hx-swap="innerHTML"
-    >
+    <li id="{{.Id}}">
       <b>{{.Name}}: </b>
-      <button id="button-std">Accept Invite as <b>{{.Role}}</b></button>
+      <button id="button-std" hx-post="/join-org/{{$.User.Id}}/{{.Id}}">
+        Accept Invite as <b>{{.Role}}</b>
+      </button>
       {{end}}
     </li>
     {{end}}
