@@ -3,8 +3,8 @@
   {{.Name}}
   <form
     hx-post="/invite-member/{{.Id}}/{{$.ProjectId}}"
-    hx-swap="beforeend"
-    hx-target="#list-found-users"
+    hx-swap="innerHTML"
+    hx-target="#sidebar"
   >
     <select name="role">
       <option>writer</option>

@@ -54,7 +54,7 @@ type DocInfo struct {
 type ProjectPageData struct {
 	Project Project
 	Members []User
-	FoundUsers []User
+	FoundUsers []User // users on search in sidebar are placed here
 }
 
 type SelectProject struct {
@@ -95,12 +95,10 @@ func CreateUser(c *pgx.Conn, name string, email string, password string) (User, 
 	}
 	defer rows.Close()
 	if !rows.Next() {
-		fmt.Println("No rows found for email:", email)
 		return user, fmt.Errorf("no user found with email: %s", email)
 	}
 	err = rows.Scan(&user.Id, &user.Email, &user.Name, &user.Role)
 	if err != nil {
-		fmt.Println("Error scanning row:", err)
 		return user, fmt.Errorf("error scanning row: %v", err)
 	}
 	if rows.Err() != nil {
@@ -249,10 +247,10 @@ ORDER BY o.id;
 	`
 	rows, err := c.Query(context.Background(), query, projectId)
 	if err != nil {
+		fmt.Println("Here is the error!", err)
 		return ProjectPageData{}, err
 	}
 	defer rows.Close()
-
 	var projectData ProjectPageData
 	projectMap := make(map[string]DocInfo)
 
@@ -281,7 +279,6 @@ ORDER BY o.id;
 			&docType,
 		)
 		if err != nil {
-			fmt.Println("here: ", err)
 			return projectData, err
 		}
 
@@ -323,7 +320,6 @@ ORDER BY o.id;
 	if rows.Err() != nil {
 		return projectData, rows.Err()
 	}
-	fmt.Println("in the query: ", projectData.Members)
 	return projectData, nil
 }
 
@@ -349,34 +345,60 @@ func SearchForUsers(c *pgx.Conn, queryString string) ([]User, error) {
 	return users, nil
 }
 
-func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string) (User, error) {
-	var user User
-	query := `WITH inserted AS (
-    INSERT INTO memberships (user_id, organization_id, access_tier, invite_status)
-    VALUES ($1, $2, $3, $4)
-    RETURNING user_id, organization_id, access_tier
-)
-SELECT
-    inserted.user_id,
-    inserted.access_tier AS role,
-    users.name,
-    users.email
-FROM
-    inserted
-JOIN
-    users ON users.id = inserted.user_id;`;
+func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string) ([]User, error) {
+	query := `
+	WITH new_membership AS (
+			INSERT INTO memberships (user_id, organization_id, access_tier, invite_status)
+			VALUES ($1, $2, $3, $4)
+			RETURNING user_id, organization_id, access_tier, invite_status
+	)
+	SELECT
+			new_membership.user_id,
+			new_membership.access_tier AS role,
+			new_membership.invite_status,
+			users.name,
+			users.email
+	FROM
+			new_membership
+	JOIN
+			users ON users.id = new_membership.user_id
+	UNION ALL
+	SELECT
+			memberships.user_id,
+			memberships.access_tier,
+			memberships.invite_status,
+			users.name,
+			users.email
+	FROM
+			memberships
+	JOIN
+			users ON users.id = memberships.user_id
+	WHERE
+			memberships.organization_id = $2;`
+
 	// err := c.QueryRow(context.Background(), query, memberId, organizationId, role).Scan(&user.Id, &user.Email, &user.Role)
-	err := c.QueryRow(context.Background(), query, memberId, organizationId, role, "pending").Scan(
-    &user.Id, &user.Role, &user.Name, &user.Email,
-)
+	var users []User
+	rows, err := c.Query(context.Background(), query, memberId, organizationId, role, "pending")
 	if err != nil {
-		return user, fmt.Errorf("error querying memberships: %v", err)
+		return users, fmt.Errorf("error querying: %v", err)
 	}
-	return user, nil
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.InviteStatus, &user.Role)
+		if err != nil {
+			return users, fmt.Errorf("error scanning row %v", err)
+		}
+		users = append(users, user)
+	}
+	if rows.Err() != nil {
+		return users, rows.Err()
+	}
+	fmt.Println("at the database for inviting: ", users)
+	return users, nil
 }
 
 func GetProjectUsers(c *pgx.Conn, orgId int) ([]User, error) {
-	query := `SELECT users.id, users.name, users.email, memberships.access_tier
+	query := `SELECT users.id, users.name, users.email, memberships.access_tier, memberships.invite_status
 	FROM users
 	JOIN memberships ON users.id = memberships.user_id
 	WHERE memberships.organization_id = $1;

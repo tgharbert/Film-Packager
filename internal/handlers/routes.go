@@ -66,7 +66,6 @@ func HomePage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
-	fmt.Println("orgs: ", orgs.Pending)
 	data := HomeData{User: userInfo, Orgs: orgs,}
 	return c.Render("index", data)
 }
@@ -285,6 +284,7 @@ func InviteMember(c *fiber.Ctx) error {
 	role := c.FormValue("role")
 	projectId := c.Params("project_id")
 	conn := db.Connect()
+	defer conn.Close(context.Background())
 	memIdInt, err := strconv.Atoi(memberId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
@@ -293,10 +293,13 @@ func InviteMember(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	user, err := db.InviteUserToOrg(conn, memIdInt, projIdInt, role)
+	users, err := db.InviteUserToOrg(conn, memIdInt, projIdInt, role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error adding user to db")
 	}
-	// what to really re-render?
-	return c.Render("search-membersHTML", user)
+
+	// fmt.Println("after inviting users: ", users)
+	return c.Render("members-listHTML", fiber.Map{
+		"Members": users,
+	})
 }
