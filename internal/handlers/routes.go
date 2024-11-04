@@ -39,8 +39,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/logout/", Logout)
 	app.Post("/file-submit/", PostDocument)
 	app.Post("/search-users/:id", SearchUsers)
-	// FIX THIS!
-	app.Post("/add-member/:id/:project_id", AddMember)
+	app.Post("/add-member/:id/:project_id", InviteMember)
 }
 
 func isValidEmail(email string) bool {
@@ -270,14 +269,16 @@ func SearchUsers(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
 	}
-	// NOT SENDING THE PROJECT ID BACK...
 	return c.Render("search-resultsHTML", fiber.Map{
 		"ProjectId": id,
 		"FoundUsers": users,
 	})
 }
 
-func AddMember(c *fiber.Ctx) error {
+// ALTER THIS WITH "INVITES ADDED"
+// should I alter this to return all project users then re-render the list of members?
+// Also include the new "invited members" (db edit)
+func InviteMember(c *fiber.Ctx) error {
 	memberId := c.Params("id")
 	role := c.FormValue("role")
 	projectId := c.Params("project_id")
@@ -290,9 +291,10 @@ func AddMember(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	user, err := db.AddUserToOrg(conn, memIdInt, projIdInt, role)
+	user, err := db.InviteUserToOrg(conn, memIdInt, projIdInt, role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error adding user to db")
 	}
+	// what to really re-render?
 	return c.Render("search-membersHTML", user)
 }

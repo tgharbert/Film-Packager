@@ -18,6 +18,7 @@ type User struct {
 	Email string
 	Role string
 	Password string
+	InviteStatus string
 }
 
 type Org struct {
@@ -139,7 +140,7 @@ func GetUser(c *pgx.Conn, email string, password string) (User, error) {
 }
 
 func GetProjects(c *pgx.Conn, userId int) ([]Org, error) {
-	query := `SELECT o.id, o.name, m.access_tier FROM organizations o JOIN memberships m ON o.id = m.organization_id WHERE m.user_id = $1;`
+	query := `SELECT o.id, o.name, m.access_tier, m.invite_status FROM organizations o JOIN memberships m ON o.id = m.organization_id WHERE m.user_id = $1;`
 	var orgs []Org
 	rows, err := c.Query(context.Background(), query, userId)
 	if err != nil {
@@ -334,7 +335,7 @@ func SearchForUsers(c *pgx.Conn, queryString string) ([]User, error) {
 	return users, nil
 }
 
-func AddUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string) (User, error) {
+func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string) (User, error) {
 	var user User
 	query := `WITH inserted AS (
     INSERT INTO memberships (user_id, organization_id, access_tier)
@@ -359,4 +360,29 @@ JOIN
 	}
 	return user, nil
 	// `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
+}
+
+func GetProjectUsers(c *pgx.Conn, orgId int) ([]User, error) {
+	query := `SELECT users.id, users.name, users.email, memberships.access_tier
+	FROM users
+	JOIN memberships ON users.id = memberships.user_id
+	WHERE memberships.organization_id = $1;
+	`
+	rows, err := c.Query(context.Background(), query, orgId)
+	var users []User
+	if err != nil {
+		return users, fmt.Errorf("error with query: %v", err)
+	}
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.Id, &user.Name, &user.Email)
+		if err != nil {
+			return users, fmt.Errorf("error scanning row %v", err)
+		}
+		users = append(users, user)
+	}
+	if rows.Err() != nil {
+		return users, rows.Err()
+	}
+	return users, nil
 }
