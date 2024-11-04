@@ -39,7 +39,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/logout/", Logout)
 	app.Post("/file-submit/", PostDocument)
 	app.Post("/search-users/:id", SearchUsers)
-	app.Post("/add-member/:id/:project_id", InviteMember)
+	app.Post("/invite-member/:id/:project_id", InviteMember)
 }
 
 func isValidEmail(email string) bool {
@@ -279,6 +279,7 @@ func SearchUsers(c *fiber.Ctx) error {
 // ALTER THIS WITH "INVITES ADDED"
 // should I alter this to return all project users then re-render the list of members?
 // Also include the new "invited members" (db edit)
+// do the invite and then get all users?
 func InviteMember(c *fiber.Ctx) error {
 	memberId := c.Params("id")
 	role := c.FormValue("role")

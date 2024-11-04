@@ -2,7 +2,7 @@
 <li>
   {{.Name}}
   <form
-    hx-post="/add-member/{{.Id}}/{{$.ProjectId}}"
+    hx-post="/invite-member/{{.Id}}/{{$.ProjectId}}"
     hx-swap="beforeend"
     hx-target="#list-found-users"
   >

@@ -2,10 +2,21 @@
 <div id="sidebar">
   <h2 id="sub-header">Members</h2>
   {{template "search-membersHTML" .}}
-  <div id="list-of-members">
-    {{range .Members}}
-    <li id="{{.Id}}">{{.Name}} <i>{{.Role}}</i></li>
-    {{end}}
+  <div id="list-of-accepted-members">
+    <ul>
+      {{range .Members}} {{if eq .InviteStatus "accepted"}}
+      <li id="{{.Id}}">{{.Name}} <i>{{.Role}}</i></li>
+      {{end}} {{end}}
+    </ul>
+  </div>
+
+  <div>
+    <h2 id="sub-header">Invited</h2>
+    <ul>
+      {{range .Members}} {{if eq .InviteStatus "pending"}}
+      <li id="{{.Id}}">{{.Name}} <i>{{.Role}}</i></li>
+      {{end}} {{end}}
+    </ul>
   </div>
 </div>
 {{end}}

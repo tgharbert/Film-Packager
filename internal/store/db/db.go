@@ -238,7 +238,8 @@ SELECT
     u.name AS user_name,
     u.email AS user_email,
 		m.access_tier AS user_role,
-    d.doc_type
+		m.invite_status AS user_invite_status,
+		d.doc_type
 FROM organizations o
 LEFT JOIN memberships m ON o.id = m.organization_id
 LEFT JOIN users u ON m.user_id = u.id
@@ -260,6 +261,7 @@ ORDER BY o.id;
 		var docAddress, docColor sql.NullString
 		var userId, docAuthor sql.NullInt32
 		var userRole sql.NullString
+		var inviteStatus sql.NullString
 		// projectId int
 		var docDate sql.NullTime
 
@@ -275,6 +277,7 @@ ORDER BY o.id;
 			&userName,
 			&userEmail,
 			&userRole,
+			&inviteStatus,
 			&docType,
 		)
 		if err != nil {
@@ -289,6 +292,7 @@ ORDER BY o.id;
 				Name:  userName.String,
 				Email: userEmail.String,
 				Role: userRole.String,
+				InviteStatus: inviteStatus.String,
 			})
 		}
 
@@ -319,7 +323,7 @@ ORDER BY o.id;
 	if rows.Err() != nil {
 		return projectData, rows.Err()
 	}
-
+	fmt.Println("in the query: ", projectData.Members)
 	return projectData, nil
 }
 
@@ -348,8 +352,8 @@ func SearchForUsers(c *pgx.Conn, queryString string) ([]User, error) {
 func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string) (User, error) {
 	var user User
 	query := `WITH inserted AS (
-    INSERT INTO memberships (user_id, organization_id, access_tier)
-    VALUES ($1, $2, $3)
+    INSERT INTO memberships (user_id, organization_id, access_tier, invite_status)
+    VALUES ($1, $2, $3, $4)
     RETURNING user_id, organization_id, access_tier
 )
 SELECT
@@ -362,14 +366,13 @@ FROM
 JOIN
     users ON users.id = inserted.user_id;`;
 	// err := c.QueryRow(context.Background(), query, memberId, organizationId, role).Scan(&user.Id, &user.Email, &user.Role)
-	err := c.QueryRow(context.Background(), query, memberId, organizationId, role).Scan(
+	err := c.QueryRow(context.Background(), query, memberId, organizationId, role, "pending").Scan(
     &user.Id, &user.Role, &user.Name, &user.Email,
 )
 	if err != nil {
 		return user, fmt.Errorf("error querying memberships: %v", err)
 	}
 	return user, nil
-	// `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
 }
 
 func GetProjectUsers(c *pgx.Conn, orgId int) ([]User, error) {
