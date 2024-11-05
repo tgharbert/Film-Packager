@@ -40,7 +40,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Post("/file-submit/", PostDocument)
 	app.Post("/search-users/:id", SearchUsers)
 	app.Post("/invite-member/:id/:project_id", InviteMember)
-	app.Post("/join-org/:id/:project_id", JoinOrg)
+	app.Post("/join-org/:id/:project_id/:role", JoinOrg)
 }
 
 func isValidEmail(email string) bool {
@@ -302,7 +302,7 @@ func InviteMember(c *fiber.Ctx) error {
 func JoinOrg(c *fiber.Ctx) error {
 	userId := c.Params("id")
 	projectId := c.Params("project_id")
-	// I NEED TO PASS THE ROLE HERE AS WELL... IN THE CASE OF MULTIPLE ROLES
+	role := c.Params("role")
 	conn := db.Connect()
 	defer conn.Close(context.Background())
 	id, err := strconv.Atoi(userId)
@@ -313,7 +313,7 @@ func JoinOrg(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	projects, err := db.JoinOrg(conn, projIdInt, id)
+	projects, err := db.JoinOrg(conn, projIdInt, id, role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying database")
 	}

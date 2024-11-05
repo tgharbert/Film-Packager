@@ -33,7 +33,7 @@
       <b>{{.Name}}: </b>
       <button
         id="button-std"
-        hx-post="/join-org/{{$.User.Id}}/{{.Id}}"
+        hx-post="/join-org/{{$.User.Id}}/{{.Id}}/{{.Role}}"
         hx-swap="innerHTML"
         hx-target="#project-list"
       >

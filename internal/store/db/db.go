@@ -394,14 +394,14 @@ func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string)
 	return users, nil
 }
 
-func JoinOrg(c *pgx.Conn, projectId int, memberId int) (SelectProject, error) {
+func JoinOrg(c *pgx.Conn, projectId int, memberId int, role string) (SelectProject, error) {
 	var projects SelectProject
 	updateQuery := `
 		UPDATE memberships
 		SET invite_status = 'accepted'
-		WHERE organization_id = $1 AND user_id = $2;
+		WHERE organization_id = $1 AND user_id = $2 and access_tier = $3;
 	`
-	_, err := c.Exec(context.Background(), updateQuery, projectId, memberId)
+	_, err := c.Exec(context.Background(), updateQuery, projectId, memberId, role)
 	if err != nil {
 		return projects, fmt.Errorf("error updating membership status: %v", err)
 	}
@@ -444,6 +444,5 @@ func JoinOrg(c *pgx.Conn, projectId int, memberId int) (SelectProject, error) {
 	if rows.Err() != nil {
 		return projects, rows.Err()
 	}
-	fmt.Println(projects)
 	return projects, nil
 }
