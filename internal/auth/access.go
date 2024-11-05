@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
 )
 
@@ -109,4 +110,17 @@ func CheckAccess(role string, orgID int, requiredTier string) (bool, error) {
 		return false, nil
 	}
 	return false, nil
+}
+
+func GetUserDataFromCookie(c *fiber.Ctx) (*UserInfo, error) {
+	tokenString := c.Cookies("Authorization")
+	if tokenString == "" {
+		return nil, fmt.Errorf("no token string on cookie")
+	}
+	tokenString = tokenString[len("Bearer "):]
+	userInfo, err := GetUserNameFromToken(tokenString)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get userInfo from token string")
+	}
+	return userInfo, nil
 }

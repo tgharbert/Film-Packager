@@ -13,17 +13,44 @@
   <h2 id="sub-title">Projects that you're a member of:</h2>
   {{block "project-list" .}}
   <ul id="project-list-items">
-    {{ range .Orgs }} {{block "project-list-item" .}}
-    <li
-      id="{{.Id}}"
-      hx-get="/get-project/{{.Id}}"
-      hx-target="#project-list"
-      hx-swap="innerHTML"
-    >
-      <b>{{.Name}}: </b> {{.Role}}
+    {{ range .Orgs.Memberships }} {{block "project-list-item" .}}
+    <li id="{{.Id}}">
+      <p
+        hx-get="/get-project/{{.Id}}"
+        hx-target="#project-list"
+        hx-swap="innerHTML"
+      >
+        <b>{{.Name}}: </b> {{.Role}}
+      </p>
+      {{if eq .Role "owner"}}
+      <button
+        id="button-std"
+        hx-get="/delete-project/{{.Id}}/"
+        hx-swap="innerHTML"
+        hx-target="#project-list"
+      >
+        DELETE ORG
+      </button>
+      {{end}}
     </li>
     {{end}}{{end}}
   </ul>
-  {{end}}
+  <h2 id="sub-title">Projects Invites:</h2>
+  <ul id="pending-list">
+    {{ range .Orgs.Pending }}
+    <li id="{{.Id}}">
+      <b>{{.Name}}: </b>
+      <button
+        id="button-std"
+        hx-post="/join-org/{{$.User.Id}}/{{.Id}}/{{.Role}}"
+        hx-swap="innerHTML"
+        hx-target="#project-list"
+      >
+        Accept Invite as <b>{{.Role}}</b>
+      </button>
+      {{end}}
+    </li>
+    {{end}}
+  </ul>
 </div>
 {{end}}

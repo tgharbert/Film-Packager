@@ -5,11 +5,15 @@ import (
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/store/db"
 	"fmt"
+	"log"
 	"net/mail"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gofiber/fiber/v2"
 
 	"golang.org/x/crypto/bcrypt"
@@ -17,7 +21,7 @@ import (
 
 type HomeData struct {
 	User *access.UserInfo
-	Orgs []db.Org
+	Orgs db.SelectProject
 }
 
 type Message struct {
@@ -34,6 +38,10 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/get-project/:id", GetProject)
 	app.Get("/logout/", Logout)
 	app.Post("/file-submit/", PostDocument)
+	app.Post("/search-users/:id", SearchUsers)
+	app.Post("/invite-member/:id/:project_id", InviteMember)
+	app.Post("/join-org/:id/:project_id/:role", JoinOrg)
+	app.Get("/delete-project/:project_id/", DeleteOrg)
 }
 
 func isValidEmail(email string) bool {
@@ -55,8 +63,9 @@ func HomePage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 	}
-	conn := db.Connect()
-	orgs, err := db.GetProjects(conn, userInfo.Id)
+	pool := db.PoolConnect()
+	defer pool.Close()
+	orgs, err := db.GetProjects(pool, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
@@ -108,10 +117,13 @@ func GetLoginPage(c *fiber.Ctx) error {
 }
 
 func PostCreateAccount(c *fiber.Ctx) error {
-	username := strings.Trim(c.FormValue("username"), " ")
+	firstName := strings.Trim(c.FormValue("firstName"), " ")
+	lastName := strings.Trim(c.FormValue("lastName"), " ")
 	email := strings.Trim(c.FormValue("email"), " ")
 	password := strings.Trim(c.FormValue("password"), " ")
 	secondPassword := strings.Trim(c.FormValue("secondPassword"), " ")
+	// concat the first and last names
+	username := fmt.Sprintf("%s %s", firstName, lastName)
 	var mess Message
 	if username == "" {
 		mess.Error = "blank username"
@@ -207,15 +219,137 @@ func GetProject(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
 	}
-	return c.Render("film-page", projectPageData)
+	return c.Render("project-page", projectPageData)
+}
+
+func getS3Session() *s3.S3 {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-west-2"), // replace with my region
+	})
+	if err != nil {
+		log.Fatalf("Failed to create session: %v", err)
+	}
+	return s3.New(sess)
 }
 
 func PostDocument(c *fiber.Ctx) error {
 	// hit the thang?
-	file := c.FormValue("file")
-	fileType := c.FormValue("file-type")
-	fmt.Println("HIT")
-	fmt.Println(file)
-	fmt.Println(fileType)
+	file, err := c.FormFile("file")
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error uploading file")
+	}
+	// FIX THIS LATER TO STORE THE VALUES
+	// fileType := c.FormValue("file-type")
+	f, err := file.Open()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open file")
+	}
+	defer f.Close()
+
+	// intialize the s3 client
+	s3Client := getS3Session()
+	bucket := "bucket-name" // replace with my bucket name
+	key := file.Filename
+
+	_, err = s3Client.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key: aws.String(key),
+		Body: f,
+		ACL: aws.String("public-read"),
+	})
+	if err != nil {
+		log.Printf("Error uploading file: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
+	}
 	return nil
+}
+
+func SearchUsers(c *fiber.Ctx) error {
+	username := c.FormValue("username")
+	id := c.Params("id")
+	conn := db.Connect()
+	users, err := db.SearchForUsers(conn, username)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
+	}
+	return c.Render("search-resultsHTML", fiber.Map{
+		"ProjectId": id,
+		"FoundUsers": users,
+	})
+}
+
+func InviteMember(c *fiber.Ctx) error {
+	memberId := c.Params("id")
+	role := c.FormValue("role")
+	projectId := c.Params("project_id")
+	conn := db.Connect()
+	defer conn.Close(context.Background())
+	memIdInt, err := strconv.Atoi(memberId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+	projIdInt, err := strconv.Atoi(projectId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+	users, err := db.InviteUserToOrg(conn, memIdInt, projIdInt, role)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error adding user to db")
+	}
+	return c.Render("new-list-of-invitesHTML", fiber.Map{
+		"Members": users,
+	})
+}
+
+func JoinOrg(c *fiber.Ctx) error {
+	userId := c.Params("id")
+	projectId := c.Params("project_id")
+	role := c.Params("role")
+	pool := db.PoolConnect()
+	defer pool.Close()
+	id, err := strconv.Atoi(userId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+	projIdInt, err := strconv.Atoi(projectId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+	projects, err := db.JoinOrg(pool, projIdInt, id, role)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error querying database")
+	}
+	return c.Render("selectOrgHTML" , fiber.Map{
+		"Orgs": projects,
+	})
+}
+
+func DeleteOrg(c *fiber.Ctx) error {
+	// getting the user info from the cookie
+	userInfo, err := access.GetUserDataFromCookie(c)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
+	}
+	projectId := c.Params("project_id")
+	pool := db.PoolConnect()
+	defer pool.Close()
+	projIdInt, err := strconv.Atoi(projectId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+	// passing the proj id correctly
+	err = db.DeleteOrg(pool, projIdInt, userInfo.Id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error querying the database")
+	}
+	// call the db, get projects??
+	orgs, err := db.GetProjects(pool, userInfo.Id)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
+	}
+
+	fmt.Println("orgs: ", orgs)
+	return c.Render("selectOrgHTML" , fiber.Map{
+		"Orgs": orgs,
+	})
 }

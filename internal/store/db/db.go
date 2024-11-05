@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -18,12 +19,14 @@ type User struct {
 	Email string
 	Role string
 	Password string
+	InviteStatus string
 }
 
 type Org struct {
 	Id int
 	Name string
 	Role string
+	InviteStatus string
 }
 
 type Project struct {
@@ -52,6 +55,12 @@ type DocInfo struct {
 type ProjectPageData struct {
 	Project Project
 	Members []User
+	FoundUsers []User // users on search in sidebar are placed here
+}
+
+type SelectProject struct {
+	Memberships []Org
+	Pending []Org
 }
 
 func CheckPasswordHash(hashedPassword string, password string) error {
@@ -72,6 +81,28 @@ func Connect() *pgx.Conn {
 	return conn
 }
 
+func PoolConnect() *pgxpool.Pool {
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+			fmt.Println("Error loading .env file")
+			panic(err)
+	}
+	// Get the database URL from the environment
+	dbURL := os.Getenv("DEV_DATABASE_URL")
+	if dbURL == "" {
+			fmt.Println("DEV_DATABASE_URL not found in environment")
+			os.Exit(1)
+	}
+	// Configure and establish a connection pool
+	pool, err := pgxpool.New(context.Background(), dbURL)
+	if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+			os.Exit(1)
+	}
+	return pool
+}
+
 func CreateUser(c *pgx.Conn, name string, email string, password string) (User, error) {
 	query := `INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)`
 	role := "readonly"
@@ -87,12 +118,10 @@ func CreateUser(c *pgx.Conn, name string, email string, password string) (User, 
 	}
 	defer rows.Close()
 	if !rows.Next() {
-		fmt.Println("No rows found for email:", email)
 		return user, fmt.Errorf("no user found with email: %s", email)
 	}
 	err = rows.Scan(&user.Id, &user.Email, &user.Name, &user.Role)
 	if err != nil {
-		fmt.Println("Error scanning row:", err)
 		return user, fmt.Errorf("error scanning row: %v", err)
 	}
 	if rows.Err() != nil {
@@ -137,26 +166,31 @@ func GetUser(c *pgx.Conn, email string, password string) (User, error) {
 	return user, nil
 }
 
-func GetProjects(c *pgx.Conn, userId int) ([]Org, error) {
-	query := `SELECT o.id, o.name, m.access_tier FROM organizations o JOIN memberships m ON o.id = m.organization_id WHERE m.user_id = $1;`
-	var orgs []Org
-	rows, err := c.Query(context.Background(), query, userId)
+// MODIFY THIS QUERY TO RETURN SELECTPROJECT STRUCT TO SEPERATE MEMBERSHIPS - INCLUDE ACCESS TIERS
+func GetProjects(pool *pgxpool.Pool, userId int) (SelectProject, error) {
+	query := `SELECT o.id, o.name, m.access_tier, m.invite_status FROM organizations o JOIN memberships m ON o.id = m.organization_id WHERE m.user_id = $1;`
+	var selectProject SelectProject
+	rows, err := pool.Query(context.Background(), query, userId)
 	if err != nil {
-		return nil, fmt.Errorf("initial query failed: %v ", err)
+		return selectProject, fmt.Errorf("initial query failed: %v ", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var org Org
-		err := rows.Scan(&org.Id, &org.Name, &org.Role)
+		err := rows.Scan(&org.Id, &org.Name, &org.Role, &org.InviteStatus)
 		if err != nil {
-			return nil, fmt.Errorf("error scanning row %v", err)
+			return selectProject, fmt.Errorf("error scanning row %v", err)
 		}
-		orgs = append(orgs, org)
+		if org.InviteStatus == "pending" {
+			selectProject.Pending = append(selectProject.Pending, org)
+		} else if org.InviteStatus == "accepted" {
+			selectProject.Memberships = append(selectProject.Memberships, org)
+		}
 	}
 	if rows.Err() != nil {
-		return nil, rows.Err()
+		return selectProject, rows.Err()
 	}
-	return orgs, nil
+	return selectProject, nil
 }
 
 func CreateProject(c *pgx.Conn, name string, ownerId int) (Org, error) {
@@ -174,10 +208,9 @@ func CreateProject(c *pgx.Conn, name string, ownerId int) (Org, error) {
 		return org, fmt.Errorf("failed to insert into organizations: %v", err)
 	}
 	// Insert into memberships with the role "owner"
-	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier) VALUES ($1, $2, $3) RETURNING access_tier`
-	err = tx.QueryRow(context.Background(), memberQuery, ownerId, org.Id, "owner").Scan(&org.Role)
+	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier, invite_status) VALUES ($1, $2, $3, $4) RETURNING access_tier`
+	err = tx.QueryRow(context.Background(), memberQuery, ownerId, org.Id, "owner", "accepted").Scan(&org.Role)
 	if err != nil {
-		fmt.Println("hit this error: ", err)
 		return org, fmt.Errorf("failed to insert into memberships: %v", err)
 	}
 	// Commit transaction
@@ -226,7 +259,8 @@ SELECT
     u.name AS user_name,
     u.email AS user_email,
 		m.access_tier AS user_role,
-    d.doc_type
+		m.invite_status AS user_invite_status,
+		d.doc_type
 FROM organizations o
 LEFT JOIN memberships m ON o.id = m.organization_id
 LEFT JOIN users u ON m.user_id = u.id
@@ -236,10 +270,10 @@ ORDER BY o.id;
 	`
 	rows, err := c.Query(context.Background(), query, projectId)
 	if err != nil {
+		fmt.Println("Here is the error!", err)
 		return ProjectPageData{}, err
 	}
 	defer rows.Close()
-
 	var projectData ProjectPageData
 	projectMap := make(map[string]DocInfo)
 
@@ -248,6 +282,7 @@ ORDER BY o.id;
 		var docAddress, docColor sql.NullString
 		var userId, docAuthor sql.NullInt32
 		var userRole sql.NullString
+		var inviteStatus sql.NullString
 		// projectId int
 		var docDate sql.NullTime
 
@@ -263,10 +298,10 @@ ORDER BY o.id;
 			&userName,
 			&userEmail,
 			&userRole,
+			&inviteStatus,
 			&docType,
 		)
 		if err != nil {
-			fmt.Println("here: ", err)
 			return projectData, err
 		}
 
@@ -277,6 +312,7 @@ ORDER BY o.id;
 				Name:  userName.String,
 				Email: userEmail.String,
 				Role: userRole.String,
+				InviteStatus: inviteStatus.String,
 			})
 		}
 
@@ -307,6 +343,139 @@ ORDER BY o.id;
 	if rows.Err() != nil {
 		return projectData, rows.Err()
 	}
-
 	return projectData, nil
+}
+
+func SearchForUsers(c *pgx.Conn, queryString string) ([]User, error) {
+	query := `SELECT id, name FROM users WHERE name ILIKE '%' || $1 || '%'`
+	rows, err := c.Query(context.Background(), query, queryString)
+	var users []User
+	if err != nil {
+		return users, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.Id, &user.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning user row %v", err)
+		}
+		users = append(users, user)
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return users, nil
+}
+
+func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string) ([]User, error) {
+	query := `
+	WITH new_membership AS (
+			INSERT INTO memberships (user_id, organization_id, access_tier, invite_status)
+			VALUES ($1, $2, $3, $4)
+			RETURNING user_id, organization_id, access_tier, invite_status
+	)
+	SELECT
+			new_membership.user_id,
+			new_membership.access_tier AS role,
+			new_membership.invite_status,
+			users.name,
+			users.email
+	FROM
+			new_membership
+	JOIN
+			users ON users.id = new_membership.user_id
+	UNION ALL
+	SELECT
+			memberships.user_id,
+			memberships.access_tier,
+			memberships.invite_status,
+			users.name,
+			users.email
+	FROM
+			memberships
+	JOIN
+			users ON users.id = memberships.user_id
+	WHERE
+			memberships.organization_id = $2;`
+	var users []User
+	rows, err := c.Query(context.Background(), query, memberId, organizationId, role, "pending")
+	if err != nil {
+		return users, fmt.Errorf("error querying: %v", err)
+	}
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.Id, &user.Role, &user.InviteStatus, &user.Name, &user.Email)
+		if err != nil {
+			return users, fmt.Errorf("error scanning row %v", err)
+		}
+		users = append(users, user)
+	}
+	if rows.Err() != nil {
+		return users, rows.Err()
+	}
+	return users, nil
+}
+
+func JoinOrg(pool *pgxpool.Pool, projectId int, memberId int, role string) (SelectProject, error) {
+	var projects SelectProject
+	updateQuery := `
+		UPDATE memberships
+		SET invite_status = 'accepted'
+		WHERE organization_id = $1 AND user_id = $2 and access_tier = $3;
+	`
+	_, err := pool.Exec(context.Background(), updateQuery, projectId, memberId, role)
+	if err != nil {
+		return projects, fmt.Errorf("error updating membership status: %v", err)
+	}
+	// Step 2: Retrieve all projects for the user
+	selectQuery := `
+		SELECT
+			o.id AS organization_id,
+			o.name AS organization_name,
+			m.access_tier,
+			m.invite_status
+		FROM
+			organizations o
+		JOIN
+			memberships m
+		ON
+			o.id = m.organization_id
+		WHERE
+			m.user_id = $1;
+	`
+	rows, err := pool.Query(context.Background(), selectQuery, memberId)
+	if err != nil {
+		return SelectProject{}, fmt.Errorf("error querying projects: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var project Org
+		err := rows.Scan(&project.Id, &project.Name, &project.Role, &project.InviteStatus)
+		if err != nil {
+			return projects, fmt.Errorf("error scanning row: %v", err)
+		}
+		if project.InviteStatus == "pending" {
+			projects.Pending = append(projects.Pending, project)
+		}
+		if project.InviteStatus == "accepted" {
+			projects.Memberships = append(projects.Memberships, project)
+		}
+	}
+	if rows.Err() != nil {
+		return projects, rows.Err()
+	}
+	return projects, nil
+}
+
+func DeleteOrg(pool *pgxpool.Pool, orgId int, userId int) (error) {
+	deleteProjectQuery := `DELETE FROM organizations WHERE id = $1;`
+	// var projects SelectProject
+	_, err := pool.Query(context.Background(), deleteProjectQuery, orgId)
+	if err != nil {
+		return fmt.Errorf("failed to delete project: %v", err)
+	}
+	return nil
+	// query should delete specified project and all related material, then return remaining ones
 }

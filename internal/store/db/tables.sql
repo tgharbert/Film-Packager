@@ -1,4 +1,5 @@
-DROP TABLE IF EXISTS users, organizations, memberships, documents, doc_comments, memberships_organizations;
+DROP TABLE IF EXISTS memberships_organizations, doc_comments, documents, memberships, organizations, users;
+DROP TYPE IF EXISTS invite_status;
 
 CREATE TABLE "users" (
     "id" serial PRIMARY KEY,
@@ -13,16 +14,19 @@ CREATE TABLE "organizations" (
     "name" VARCHAR(50)
 );
 
+CREATE TYPE invite_status AS ENUM ('pending', 'accepted', 'rejected', 'revoked');
+
 CREATE TABLE "memberships" (
     "id" serial PRIMARY KEY,
     "user_id" int,
-    "organization_id" int,
-    "access_tier" VARCHAR(50)
+    "organization_id" int REFERENCES organizations(id) ON DELETE CASCADE,
+    "access_tier" VARCHAR(20),
+    "invite_status" invite_status DEFAULT 'pending'
 );
 
 CREATE TABLE "documents" (
     "id" serial PRIMARY KEY,
-    "organization_id" int,
+    "organization_id" int REFERENCES organizations(id) ON DELETE CASCADE,
     "user_id" int,
     "address" VARCHAR(100),
     "name" VARCHAR(50),
@@ -39,23 +43,13 @@ CREATE TABLE "doc_comments" (
 );
 
 CREATE TABLE "memberships_organizations" (
-    "memberships_organization_id" int,
-    "organizations_id" serial,
-    PRIMARY KEY ("memberships_organization_id", "organizations_id")
+    "membership_id" int REFERENCES "memberships" ("id") ON DELETE CASCADE,
+    "organization_id" int REFERENCES "organizations" ("id") ON DELETE CASCADE,
+    PRIMARY KEY ("membership_id", "organization_id")
 );
 
 ALTER TABLE "memberships" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
-
 ALTER TABLE "documents" ADD FOREIGN KEY ("organization_id") REFERENCES "organizations" ("id");
-
 ALTER TABLE "doc_comments" ADD FOREIGN KEY ("document_id") REFERENCES "documents" ("id");
-
-ALTER TABLE "memberships_organizations" ADD FOREIGN KEY ("memberships_organization_id") REFERENCES "memberships" ("organization_id");
-
-ALTER TABLE "memberships_organizations" ADD FOREIGN KEY ("organizations_id") REFERENCES "organizations" ("id");
-
 ALTER TABLE "doc_comments" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
-
 ALTER TABLE "documents" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
-
-ALTER TABLE "memberships_organizations" ADD FOREIGN KEY ("memberships_organization_id") REFERENCES "memberships" ("id");

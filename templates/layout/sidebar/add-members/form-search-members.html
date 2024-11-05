@@ -1,0 +1,15 @@
+{{define "search-membersHTML"}}
+<div id="members">
+  <form
+    hx-post="/search-users/{{.Project.Id}}"
+    name="search-users"
+    hx-target="#search-results"
+    hx-swap="innerHTML"
+    hx-on::after-request="this.reset()"
+  >
+    <input type="text" placeholder="username" name="username" />
+    <button>Search</button>
+  </form>
+  <div id="search-results"></div>
+</div>
+{{end}}
