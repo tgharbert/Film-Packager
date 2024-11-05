@@ -19,14 +19,14 @@ CREATE TYPE invite_status AS ENUM ('pending', 'accepted', 'rejected', 'revoked')
 CREATE TABLE "memberships" (
     "id" serial PRIMARY KEY,
     "user_id" int,
-    "organization_id" int,
+    "organization_id" int REFERENCES organizations(id) ON DELETE CASCADE,
     "access_tier" VARCHAR(20),
     "invite_status" invite_status DEFAULT 'pending'
 );
 
 CREATE TABLE "documents" (
     "id" serial PRIMARY KEY,
-    "organization_id" int,
+    "organization_id" int REFERENCES organizations(id) ON DELETE CASCADE,
     "user_id" int,
     "address" VARCHAR(100),
     "name" VARCHAR(50),

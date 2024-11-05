@@ -14,14 +14,18 @@
   {{block "project-list" .}}
   <ul id="project-list-items">
     {{ range .Orgs.Memberships }} {{block "project-list-item" .}}
-    <li
-      id="{{.Id}}"
-      hx-get="/get-project/{{.Id}}"
-      hx-target="#project-list"
-      hx-swap="innerHTML"
-    >
-      <b>{{.Name}}: </b> {{.Role}} {{if eq .InviteStatus "pending"}}
-      <span>(Invite Pending)</span>
+    <li id="{{.Id}}">
+      <p
+        hx-get="/get-project/{{.Id}}"
+        hx-target="#project-list"
+        hx-swap="innerHTML"
+      >
+        <b>{{.Name}}: </b> {{.Role}}
+      </p>
+      {{if eq .Role "owner"}}
+      <button id="btn-std" hx-delete="/delete-project/{{.Id}}/">
+        DELETE ORG
+      </button>
       {{end}}
     </li>
     {{end}}{{end}}

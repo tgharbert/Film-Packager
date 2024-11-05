@@ -433,7 +433,45 @@ func JoinOrg(c *pgx.Conn, projectId int, memberId int, role string) (SelectProje
 		if err != nil {
 			return projects, fmt.Errorf("error scanning row: %v", err)
 		}
-		// adjust for status
+		if project.InviteStatus == "pending" {
+			projects.Pending = append(projects.Pending, project)
+		}
+		if project.InviteStatus == "accepted" {
+			projects.Memberships = append(projects.Memberships, project)
+		}
+	}
+	if rows.Err() != nil {
+		return projects, rows.Err()
+	}
+	return projects, nil
+}
+
+func DeleteOrg(c *pgx.Conn, orgId int, userId int) (SelectProject, error) {
+	// query should delete specified project and all related material, then return remaining ones
+	query := `SELECT
+    o.id AS organization_id,
+    o.name AS organization_name,
+    m.access_tier,
+    m.invite_status
+FROM
+    organizations o
+JOIN
+    memberships m ON o.id = m.organization_id
+WHERE
+    m.user_id = $1;`
+	var projects SelectProject
+	rows, err := c.Query(context.Background(), query, orgId)
+	if err != nil {
+		return SelectProject{}, fmt.Errorf("error querying projects: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var project Org
+		err := rows.Scan(&project.Id, &project.Name, &project.Role, &project.InviteStatus)
+		if err != nil {
+			return projects, fmt.Errorf("error scanning row: %v", err)
+		}
 		if project.InviteStatus == "pending" {
 			projects.Pending = append(projects.Pending, project)
 		}

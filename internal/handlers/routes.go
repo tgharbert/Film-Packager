@@ -41,6 +41,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Post("/search-users/:id", SearchUsers)
 	app.Post("/invite-member/:id/:project_id", InviteMember)
 	app.Post("/join-org/:id/:project_id/:role", JoinOrg)
+	app.Delete("/delete-project/:project_id/", DeleteOrg)
 }
 
 func isValidEmail(email string) bool {
@@ -217,7 +218,7 @@ func GetProject(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
 	}
-	return c.Render("film-page", projectPageData)
+	return c.Render("project-page", projectPageData)
 }
 
 func getS3Session() *s3.S3 {
@@ -320,4 +321,29 @@ func JoinOrg(c *fiber.Ctx) error {
 	return c.Render("selectOrgHTML" , fiber.Map{
 		"Orgs": projects,
 	})
+}
+
+func DeleteOrg(c *fiber.Ctx) error {
+	// getting the user info from the cookie
+	userInfo, err := access.GetUserDataFromCookie(c)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
+	}
+	fmt.Println("user id: ", userInfo.Id)
+
+	projectId := c.Params("project_id")
+	conn := db.Connect()
+	defer conn.Close(context.Background())
+	projIdInt, err := strconv.Atoi(projectId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+
+	// passing the proj id correctly
+	projects, err := db.DeleteOrg(conn, projIdInt, userInfo.Id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error querying the database")
+	}
+	fmt.Println("returned projects: ", projects)
+	return nil
 }
