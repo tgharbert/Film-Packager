@@ -63,8 +63,9 @@ func HomePage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 	}
-	conn := db.Connect()
-	orgs, err := db.GetProjects(conn, userInfo.Id)
+	pool := db.PoolConnect()
+	defer pool.Close()
+	orgs, err := db.GetProjects(pool, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
@@ -329,21 +330,24 @@ func DeleteOrg(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
 	}
-	fmt.Println("user id: ", userInfo.Id)
-
 	projectId := c.Params("project_id")
-	conn := db.Connect()
-	defer conn.Close(context.Background())
+	pool := db.PoolConnect()
+	defer pool.Close()
 	projIdInt, err := strconv.Atoi(projectId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-
 	// passing the proj id correctly
-	projects, err := db.DeleteOrg(conn, projIdInt, userInfo.Id)
+	err = db.DeleteOrg(pool, projIdInt, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying the database")
 	}
-	fmt.Println("returned projects: ", projects)
+	// call the db, get projects??
+	orgs, err := db.GetProjects(pool, userInfo.Id)
+	if err != nil {
+		fmt.Println("orgs: ", orgs)
+		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
+	}
+	fmt.Println("orgs: ", orgs)
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -80,6 +81,28 @@ func Connect() *pgx.Conn {
 	return conn
 }
 
+func PoolConnect() *pgxpool.Pool {
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+			fmt.Println("Error loading .env file")
+			panic(err)
+	}
+	// Get the database URL from the environment
+	dbURL := os.Getenv("DEV_DATABASE_URL")
+	if dbURL == "" {
+			fmt.Println("DEV_DATABASE_URL not found in environment")
+			os.Exit(1)
+	}
+	// Configure and establish a connection pool
+	pool, err := pgxpool.New(context.Background(), dbURL)
+	if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+			os.Exit(1)
+	}
+	return pool
+}
+
 func CreateUser(c *pgx.Conn, name string, email string, password string) (User, error) {
 	query := `INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)`
 	role := "readonly"
@@ -144,10 +167,10 @@ func GetUser(c *pgx.Conn, email string, password string) (User, error) {
 }
 
 // MODIFY THIS QUERY TO RETURN SELECTPROJECT STRUCT TO SEPERATE MEMBERSHIPS - INCLUDE ACCESS TIERS
-func GetProjects(c *pgx.Conn, userId int) (SelectProject, error) {
+func GetProjects(pool *pgxpool.Pool, userId int) (SelectProject, error) {
 	query := `SELECT o.id, o.name, m.access_tier, m.invite_status FROM organizations o JOIN memberships m ON o.id = m.organization_id WHERE m.user_id = $1;`
 	var selectProject SelectProject
-	rows, err := c.Query(context.Background(), query, userId)
+	rows, err := pool.Query(context.Background(), query, userId)
 	if err != nil {
 		return selectProject, fmt.Errorf("initial query failed: %v ", err)
 	}
@@ -446,41 +469,18 @@ func JoinOrg(c *pgx.Conn, projectId int, memberId int, role string) (SelectProje
 	return projects, nil
 }
 
-func DeleteOrg(c *pgx.Conn, orgId int, userId int) (SelectProject, error) {
-	// query should delete specified project and all related material, then return remaining ones
-	query := `SELECT
-    o.id AS organization_id,
-    o.name AS organization_name,
-    m.access_tier,
-    m.invite_status
-FROM
-    organizations o
-JOIN
-    memberships m ON o.id = m.organization_id
-WHERE
-    m.user_id = $1;`
-	var projects SelectProject
-	rows, err := c.Query(context.Background(), query, orgId)
+func DeleteOrg(pool *pgxpool.Pool, orgId int, userId int) (error) {
+	deleteProjectQuery := `DELETE FROM organizations WHERE id = $1;`
+	// var projects SelectProject
+	_, err := pool.Query(context.Background(), deleteProjectQuery, orgId)
 	if err != nil {
-		return SelectProject{}, fmt.Errorf("error querying projects: %v", err)
+		return fmt.Errorf("failed to delete project: %v", err)
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var project Org
-		err := rows.Scan(&project.Id, &project.Name, &project.Role, &project.InviteStatus)
-		if err != nil {
-			return projects, fmt.Errorf("error scanning row: %v", err)
-		}
-		if project.InviteStatus == "pending" {
-			projects.Pending = append(projects.Pending, project)
-		}
-		if project.InviteStatus == "accepted" {
-			projects.Memberships = append(projects.Memberships, project)
-		}
-	}
-	if rows.Err() != nil {
-		return projects, rows.Err()
-	}
-	return projects, nil
+	// projects, err = GetProjects(c, userId)
+	// if err != nil {
+	// 	fmt.Println("projects: ", projects)
+	// 	return projects, fmt.Errorf("failed to get projects: %v", err)
+	// }
+	return nil
+	// query should delete specified project and all related material, then return remaining ones
 }

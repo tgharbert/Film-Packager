@@ -7,11 +7,11 @@ import (
 	"github.com/gofiber/template/html/v2"
 
 	routes "filmPackager/internal/handlers"
-	db "filmPackager/internal/store/db"
+	// db "filmPackager/internal/store/db"
 )
 
 func main() {
-  db.Connect()
+  // db.Connect()
 	engine := html.New("./templates", ".html")
 	app := fiber.New(fiber.Config{
 		Views: engine,
