@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
@@ -67,19 +66,19 @@ func CheckPasswordHash(hashedPassword string, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
-func Connect() *pgx.Conn {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("error loading env file")
-		panic(err)
-	}
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DEV_DATABASE_URL"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to the database: %v\n", err)
-		os.Exit(1)
-	}
-	return conn
-}
+// func Connect() *pgx.Conn {
+// 	err := godotenv.Load()
+// 	if err != nil {
+// 		fmt.Println("error loading env file")
+// 		panic(err)
+// 	}
+// 	conn, err := pgx.Connect(context.Background(), os.Getenv("DEV_DATABASE_URL"))
+// 	if err != nil {
+// 		fmt.Fprintf(os.Stderr, "Unable to connect to the database: %v\n", err)
+// 		os.Exit(1)
+// 	}
+// 	return conn
+// }
 
 var DBPool *pgxpool.Pool
 
@@ -109,16 +108,16 @@ func GetPool() *pgxpool.Pool {
 	return DBPool
 }
 
-func CreateUser(c *pgx.Conn, name string, email string, password string) (User, error) {
+func CreateUser(pool *pgxpool.Pool, name string, email string, password string) (User, error) {
 	query := `INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)`
 	role := "readonly"
-	_, err := c.Exec(context.Background(), query, name, email, password, role)
+	_, err := pool.Exec(context.Background(), query, name, email, password, role)
 	var user User
 	if err != nil {
 		return user, fmt.Errorf("failed to insert user into users table: %v", err)
 	}
 	getNewUserQuery := `SELECT id, email, name, role FROM users WHERE email = $1`
-	rows, err := c.Query(context.Background(), getNewUserQuery, email)
+	rows, err := pool.Query(context.Background(), getNewUserQuery, email)
 	if err != nil {
 		return user, err
 	}
@@ -137,10 +136,10 @@ func CreateUser(c *pgx.Conn, name string, email string, password string) (User, 
 	return user, nil
 }
 
-func GetUser(c *pgx.Conn, email string, password string) (User, error) {
+func GetUser(pool *pgxpool.Pool, email string, password string) (User, error) {
 	query := `SELECT id, email, name, role, password FROM users where email = $1`
 	var user User
-	rows, err := c.Query(context.Background(), query, email)
+	rows, err := pool.Query(context.Background(), query, email)
 	if err != nil {
 		return user, err
 	}
@@ -199,9 +198,9 @@ func GetProjects(pool *pgxpool.Pool, userId int) (SelectProject, error) {
 	return selectProject, nil
 }
 
-func CreateProject(c *pgx.Conn, name string, ownerId int) (Org, error) {
+func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (Org, error) {
 	// Begin transaction
-	tx, err := c.Begin(context.Background())
+	tx, err := pool.Begin(context.Background())
 	if err != nil {
 		return Org{}, fmt.Errorf("could not begin transaction: %v", err)
 	}
@@ -228,7 +227,7 @@ func CreateProject(c *pgx.Conn, name string, ownerId int) (Org, error) {
 }
 
 // THIS IS WHERE I'M AT
-func GetProjectPageData(c *pgx.Conn, projectId int) (ProjectPageData, error) {
+func GetProjectPageData(pool *pgxpool.Pool, projectId int) (ProjectPageData, error) {
 	// I want to return all users attached to a project, all docs attached to the project -- not really too difficult
 	query := `WITH doc_types AS (
     SELECT
@@ -274,7 +273,7 @@ LEFT JOIN doc_types d ON o.id = d.organization_id
 WHERE o.id = $1 -- assuming you're passing the organization ID as a parameter
 ORDER BY o.id;
 	`
-	rows, err := c.Query(context.Background(), query, projectId)
+	rows, err := pool.Query(context.Background(), query, projectId)
 	if err != nil {
 		fmt.Println("Here is the error!", err)
 		return ProjectPageData{}, err
@@ -352,9 +351,9 @@ ORDER BY o.id;
 	return projectData, nil
 }
 
-func SearchForUsers(c *pgx.Conn, queryString string) ([]User, error) {
+func SearchForUsers(pool *pgxpool.Pool, queryString string) ([]User, error) {
 	query := `SELECT id, name FROM users WHERE name ILIKE '%' || $1 || '%'`
-	rows, err := c.Query(context.Background(), query, queryString)
+	rows, err := pool.Query(context.Background(), query, queryString)
 	var users []User
 	if err != nil {
 		return users, err

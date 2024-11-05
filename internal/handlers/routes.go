@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"context"
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/store/db"
 	"fmt"
@@ -79,9 +78,7 @@ func PostLoginSubmit(c *fiber.Ctx) error {
 	if email == "" || password == "" {
 		return c.Status(fiber.StatusBadRequest).SendString("Email or password cannot be empty")
 	}
-	conn := db.Connect()
-	defer conn.Close(context.Background())
-	user, err := db.GetUser(conn, email, password)
+	user, err := db.GetUser(db.DBPool, email, password)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving user")
 	}
@@ -145,14 +142,12 @@ func PostCreateAccount(c *fiber.Ctx) error {
 		mess.Error = "invalid email"
 		return c.Render("login-error", mess)
 	}
-	conn := db.Connect()
-	defer conn.Close(context.Background())
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error hashing password")
 	}
 	hashedStr := string(hash)
-	user, err := db.CreateUser(conn, username, email, hashedStr)
+	user, err := db.CreateUser(db.DBPool, username, email, hashedStr)
 	if err != nil {
 		panic(err)
 	}
@@ -198,9 +193,7 @@ func CreateProject(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 	}
-	conn := db.Connect()
-	defer conn.Close(context.Background())
-	org, err := db.CreateProject(conn, projectName, userInfo.Id)
+	org, err := db.CreateProject(db.DBPool, projectName, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving org")
 	}
@@ -213,9 +206,7 @@ func GetProject(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	conn := db.Connect()
-	defer conn.Close(context.Background())
-	projectPageData, err := db.GetProjectPageData(conn, idInt)
+	projectPageData, err := db.GetProjectPageData(db.DBPool, idInt)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
 	}
@@ -267,8 +258,7 @@ func PostDocument(c *fiber.Ctx) error {
 func SearchUsers(c *fiber.Ctx) error {
 	username := c.FormValue("username")
 	id := c.Params("id")
-	conn := db.Connect()
-	users, err := db.SearchForUsers(conn, username)
+	users, err := db.SearchForUsers(db.DBPool, username)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
 	}
@@ -282,8 +272,6 @@ func InviteMember(c *fiber.Ctx) error {
 	memberId := c.Params("id")
 	role := c.FormValue("role")
 	projectId := c.Params("project_id")
-	// conn := db.Connect()
-	// defer conn.Close(context.Background())
 	memIdInt, err := strconv.Atoi(memberId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
