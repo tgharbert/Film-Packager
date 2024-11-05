@@ -63,9 +63,9 @@ func HomePage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 	}
-	pool := db.PoolConnect()
-	defer pool.Close()
-	orgs, err := db.GetProjects(pool, userInfo.Id)
+	// pool := db.PoolConnect()
+	// defer pool.Close()
+	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
@@ -282,8 +282,8 @@ func InviteMember(c *fiber.Ctx) error {
 	memberId := c.Params("id")
 	role := c.FormValue("role")
 	projectId := c.Params("project_id")
-	conn := db.Connect()
-	defer conn.Close(context.Background())
+	// conn := db.Connect()
+	// defer conn.Close(context.Background())
 	memIdInt, err := strconv.Atoi(memberId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
@@ -292,7 +292,7 @@ func InviteMember(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	users, err := db.InviteUserToOrg(conn, memIdInt, projIdInt, role)
+	users, err := db.InviteUserToOrg(db.DBPool, memIdInt, projIdInt, role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error adding user to db")
 	}
@@ -305,8 +305,6 @@ func JoinOrg(c *fiber.Ctx) error {
 	userId := c.Params("id")
 	projectId := c.Params("project_id")
 	role := c.Params("role")
-	pool := db.PoolConnect()
-	defer pool.Close()
 	id, err := strconv.Atoi(userId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
@@ -315,7 +313,7 @@ func JoinOrg(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	projects, err := db.JoinOrg(pool, projIdInt, id, role)
+	projects, err := db.JoinOrg(db.DBPool, projIdInt, id, role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying database")
 	}
@@ -331,24 +329,20 @@ func DeleteOrg(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
 	}
 	projectId := c.Params("project_id")
-	pool := db.PoolConnect()
-	defer pool.Close()
 	projIdInt, err := strconv.Atoi(projectId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
 	// passing the proj id correctly
-	err = db.DeleteOrg(pool, projIdInt, userInfo.Id)
+	err = db.DeleteOrg(db.DBPool, projIdInt, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying the database")
 	}
 	// call the db, get projects??
-	orgs, err := db.GetProjects(pool, userInfo.Id)
+	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
-
-	fmt.Println("orgs: ", orgs)
 	return c.Render("selectOrgHTML" , fiber.Map{
 		"Orgs": orgs,
 	})

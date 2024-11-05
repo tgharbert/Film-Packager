@@ -81,7 +81,9 @@ func Connect() *pgx.Conn {
 	return conn
 }
 
-func PoolConnect() *pgxpool.Pool {
+var DBPool *pgxpool.Pool
+
+func PoolConnect() {
 	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
@@ -100,7 +102,11 @@ func PoolConnect() *pgxpool.Pool {
 			fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 			os.Exit(1)
 	}
-	return pool
+	DBPool = pool
+}
+
+func GetPool() *pgxpool.Pool {
+	return DBPool
 }
 
 func CreateUser(c *pgx.Conn, name string, email string, password string) (User, error) {
@@ -368,7 +374,7 @@ func SearchForUsers(c *pgx.Conn, queryString string) ([]User, error) {
 	return users, nil
 }
 
-func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string) ([]User, error) {
+func InviteUserToOrg(pool *pgxpool.Pool, memberId int, organizationId int, role string) ([]User, error) {
 	query := `
 	WITH new_membership AS (
 			INSERT INTO memberships (user_id, organization_id, access_tier, invite_status)
@@ -399,7 +405,7 @@ func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string)
 	WHERE
 			memberships.organization_id = $2;`
 	var users []User
-	rows, err := c.Query(context.Background(), query, memberId, organizationId, role, "pending")
+	rows, err := pool.Query(context.Background(), query, memberId, organizationId, role, "pending")
 	if err != nil {
 		return users, fmt.Errorf("error querying: %v", err)
 	}
