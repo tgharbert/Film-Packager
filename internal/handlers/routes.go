@@ -317,7 +317,7 @@ func JoinOrg(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying database")
 	}
-	fmt.Println("here: ", projects)
-
-	return nil
+	return c.Render("selectOrgHTML" , fiber.Map{
+		"Orgs": projects,
+	})
 }

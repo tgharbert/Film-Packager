@@ -31,7 +31,12 @@
     {{ range .Orgs.Pending }}
     <li id="{{.Id}}">
       <b>{{.Name}}: </b>
-      <button id="button-std" hx-post="/join-org/{{$.User.Id}}/{{.Id}}">
+      <button
+        id="button-std"
+        hx-post="/join-org/{{$.User.Id}}/{{.Id}}"
+        hx-swap="innerHTML"
+        hx-target="#project-list"
+      >
         Accept Invite as <b>{{.Role}}</b>
       </button>
       {{end}}
