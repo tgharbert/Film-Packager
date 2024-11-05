@@ -23,7 +23,12 @@
         <b>{{.Name}}: </b> {{.Role}}
       </p>
       {{if eq .Role "owner"}}
-      <button id="btn-std" hx-delete="/delete-project/{{.Id}}/">
+      <button
+        id="button-std"
+        hx-get="/delete-project/{{.Id}}/"
+        hx-swap="innerHTML"
+        hx-target="#project-list"
+      >
         DELETE ORG
       </button>
       {{end}}

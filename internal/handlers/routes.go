@@ -41,7 +41,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Post("/search-users/:id", SearchUsers)
 	app.Post("/invite-member/:id/:project_id", InviteMember)
 	app.Post("/join-org/:id/:project_id/:role", JoinOrg)
-	app.Delete("/delete-project/:project_id/", DeleteOrg)
+	app.Get("/delete-project/:project_id/", DeleteOrg)
 }
 
 func isValidEmail(email string) bool {
@@ -305,8 +305,8 @@ func JoinOrg(c *fiber.Ctx) error {
 	userId := c.Params("id")
 	projectId := c.Params("project_id")
 	role := c.Params("role")
-	conn := db.Connect()
-	defer conn.Close(context.Background())
+	pool := db.PoolConnect()
+	defer pool.Close()
 	id, err := strconv.Atoi(userId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
@@ -315,7 +315,7 @@ func JoinOrg(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	projects, err := db.JoinOrg(conn, projIdInt, id, role)
+	projects, err := db.JoinOrg(pool, projIdInt, id, role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying database")
 	}
@@ -345,9 +345,11 @@ func DeleteOrg(c *fiber.Ctx) error {
 	// call the db, get projects??
 	orgs, err := db.GetProjects(pool, userInfo.Id)
 	if err != nil {
-		fmt.Println("orgs: ", orgs)
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
+
 	fmt.Println("orgs: ", orgs)
-	return nil
+	return c.Render("selectOrgHTML" , fiber.Map{
+		"Orgs": orgs,
+	})
 }

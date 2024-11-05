@@ -112,7 +112,6 @@ func CheckAccess(role string, orgID int, requiredTier string) (bool, error) {
 	return false, nil
 }
 
-
 func GetUserDataFromCookie(c *fiber.Ctx) (*UserInfo, error) {
 	tokenString := c.Cookies("Authorization")
 	if tokenString == "" {

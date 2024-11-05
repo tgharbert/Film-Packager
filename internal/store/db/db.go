@@ -417,14 +417,14 @@ func InviteUserToOrg(c *pgx.Conn, memberId int, organizationId int, role string)
 	return users, nil
 }
 
-func JoinOrg(c *pgx.Conn, projectId int, memberId int, role string) (SelectProject, error) {
+func JoinOrg(pool *pgxpool.Pool, projectId int, memberId int, role string) (SelectProject, error) {
 	var projects SelectProject
 	updateQuery := `
 		UPDATE memberships
 		SET invite_status = 'accepted'
 		WHERE organization_id = $1 AND user_id = $2 and access_tier = $3;
 	`
-	_, err := c.Exec(context.Background(), updateQuery, projectId, memberId, role)
+	_, err := pool.Exec(context.Background(), updateQuery, projectId, memberId, role)
 	if err != nil {
 		return projects, fmt.Errorf("error updating membership status: %v", err)
 	}
@@ -444,7 +444,7 @@ func JoinOrg(c *pgx.Conn, projectId int, memberId int, role string) (SelectProje
 		WHERE
 			m.user_id = $1;
 	`
-	rows, err := c.Query(context.Background(), selectQuery, memberId)
+	rows, err := pool.Query(context.Background(), selectQuery, memberId)
 	if err != nil {
 		return SelectProject{}, fmt.Errorf("error querying projects: %v", err)
 	}
@@ -476,11 +476,6 @@ func DeleteOrg(pool *pgxpool.Pool, orgId int, userId int) (error) {
 	if err != nil {
 		return fmt.Errorf("failed to delete project: %v", err)
 	}
-	// projects, err = GetProjects(c, userId)
-	// if err != nil {
-	// 	fmt.Println("projects: ", projects)
-	// 	return projects, fmt.Errorf("failed to get projects: %v", err)
-	// }
 	return nil
 	// query should delete specified project and all related material, then return remaining ones
 }
