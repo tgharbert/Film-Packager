@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-  // db.Connect()
 	db.PoolConnect()
 	conn, err := db.GetPool().Acquire(context.Background())
 	if err != nil {

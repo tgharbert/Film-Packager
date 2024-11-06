@@ -54,6 +54,8 @@ type DocInfo struct {
 type ProjectPageData struct {
 	Project Project
 	Members []User
+	// add invited field for users
+	Invited []User
 	FoundUsers []User // users on search in sidebar are placed here
 }
 
@@ -183,6 +185,7 @@ func GetProjects(pool *pgxpool.Pool, userId int) (SelectProject, error) {
 	return selectProject, nil
 }
 
+// MODIFY THIS FUNCTION TO CHECK IF THERE ARE OTHER PROJECTS WITH THIS NAME? OR NAME AND OWNER?
 func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (Org, error) {
 	// Begin transaction
 	tx, err := pool.Begin(context.Background())
@@ -197,7 +200,6 @@ func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (Org, error) {
 	if err != nil {
 		return org, fmt.Errorf("failed to insert into organizations: %v", err)
 	}
-	// Insert into memberships with the role "owner"
 	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier, invite_status) VALUES ($1, $2, $3, $4) RETURNING access_tier`
 	err = tx.QueryRow(context.Background(), memberQuery, ownerId, org.Id, "owner", "accepted").Scan(&org.Role)
 	if err != nil {
@@ -291,6 +293,16 @@ ORDER BY o.id;
 		)
 		if err != nil {
 			return projectData, err
+		}
+
+		if inviteStatus.String == "pending" {
+			projectData.Invited = append(projectData.Invited, User{
+				Id:    int(userId.Int32),  // Convert sql.NullInt32 to int
+				Name:  userName.String,
+				Email: userEmail.String,
+				Role: userRole.String,
+				InviteStatus: inviteStatus.String,
+			})
 		}
 
 		if userName.Valid && userEmail.Valid {
@@ -415,44 +427,6 @@ func JoinOrg(pool *pgxpool.Pool, projectId int, memberId int, role string) (erro
 	if err != nil {
 		return fmt.Errorf("error updating membership status: %v", err)
 	}
-	// selectQuery := `
-	// 	SELECT
-	// 		o.id AS organization_id,
-	// 		o.name AS organization_name,
-	// 		m.access_tier,
-	// 		m.invite_status
-	// 	FROM
-	// 		organizations o
-	// 	JOIN
-	// 		memberships m
-	// 	ON
-	// 		o.id = m.organization_id
-	// 	WHERE
-	// 		m.user_id = $1;
-	// `
-	// rows, err := pool.Query(context.Background(), selectQuery, memberId)
-	// if err != nil {
-	// 	return SelectProject{}, fmt.Errorf("error querying projects: %v", err)
-	// }
-	// defer rows.Close()
-
-	// for rows.Next() {
-	// 	var project Org
-	// 	err := rows.Scan(&project.Id, &project.Name, &project.Role, &project.InviteStatus)
-	// 	if err != nil {
-	// 		return projects, fmt.Errorf("error scanning row: %v", err)
-	// 	}
-	// 	if project.InviteStatus == "pending" {
-	// 		projects.Pending = append(projects.Pending, project)
-	// 	}
-	// 	if project.InviteStatus == "accepted" {
-	// 		projects.Memberships = append(projects.Memberships, project)
-	// 	}
-	// }
-	// if rows.Err() != nil {
-	// 	return projects, rows.Err()
-	// }
-	// return projects, nil
 	return nil
 }
 

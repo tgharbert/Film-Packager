@@ -8,20 +8,21 @@
     hx-on::after-request="this.reset()"
   >
     <input type="text" placeholder="enter project title" name="project-name" />
-    <button>Create Project</button>
+    <button id="button-std">Create Project</button>
   </form>
   <h2 id="sub-title">Projects that you're a member of:</h2>
   {{block "project-list" .}}
   <ul id="project-list-items">
     {{ range .Orgs.Memberships }} {{block "project-list-item" .}}
-    <li id="{{.Id}}" class="project-list-item">
-      <p
-        id="project-title"
-        hx-get="/get-project/{{.Id}}"
-        hx-target="#project-list"
-        hx-swap="innerHTML"
-      >
-        <b>{{.Name}}: </b> {{.Role}}
+    <li
+      id="{{.Id}}"
+      class="project-list-item"
+      hx-get="/get-project/{{.Id}}"
+      hx-target="#project-list"
+      hx-swap="innerHTML"
+    >
+      <p id="project-title">
+        <b>{{.Name}}: </b> <span id="project-role">{{.Role}}</span>
       </p>
       {{if eq .Role "owner"}}
       <button
