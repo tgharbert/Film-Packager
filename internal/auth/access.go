@@ -25,7 +25,7 @@ type Organization struct {
 type Membership struct {
 	UserID         int
 	OrganizationID int
-	AccessTier     string // Access level like "read", "write", "admin" -- can alter roles & push from 'staging area', "owner" - creator
+	AccessTier     string // roles specific to film - owner, producer, director, writer, pd, cinematographer, etc.
 }
 
 type UserInfo struct {

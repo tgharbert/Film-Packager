@@ -66,36 +66,21 @@ func CheckPasswordHash(hashedPassword string, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
-// func Connect() *pgx.Conn {
-// 	err := godotenv.Load()
-// 	if err != nil {
-// 		fmt.Println("error loading env file")
-// 		panic(err)
-// 	}
-// 	conn, err := pgx.Connect(context.Background(), os.Getenv("DEV_DATABASE_URL"))
-// 	if err != nil {
-// 		fmt.Fprintf(os.Stderr, "Unable to connect to the database: %v\n", err)
-// 		os.Exit(1)
-// 	}
-// 	return conn
-// }
-
+// globally available db pool to connect
 var DBPool *pgxpool.Pool
 
 func PoolConnect() {
-	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
 			fmt.Println("Error loading .env file")
 			panic(err)
 	}
-	// Get the database URL from the environment
 	dbURL := os.Getenv("DEV_DATABASE_URL")
 	if dbURL == "" {
 			fmt.Println("DEV_DATABASE_URL not found in environment")
 			os.Exit(1)
 	}
-	// Configure and establish a connection pool
+	// later need to work on pool settings
 	pool, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
 			fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
@@ -204,8 +189,8 @@ func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (Org, error) {
 	if err != nil {
 		return Org{}, fmt.Errorf("could not begin transaction: %v", err)
 	}
-	defer tx.Rollback(context.Background()) // Rollback if any step fails
-	// Insert organization
+	// Rollback if any step fails
+	defer tx.Rollback(context.Background())
 	orgQuery := `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
 	var org Org
 	err = tx.QueryRow(context.Background(), orgQuery, name).Scan(&org.Id, &org.Name)
@@ -226,9 +211,7 @@ func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (Org, error) {
 	return org, nil
 }
 
-// THIS IS WHERE I'M AT
 func GetProjectPageData(pool *pgxpool.Pool, projectId int) (ProjectPageData, error) {
-	// I want to return all users attached to a project, all docs attached to the project -- not really too difficult
 	query := `WITH doc_types AS (
     SELECT
         organization_id,
@@ -422,8 +405,7 @@ func InviteUserToOrg(pool *pgxpool.Pool, memberId int, organizationId int, role 
 	return users, nil
 }
 
-func JoinOrg(pool *pgxpool.Pool, projectId int, memberId int, role string) (SelectProject, error) {
-	var projects SelectProject
+func JoinOrg(pool *pgxpool.Pool, projectId int, memberId int, role string) (error) {
 	updateQuery := `
 		UPDATE memberships
 		SET invite_status = 'accepted'
@@ -431,56 +413,54 @@ func JoinOrg(pool *pgxpool.Pool, projectId int, memberId int, role string) (Sele
 	`
 	_, err := pool.Exec(context.Background(), updateQuery, projectId, memberId, role)
 	if err != nil {
-		return projects, fmt.Errorf("error updating membership status: %v", err)
+		return fmt.Errorf("error updating membership status: %v", err)
 	}
-	// Step 2: Retrieve all projects for the user
-	selectQuery := `
-		SELECT
-			o.id AS organization_id,
-			o.name AS organization_name,
-			m.access_tier,
-			m.invite_status
-		FROM
-			organizations o
-		JOIN
-			memberships m
-		ON
-			o.id = m.organization_id
-		WHERE
-			m.user_id = $1;
-	`
-	rows, err := pool.Query(context.Background(), selectQuery, memberId)
-	if err != nil {
-		return SelectProject{}, fmt.Errorf("error querying projects: %v", err)
-	}
-	defer rows.Close()
+	// selectQuery := `
+	// 	SELECT
+	// 		o.id AS organization_id,
+	// 		o.name AS organization_name,
+	// 		m.access_tier,
+	// 		m.invite_status
+	// 	FROM
+	// 		organizations o
+	// 	JOIN
+	// 		memberships m
+	// 	ON
+	// 		o.id = m.organization_id
+	// 	WHERE
+	// 		m.user_id = $1;
+	// `
+	// rows, err := pool.Query(context.Background(), selectQuery, memberId)
+	// if err != nil {
+	// 	return SelectProject{}, fmt.Errorf("error querying projects: %v", err)
+	// }
+	// defer rows.Close()
 
-	for rows.Next() {
-		var project Org
-		err := rows.Scan(&project.Id, &project.Name, &project.Role, &project.InviteStatus)
-		if err != nil {
-			return projects, fmt.Errorf("error scanning row: %v", err)
-		}
-		if project.InviteStatus == "pending" {
-			projects.Pending = append(projects.Pending, project)
-		}
-		if project.InviteStatus == "accepted" {
-			projects.Memberships = append(projects.Memberships, project)
-		}
-	}
-	if rows.Err() != nil {
-		return projects, rows.Err()
-	}
-	return projects, nil
+	// for rows.Next() {
+	// 	var project Org
+	// 	err := rows.Scan(&project.Id, &project.Name, &project.Role, &project.InviteStatus)
+	// 	if err != nil {
+	// 		return projects, fmt.Errorf("error scanning row: %v", err)
+	// 	}
+	// 	if project.InviteStatus == "pending" {
+	// 		projects.Pending = append(projects.Pending, project)
+	// 	}
+	// 	if project.InviteStatus == "accepted" {
+	// 		projects.Memberships = append(projects.Memberships, project)
+	// 	}
+	// }
+	// if rows.Err() != nil {
+	// 	return projects, rows.Err()
+	// }
+	// return projects, nil
+	return nil
 }
 
 func DeleteOrg(pool *pgxpool.Pool, orgId int, userId int) (error) {
 	deleteProjectQuery := `DELETE FROM organizations WHERE id = $1;`
-	// var projects SelectProject
 	_, err := pool.Query(context.Background(), deleteProjectQuery, orgId)
 	if err != nil {
 		return fmt.Errorf("failed to delete project: %v", err)
 	}
 	return nil
-	// query should delete specified project and all related material, then return remaining ones
 }

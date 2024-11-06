@@ -14,8 +14,9 @@
   {{block "project-list" .}}
   <ul id="project-list-items">
     {{ range .Orgs.Memberships }} {{block "project-list-item" .}}
-    <li id="{{.Id}}">
+    <li id="{{.Id}}" class="project-list-item">
       <p
+        id="project-title"
         hx-get="/get-project/{{.Id}}"
         hx-target="#project-list"
         hx-swap="innerHTML"
@@ -29,7 +30,7 @@
         hx-swap="innerHTML"
         hx-target="#project-list"
       >
-        DELETE ORG
+        Delete Org
       </button>
       {{end}}
     </li>
@@ -38,8 +39,10 @@
   <h2 id="sub-title">Projects Invites:</h2>
   <ul id="pending-list">
     {{ range .Orgs.Pending }}
-    <li id="{{.Id}}">
-      <b>{{.Name}}: </b>
+    <li id="{{.Id}}" class="project-list-item">
+      <p id="project-title">
+        <b>{{.Name}}: </b>
+      </p>
       <button
         id="button-std"
         hx-post="/join-org/{{$.User.Id}}/{{.Id}}/{{.Role}}"

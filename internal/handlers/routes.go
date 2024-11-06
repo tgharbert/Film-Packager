@@ -62,8 +62,6 @@ func HomePage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 	}
-	// pool := db.PoolConnect()
-	// defer pool.Close()
 	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
@@ -257,6 +255,7 @@ func PostDocument(c *fiber.Ctx) error {
 
 func SearchUsers(c *fiber.Ctx) error {
 	username := c.FormValue("username")
+	// MODIFY - GET USER ID FROM COOKIE?
 	id := c.Params("id")
 	users, err := db.SearchForUsers(db.DBPool, username)
 	if err != nil {
@@ -269,6 +268,7 @@ func SearchUsers(c *fiber.Ctx) error {
 }
 
 func InviteMember(c *fiber.Ctx) error {
+	// MODIFY - GET USER ID FROM COOKIE?
 	memberId := c.Params("id")
 	role := c.FormValue("role")
 	projectId := c.Params("project_id")
@@ -290,6 +290,7 @@ func InviteMember(c *fiber.Ctx) error {
 }
 
 func JoinOrg(c *fiber.Ctx) error {
+	// MODIFY - GET USER ID FROM COOKIE?
 	userId := c.Params("id")
 	projectId := c.Params("project_id")
 	role := c.Params("role")
@@ -301,17 +302,21 @@ func JoinOrg(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	projects, err := db.JoinOrg(db.DBPool, projIdInt, id, role)
+	err = db.JoinOrg(db.DBPool, projIdInt, id, role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying database")
 	}
+	orgs, err := db.GetProjects(db.DBPool, id)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
+	}
 	return c.Render("selectOrgHTML" , fiber.Map{
-		"Orgs": projects,
+		"Orgs": orgs,
 	})
 }
 
 func DeleteOrg(c *fiber.Ctx) error {
-	// getting the user info from the cookie
+	// getting the user info from the cookie - should be done everywhere?
 	userInfo, err := access.GetUserDataFromCookie(c)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
@@ -321,12 +326,10 @@ func DeleteOrg(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	// passing the proj id correctly
 	err = db.DeleteOrg(db.DBPool, projIdInt, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying the database")
 	}
-	// call the db, get projects??
 	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
