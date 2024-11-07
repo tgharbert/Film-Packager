@@ -96,10 +96,10 @@ func GetPool() *pgxpool.Pool {
 }
 
 func CreateUser(pool *pgxpool.Pool, name string, email string, password string) (User, error) {
+	var user User
 	query := `INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)`
 	role := "readonly"
 	_, err := pool.Exec(context.Background(), query, name, email, password, role)
-	var user User
 	if err != nil {
 		return user, fmt.Errorf("failed to insert user into users table: %v", err)
 	}

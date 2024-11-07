@@ -120,25 +120,25 @@ func PostCreateAccount(c *fiber.Ctx) error {
 	// concat the first and last names
 	username := fmt.Sprintf("%s %s", firstName, lastName)
 	var mess Message
-	if username == "" {
-		mess.Error = "blank username"
-		return c.Render("login-error", mess)
+	if firstName == "" || lastName == "" {
+		mess.Error = "Error: please enter first and last name!"
+		return c.Render("create-accountHTML", mess)
 	}
 	if email == "" {
-		mess.Error = "blank email"
-		return c.Render("login-error", mess)
+		mess.Error = "Error: email field left blank!"
+		return c.Render("create-accountHTML", mess)
 	}
 	if password != secondPassword {
-		mess.Error = "passwords do not match"
-		return c.Render("login-error", mess)
+		mess.Error = "Error: passwords do not match!"
+		return c.Render("create-accountHTML", mess)
 	}
 	if len(password) < 6 || len(secondPassword) < 6 {
-		mess.Error = "password is too short"
-		return c.Render("login-error", mess)
+		mess.Error = "Error: password need to be at least 6 characters!"
+		return c.Render("create-accountHTML", mess)
 	}
 	if !isValidEmail(email) {
-		mess.Error = "invalid email"
-		return c.Render("login-error", mess)
+		mess.Error = "Error: invalid email address"
+		return c.Render("create-accountHTML", mess)
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -147,7 +147,8 @@ func PostCreateAccount(c *fiber.Ctx) error {
 	hashedStr := string(hash)
 	user, err := db.CreateUser(db.DBPool, username, email, hashedStr)
 	if err != nil {
-		panic(err)
+		mess.Error = "Error: user already exists with this email!"
+		return c.Render("create-accountHTML", mess)
 	}
 	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email, user.Role)
 	if err != nil {

@@ -1,5 +1,5 @@
 {{define "create-accountHTML"}}
-<form hx-post="/post-create-account/">
+<form hx-post="/post-create-account/" hx-swap="innerHTML" hx-target="#login">
   <h2 id="subheader">Create Account:</h2>
   <div id="login-input">
     <label>First Name: </label>
@@ -33,6 +33,7 @@
       >
     </p>
     <button id="button-std">Create Account</button>
+    <p>{{.Error}}</p>
   </div>
 </form>
 {{end}}
