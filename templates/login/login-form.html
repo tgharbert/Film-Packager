@@ -2,8 +2,8 @@
 <form
   hx-post="/post-login/"
   hx-trigger="submit"
-  hx-target="body"
-  hx-swap="outerHTML"
+  hx-target="#login"
+  hx-swap="innerHTML"
 >
   <h2 id="subheader">Login:</h2>
   <div id="login-input">
@@ -26,6 +26,7 @@
       >
     </p>
     <button id="button-std">Log In</button>
+    <p>{{.Error}}</p>
   </div>
 </form>
 {{end}}

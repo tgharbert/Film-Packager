@@ -70,19 +70,19 @@ func HomePage(c *fiber.Ctx) error {
 	return c.Render("index", data)
 }
 
+// AUTH ROUTES
 func PostLoginSubmit(c *fiber.Ctx) error {
 	email := strings.TrimSpace(c.FormValue("email"))
 	password := strings.TrimSpace(c.FormValue("password"))
+	var mess Message
 	if email == "" || password == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Email or password cannot be empty")
+		mess.Error = "Error: both fields must be filled!"
+		return c.Render("login-formHTML", mess)
 	}
 	user, err := db.GetUser(db.DBPool, email, password)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving user")
-	}
-	if user.Password == "" {
-		mess := Message{Error: "Incorrect Password"}
-		return c.Render("login-error", mess) // Fiber automatically handles the template rendering
+		mess.Error = "Error: cannot find user, please verify correct login!"
+		return c.Render("login-formHTML", mess)
 	}
 	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email, user.Role)
 	if err != nil {
@@ -117,7 +117,6 @@ func PostCreateAccount(c *fiber.Ctx) error {
 	email := strings.Trim(c.FormValue("email"), " ")
 	password := strings.Trim(c.FormValue("password"), " ")
 	secondPassword := strings.Trim(c.FormValue("secondPassword"), " ")
-	// concat the first and last names
 	username := fmt.Sprintf("%s %s", firstName, lastName)
 	var mess Message
 	if firstName == "" || lastName == "" {
@@ -199,7 +198,20 @@ func CreateProject(c *fiber.Ctx) error {
 	return c.Render("project-list-item", org)
 }
 
+
+// SHOULD RENDER THE HTML BASED ON ROLE??
+// - USERS SHOULD SEE THE INVITED BUT NOT BE ABLE TO SEARCH MEMBERS UNLESS PROD, DIR, OR OWNER
 func GetProject(c *fiber.Ctx) error {
+
+	// CAN'T DO THIS BC USER ROLE IS ALWAYS READONLY... GET THE ROLE FROM THE PARAMS DOESN'T WORK EITHER
+	// ISSUE IS THAT IF THE USER CLICKS ON THEIR LESSER ROLE THEN THEY LOSE PRIVAGLEDGES
+	// NEED TO HAVE THEIR ROLES LISTED RATHER THAN THE PROJECT MULTIPLE TIMES
+	// THEN GET THEIR HIGHEST ROLE?
+
+	// user, err := access.GetUserDataFromCookie(c)
+	// if err != nil {
+	// 	return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
+	// }
 	id := c.Params("id")
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -209,13 +221,15 @@ func GetProject(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
 	}
+	// here is where you get the user role??
+	// fmt.Println("user: ", user)
+
 	return c.Render("project-page", projectPageData)
 }
 
-
+// JOINING AND INVITING TO ORGS WORK
 func SearchUsers(c *fiber.Ctx) error {
 	username := c.FormValue("username")
-	// MODIFY - GET USER ID FROM COOKIE?
 	id := c.Params("id")
 	users, err := db.SearchForUsers(db.DBPool, username)
 	if err != nil {
@@ -276,7 +290,6 @@ func JoinOrg(c *fiber.Ctx) error {
 }
 
 func DeleteOrg(c *fiber.Ctx) error {
-	// getting the user info from the cookie - should be done everywhere?
 	userInfo, err := access.GetUserDataFromCookie(c)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
