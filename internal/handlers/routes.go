@@ -64,8 +64,10 @@ func HomePage(c *fiber.Ctx) error {
 	}
 	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
 	if err != nil {
+		fmt.Println(err)
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
+	// fmt.Println(orgs.Pending.Roles[0])
 	data := HomeData{User: userInfo, Orgs: orgs,}
 	return c.Render("index", data)
 }

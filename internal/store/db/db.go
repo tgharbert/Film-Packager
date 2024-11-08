@@ -34,7 +34,7 @@ type ProjectUser struct {
 type Org struct {
 	Id int
 	Name string
-	Role string
+	Roles []string
 	InviteStatus string
 }
 
@@ -192,7 +192,19 @@ func GetUser(pool *pgxpool.Pool, email string, password string) (User, error) {
 
 // MODIFY THIS QUERY TO RETURN SELECTPROJECT STRUCT TO SEPERATE MEMBERSHIPS - INCLUDE ACCESS TIERS
 func GetProjects(pool *pgxpool.Pool, userId int) (SelectProject, error) {
-	query := `SELECT o.id, o.name, m.access_tier, m.invite_status FROM organizations o JOIN memberships m ON o.id = m.organization_id WHERE m.user_id = $1;`
+	query := `SELECT
+    o.id AS organization_id,
+    o.name AS organization_name,
+    array_agg(m.access_tier) AS roles,  -- Aggregate roles into an array
+    m.invite_status
+FROM
+    organizations o
+JOIN
+    memberships m ON o.id = m.organization_id
+WHERE
+    m.user_id = $1
+GROUP BY
+    o.id, o.name, m.invite_status;`
 	var selectProject SelectProject
 	rows, err := pool.Query(context.Background(), query, userId)
 	if err != nil {
@@ -201,7 +213,8 @@ func GetProjects(pool *pgxpool.Pool, userId int) (SelectProject, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var org Org
-		err := rows.Scan(&org.Id, &org.Name, &org.Role, &org.InviteStatus)
+		err := rows.Scan(&org.Id, &org.Name, &org.Roles, &org.InviteStatus)
+
 		if err != nil {
 			return selectProject, fmt.Errorf("error scanning row %v", err)
 		}
@@ -214,34 +227,38 @@ func GetProjects(pool *pgxpool.Pool, userId int) (SelectProject, error) {
 	if rows.Err() != nil {
 		return selectProject, rows.Err()
 	}
+	// actually what might be best here is to iterate through the projects and consolodate the roles?
+	fmt.Println("select project data in get projects: ", selectProject)
 	return selectProject, nil
 }
 
 // MODIFY THIS FUNCTION TO CHECK IF THERE ARE OTHER PROJECTS WITH THIS NAME? OR NAME AND OWNER?
 func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (Org, error) {
 	// Begin transaction
-	tx, err := pool.Begin(context.Background())
-	if err != nil {
-		return Org{}, fmt.Errorf("could not begin transaction: %v", err)
-	}
+	// tx, err := pool.Begin(context.Background())
+	// if err != nil {
+	// 	return Org{}, fmt.Errorf("could not begin transaction: %v", err)
+	// }
 	// Rollback if any step fails
-	defer tx.Rollback(context.Background())
+	// defer tx.Rollback(context.Background())
+	fmt.Println("hit the create")
 	orgQuery := `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
 	var org Org
-	err = tx.QueryRow(context.Background(), orgQuery, name).Scan(&org.Id, &org.Name)
+	// var roles []string
+	err := pool.QueryRow(context.Background(), orgQuery, name).Scan(&org.Id, &org.Name)
 	if err != nil {
 		return org, fmt.Errorf("failed to insert into organizations: %v", err)
 	}
 	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier, invite_status) VALUES ($1, $2, $3, $4) RETURNING access_tier`
-	err = tx.QueryRow(context.Background(), memberQuery, ownerId, org.Id, "owner", "accepted").Scan(&org.Role)
+	err = pool.QueryRow(context.Background(), memberQuery, ownerId, org.Id, "owner", "accepted").Scan(&org.Roles)
 	if err != nil {
 		return org, fmt.Errorf("failed to insert into memberships: %v", err)
 	}
 	// Commit transaction
-	err = tx.Commit(context.Background())
-	if err != nil {
-		return org, fmt.Errorf("failed to commit transaction: %v", err)
-	}
+	// err = pool.Commit(context.Background())
+	// if err != nil {
+	// 	return org, fmt.Errorf("failed to commit transaction: %v", err)
+	// }
 	return org, nil
 }
 

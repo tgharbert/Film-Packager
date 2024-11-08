@@ -22,37 +22,40 @@
       hx-swap="innerHTML"
     >
       <p id="project-title">
-        <b>{{.Name}}: </b> <span id="project-role">{{.Role}}</span>
+        <b>{{.Name}}: </b>
+        {{range .Roles}}
+        <span id="project-role">{{.}}</span>
       </p>
-      {{if eq .Role "owner"}}
+      {{if eq . "owner"}}
       <button
         id="button-std"
-        hx-get="/delete-project/{{.Id}}/"
+        hx-get="/delete-project/{{$.Id}}/"
         hx-swap="innerHTML"
         hx-target="#project-list"
       >
         Delete Org
       </button>
-      {{end}}
+      {{end}} {{end}}
     </li>
     {{end}}{{end}}
   </ul>
   <h2 id="sub-title">Projects Invites:</h2>
   <ul id="pending-list">
-    {{ range .Orgs.Pending }}
+    {{ range .Orgs.Pending }} {{ $org := . }}
     <li id="{{.Id}}" class="project-list-item">
       <p id="project-title">
         <b>{{.Name}}: </b>
       </p>
+      {{range .Roles}}
       <button
         id="button-std"
-        hx-post="/join-org/{{$.User.Id}}/{{.Id}}/{{.Role}}"
+        hx-post="/join-org/{{$.User.Id}}/{{$org.Id}}/{{.}}"
         hx-swap="innerHTML"
         hx-target="#project-list"
       >
-        Accept Invite as <b>{{.Role}}</b>
+        Accept Invite as <b> {{.}} </b>
       </button>
-      {{end}}
+      {{end}} {{end}}
     </li>
     {{end}}
   </ul>
