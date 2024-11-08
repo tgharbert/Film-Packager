@@ -64,7 +64,6 @@ type DocInfo struct {
 type ProjectPageData struct {
 	Project Project
 	Members []ProjectUser
-	// add invited field for users
 	Invited []ProjectUser
 	FoundUsers []User // users on search in sidebar are placed here
 }
@@ -74,27 +73,29 @@ type SelectProject struct {
 	Pending []Org
 }
 
+// written to order the roles based on preference -- optimize later?
+// all of these are no eval to true????
 func OrderRoles(rolesStr string) []string {
 	var orderedRoles []string
-	switch {
-	case strings.Contains(rolesStr, "owner"):
+	if strings.Contains(rolesStr, "owner"){
 		orderedRoles = append(orderedRoles, "owner")
-		fallthrough
-	case strings.Contains(rolesStr, "director"):
+	}
+	if strings.Contains(rolesStr, "director"){
 		orderedRoles = append(orderedRoles, "director")
-		fallthrough
-	case strings.Contains(rolesStr, "producer"):
+	}
+	if strings.Contains(rolesStr, "producer"){
 		orderedRoles = append(orderedRoles, "producer")
-		fallthrough
-	case strings.Contains(rolesStr, "writer"):
+	}
+	if strings.Contains(rolesStr, "writer"){
 		orderedRoles = append(orderedRoles, "writer")
-	case strings.Contains(rolesStr, "cinematographer"):
+	}
+	if strings.Contains(rolesStr, "cinematographer"){
 		orderedRoles = append(orderedRoles, "cinematographer")
-		fallthrough
-	case strings.Contains(rolesStr, "production designer"):
+	}
+	if strings.Contains(rolesStr, "production designer"){
 		orderedRoles = append(orderedRoles, "production designer")
-		fallthrough
-	case strings.Contains(rolesStr, "reader"):
+	}
+	if strings.Contains(rolesStr, "reader"){
 		orderedRoles = append(orderedRoles, "reader")
 	}
 	return orderedRoles
@@ -182,11 +183,6 @@ func GetUser(pool *pgxpool.Pool, email string, password string) (User, error) {
 		user.Password = ""
 		return user, fmt.Errorf("invalid password")
 	}
-	// if password != user.Password {
-	// 	fmt.Println("WRONG PASSWORD - ADD LOGIC")
-	// 	user.Email = "false"
-	// 	return user, err
-	// }
 	if rows.Err() != nil {
 		fmt.Println("Error after rows loop:", rows.Err())
 		return user, rows.Err()
@@ -249,9 +245,6 @@ func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (Org, error) {
 	return org, nil
 }
 
-
-// do this with multiple queries??
-// select all project data then select all memberships, then assign to value in user??
 func GetProjectPageData(pool *pgxpool.Pool, projectId int) (ProjectPageData, error) {
 	query := `WITH doc_types AS (
     SELECT
@@ -283,6 +276,7 @@ user_roles AS (
         array_agg(m.access_tier) AS roles,
         m.invite_status
     FROM memberships m
+    WHERE m.organization_id = $1
     GROUP BY m.user_id, m.organization_id, m.invite_status
 )
 SELECT
@@ -303,10 +297,9 @@ FROM organizations o
 LEFT JOIN user_roles ur ON o.id = ur.organization_id
 LEFT JOIN users u ON ur.user_id = u.id
 LEFT JOIN doc_types d ON o.id = d.organization_id
-WHERE o.id = $1
+WHERE o.id = $1  -- Ensure we only fetch data for the given organization
 ORDER BY o.id;
 `
-
 	rows, err := pool.Query(context.Background(), query, projectId)
 	if err != nil {
 		return ProjectPageData{}, err
@@ -342,8 +335,6 @@ ORDER BY o.id;
 		if err != nil {
 			return projectData, fmt.Errorf("error scanning row: %w", err)
 		}
-
-		// Convert pgtype.TextArray to a slice of strings
 		roles := []string{}
 		if userRoles.Valid {
 			rolesStr := userRoles.String
@@ -353,9 +344,6 @@ ORDER BY o.id;
 			}
 		}
 		roles = OrderRoles(roles[0])
-		fmt.Println("HERE are the ORDERED? roles: ", roles)
-
-
 		if inviteStatus.String == "pending" {
 			projectData.Invited = append(projectData.Invited, ProjectUser{
 				Id:    int(userId.Int32),  // Convert sql.NullInt32 to int
@@ -366,7 +354,7 @@ ORDER BY o.id;
 			})
 		}
 
-		if userName.Valid && userEmail.Valid {
+		if inviteStatus.String == "accepted" {
 			// Add members
 			projectData.Members = append(projectData.Members, ProjectUser{
 				Id:    int(userId.Int32),  // Convert sql.NullInt32 to int
@@ -388,7 +376,6 @@ ORDER BY o.id;
 			}
 		}
 	}
-
 	// Assign each document type to the project struct
 	projectData.Project.Script = projectMap["Script"]
 	projectData.Project.Logline = projectMap["Logline"]

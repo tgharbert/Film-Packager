@@ -200,18 +200,9 @@ func CreateProject(c *fiber.Ctx) error {
 
 
 // SHOULD RENDER THE HTML BASED ON ROLE??
-// - USERS SHOULD SEE THE INVITED BUT NOT BE ABLE TO SEARCH MEMBERS UNLESS PROD, DIR, OR OWNER
+// USERS SHOULD SEE THE INVITED BUT NOT BE ABLE TO SEARCH MEMBERS UNLESS PROD, DIR, OR OWNER
+// how to do this??
 func GetProject(c *fiber.Ctx) error {
-
-	// CAN'T DO THIS BC USER ROLE IS ALWAYS READONLY... GET THE ROLE FROM THE PARAMS DOESN'T WORK EITHER
-	// ISSUE IS THAT IF THE USER CLICKS ON THEIR LESSER ROLE THEN THEY LOSE PRIVAGLEDGES
-	// NEED TO HAVE THEIR ROLES LISTED RATHER THAN THE PROJECT MULTIPLE TIMES
-	// THEN GET THEIR HIGHEST ROLE?
-
-	// user, err := access.GetUserDataFromCookie(c)
-	// if err != nil {
-	// 	return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-	// }
 	id := c.Params("id")
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -221,14 +212,6 @@ func GetProject(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
 	}
-	// here is where you get the user role??
-	// fmt.Println("user: ", user)
-
-	for _, member := range projectPageData.Members {
-    fmt.Println(member.Name, member.Roles)
-	}
-
-	fmt.Println("here: ", projectPageData.Members)
 	return c.Render("project-page", projectPageData)
 }
 

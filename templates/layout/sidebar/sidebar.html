@@ -5,8 +5,8 @@
     <ul>
       {{range .Members}}
       <li id="{{.Id}}">
-        {{.Name}} {{range .Roles}}
-        <span>{{.}}</span>
+        <b>{{.Name}}</b> {{range .Roles}}
+        <div>{{.}}</div>
         {{end}}
       </li>
       {{end}}
