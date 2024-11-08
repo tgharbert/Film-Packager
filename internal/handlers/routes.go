@@ -224,6 +224,11 @@ func GetProject(c *fiber.Ctx) error {
 	// here is where you get the user role??
 	// fmt.Println("user: ", user)
 
+	for _, member := range projectPageData.Members {
+    fmt.Println(member.Name, member.Roles)
+	}
+
+	fmt.Println("here: ", projectPageData.Members)
 	return c.Render("project-page", projectPageData)
 }
 

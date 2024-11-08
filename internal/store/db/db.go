@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,7 +17,16 @@ type User struct {
 	Id int
 	Name string
 	Email string
-	Role string
+	Role string // I'm not really using this at the moment. only writing "readonly"
+	Password string
+	InviteStatus string
+}
+
+type ProjectUser struct {
+	Id int
+	Name string
+	Email string
+	Roles []string
 	Password string
 	InviteStatus string
 }
@@ -53,15 +63,41 @@ type DocInfo struct {
 
 type ProjectPageData struct {
 	Project Project
-	Members []User
+	Members []ProjectUser
 	// add invited field for users
-	Invited []User
+	Invited []ProjectUser
 	FoundUsers []User // users on search in sidebar are placed here
 }
 
 type SelectProject struct {
 	Memberships []Org
 	Pending []Org
+}
+
+func OrderRoles(rolesStr string) []string {
+	var orderedRoles []string
+	switch {
+	case strings.Contains(rolesStr, "owner"):
+		orderedRoles = append(orderedRoles, "owner")
+		fallthrough
+	case strings.Contains(rolesStr, "director"):
+		orderedRoles = append(orderedRoles, "director")
+		fallthrough
+	case strings.Contains(rolesStr, "producer"):
+		orderedRoles = append(orderedRoles, "producer")
+		fallthrough
+	case strings.Contains(rolesStr, "writer"):
+		orderedRoles = append(orderedRoles, "writer")
+	case strings.Contains(rolesStr, "cinematographer"):
+		orderedRoles = append(orderedRoles, "cinematographer")
+		fallthrough
+	case strings.Contains(rolesStr, "production designer"):
+		orderedRoles = append(orderedRoles, "production designer")
+		fallthrough
+	case strings.Contains(rolesStr, "reader"):
+		orderedRoles = append(orderedRoles, "reader")
+	}
+	return orderedRoles
 }
 
 func CheckPasswordHash(hashedPassword string, password string) error {
@@ -213,6 +249,9 @@ func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (Org, error) {
 	return org, nil
 }
 
+
+// do this with multiple queries??
+// select all project data then select all memberships, then assign to value in user??
 func GetProjectPageData(pool *pgxpool.Pool, projectId int) (ProjectPageData, error) {
 	query := `WITH doc_types AS (
     SELECT
@@ -236,6 +275,15 @@ func GetProjectPageData(pool *pgxpool.Pool, projectId int) (ProjectPageData, err
             ELSE NULL
         END AS doc_type
     FROM documents
+),
+user_roles AS (
+    SELECT
+        m.user_id,
+        m.organization_id,
+        array_agg(m.access_tier) AS roles,
+        m.invite_status
+    FROM memberships m
+    GROUP BY m.user_id, m.organization_id, m.invite_status
 )
 SELECT
     o.id AS project_id,
@@ -245,22 +293,22 @@ SELECT
     d.name AS doc_name,
     d.date AS doc_date,
     d.color AS doc_color,
-    m.user_id,
+    u.id AS user_id,
     u.name AS user_name,
     u.email AS user_email,
-		m.access_tier AS user_role,
-		m.invite_status AS user_invite_status,
-		d.doc_type
+    ur.roles AS user_roles,  -- Array of roles
+    ur.invite_status AS user_invite_status,
+    d.doc_type
 FROM organizations o
-LEFT JOIN memberships m ON o.id = m.organization_id
-LEFT JOIN users u ON m.user_id = u.id
+LEFT JOIN user_roles ur ON o.id = ur.organization_id
+LEFT JOIN users u ON ur.user_id = u.id
 LEFT JOIN doc_types d ON o.id = d.organization_id
-WHERE o.id = $1 -- assuming you're passing the organization ID as a parameter
+WHERE o.id = $1
 ORDER BY o.id;
-	`
+`
+
 	rows, err := pool.Query(context.Background(), query, projectId)
 	if err != nil {
-		fmt.Println("Here is the error!", err)
 		return ProjectPageData{}, err
 	}
 	defer rows.Close()
@@ -271,7 +319,7 @@ ORDER BY o.id;
 		var docName, userName, userEmail, docType sql.NullString
 		var docAddress, docColor sql.NullString
 		var userId, docAuthor sql.NullInt32
-		var userRole sql.NullString
+		var userRoles sql.NullString
 		var inviteStatus sql.NullString
 		// projectId int
 		var docDate sql.NullTime
@@ -287,31 +335,44 @@ ORDER BY o.id;
 			&userId,
 			&userName,
 			&userEmail,
-			&userRole,
+			&userRoles,
 			&inviteStatus,
 			&docType,
 		)
 		if err != nil {
-			return projectData, err
+			return projectData, fmt.Errorf("error scanning row: %w", err)
 		}
 
+		// Convert pgtype.TextArray to a slice of strings
+		roles := []string{}
+		if userRoles.Valid {
+			rolesStr := userRoles.String
+			rolesStr = strings.Trim(rolesStr, "{}")
+			if rolesStr != "" {
+				roles = strings.Split(rolesStr, ",")
+			}
+		}
+		roles = OrderRoles(roles[0])
+		fmt.Println("HERE are the ORDERED? roles: ", roles)
+
+
 		if inviteStatus.String == "pending" {
-			projectData.Invited = append(projectData.Invited, User{
+			projectData.Invited = append(projectData.Invited, ProjectUser{
 				Id:    int(userId.Int32),  // Convert sql.NullInt32 to int
 				Name:  userName.String,
 				Email: userEmail.String,
-				Role: userRole.String,
+				Roles: roles,
 				InviteStatus: inviteStatus.String,
 			})
 		}
 
 		if userName.Valid && userEmail.Valid {
 			// Add members
-			projectData.Members = append(projectData.Members, User{
+			projectData.Members = append(projectData.Members, ProjectUser{
 				Id:    int(userId.Int32),  // Convert sql.NullInt32 to int
 				Name:  userName.String,
 				Email: userEmail.String,
-				Role: userRole.String,
+				Roles: roles,
 				InviteStatus: inviteStatus.String,
 			})
 		}
