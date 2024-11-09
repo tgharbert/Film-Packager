@@ -182,7 +182,6 @@ func Logout(c *fiber.Ctx) error {
 }
 
 func CreateProject(c *fiber.Ctx) error {
-	// send the project list updated with new project data...
 	projectName := c.FormValue("project-name")
 	tokenString := c.Cookies("Authorization")
 	if tokenString == "" {
@@ -193,11 +192,18 @@ func CreateProject(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 	}
-	org, err := db.CreateProject(db.DBPool, projectName, userInfo.Id)
+	err = db.CreateProject(db.DBPool, projectName, userInfo.Id)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving org")
+		fmt.Println("error here", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("error creating org")
 	}
-	return c.Render("project-list-item", org)
+	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving all orgs")
+	}
+	return c.Render("selectOrgHTML" , fiber.Map{
+		"Orgs": orgs,
+	})
 }
 
 

@@ -169,13 +169,11 @@ func GetUser(pool *pgxpool.Pool, email string, password string) (User, error) {
 	}
 	defer rows.Close()
 	if !rows.Next() {
-		fmt.Println("No rows found for email:", email)
 		return user, fmt.Errorf("no user found with email: %s", email)
 	}
 	// var storedPassword string
 	err = rows.Scan(&user.Id, &user.Email, &user.Name, &user.Role, &user.Password)
 	if err != nil {
-		fmt.Println("Error scanning row:", err)
 		return user, fmt.Errorf("error scanning row: %v", err)
 	}
 	err = CheckPasswordHash(user.Password, password)
@@ -190,7 +188,6 @@ func GetUser(pool *pgxpool.Pool, email string, password string) (User, error) {
 	return user, nil
 }
 
-// MODIFY THIS QUERY TO RETURN SELECTPROJECT STRUCT TO SEPERATE MEMBERSHIPS - INCLUDE ACCESS TIERS
 func GetProjects(pool *pgxpool.Pool, userId int) (SelectProject, error) {
 	query := `SELECT
     o.id AS organization_id,
@@ -214,7 +211,6 @@ GROUP BY
 	for rows.Next() {
 		var org Org
 		err := rows.Scan(&org.Id, &org.Name, &org.Roles, &org.InviteStatus)
-
 		if err != nil {
 			return selectProject, fmt.Errorf("error scanning row %v", err)
 		}
@@ -227,39 +223,23 @@ GROUP BY
 	if rows.Err() != nil {
 		return selectProject, rows.Err()
 	}
-	// actually what might be best here is to iterate through the projects and consolodate the roles?
-	fmt.Println("select project data in get projects: ", selectProject)
 	return selectProject, nil
 }
 
 // MODIFY THIS FUNCTION TO CHECK IF THERE ARE OTHER PROJECTS WITH THIS NAME? OR NAME AND OWNER?
-func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (Org, error) {
-	// Begin transaction
-	// tx, err := pool.Begin(context.Background())
-	// if err != nil {
-	// 	return Org{}, fmt.Errorf("could not begin transaction: %v", err)
-	// }
-	// Rollback if any step fails
-	// defer tx.Rollback(context.Background())
-	fmt.Println("hit the create")
+func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (error) {
 	orgQuery := `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
 	var org Org
-	// var roles []string
 	err := pool.QueryRow(context.Background(), orgQuery, name).Scan(&org.Id, &org.Name)
 	if err != nil {
-		return org, fmt.Errorf("failed to insert into organizations: %v", err)
+		return fmt.Errorf("failed to insert into organizations: %v", err)
 	}
-	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier, invite_status) VALUES ($1, $2, $3, $4) RETURNING access_tier`
-	err = pool.QueryRow(context.Background(), memberQuery, ownerId, org.Id, "owner", "accepted").Scan(&org.Roles)
+	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier, invite_status) VALUES ($1, $2, $3, $4)`
+	_, err = pool.Exec(context.Background(), memberQuery, ownerId, org.Id, "owner", "accepted")
 	if err != nil {
-		return org, fmt.Errorf("failed to insert into memberships: %v", err)
+		return fmt.Errorf("failed to insert into memberships: %v", err)
 	}
-	// Commit transaction
-	// err = pool.Commit(context.Background())
-	// if err != nil {
-	// 	return org, fmt.Errorf("failed to commit transaction: %v", err)
-	// }
-	return org, nil
+	return nil
 }
 
 func GetProjectPageData(pool *pgxpool.Pool, projectId int) (ProjectPageData, error) {
@@ -372,7 +352,6 @@ ORDER BY o.id;
 		}
 
 		if inviteStatus.String == "accepted" {
-			// Add members
 			projectData.Members = append(projectData.Members, ProjectUser{
 				Id:    int(userId.Int32),  // Convert sql.NullInt32 to int
 				Name:  userName.String,

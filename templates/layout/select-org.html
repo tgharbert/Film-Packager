@@ -3,8 +3,8 @@
   <form
     id="create-project"
     hx-get="/create-project/"
-    hx-target="#project-list-items"
-    hx-swap="beforeend"
+    hx-target="#project-list"
+    hx-swap="innerHTML"
     hx-on::after-request="this.reset()"
   >
     <input type="text" placeholder="enter project title" name="project-name" />
@@ -14,28 +14,27 @@
   {{block "project-list" .}}
   <ul id="project-list-items">
     {{ range .Orgs.Memberships }} {{block "project-list-item" .}}
-    <li
-      id="{{.Id}}"
-      class="project-list-item"
-      hx-get="/get-project/{{.Id}}"
-      hx-target="#project-list"
-      hx-swap="innerHTML"
-    >
+    <li id="{{.Id}}" class="project-list-item">
       <p id="project-title">
-        <b>{{.Name}}: </b>
-        {{range .Roles}}
+        <b
+          hx-get="/get-project/{{.Id}}"
+          hx-target="#project-list"
+          hx-swap="innerHTML"
+          >{{.Name}}:
+        </b>
+        {{range .Roles}} {{if eq . "owner"}}
+        <button
+          id="button-std"
+          hx-get="/delete-project/{{$.Id}}/"
+          hx-swap="innerHTML"
+          hx-target="#project-list"
+        >
+          Delete Org
+        </button>
+        {{end}}
         <span id="project-role">{{.}}</span>
       </p>
-      {{if eq . "owner"}}
-      <button
-        id="button-std"
-        hx-get="/delete-project/{{$.Id}}/"
-        hx-swap="innerHTML"
-        hx-target="#project-list"
-      >
-        Delete Org
-      </button>
-      {{end}} {{end}}
+      {{end}}
     </li>
     {{end}}{{end}}
   </ul>
