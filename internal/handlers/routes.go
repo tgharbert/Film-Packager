@@ -311,7 +311,7 @@ func DeleteOrg(c *fiber.Ctx) error {
 // PROJECT DOCUMENT WORK
 func getS3Session() *s3.S3 {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-west-2"), // replace with my region
+		Region: aws.String("us-east-2"), // replace with my region
 	})
 	if err != nil {
 		log.Fatalf("Failed to create session: %v", err)
@@ -335,14 +335,14 @@ func PostDocument(c *fiber.Ctx) error {
 
 	// intialize the s3 client
 	s3Client := getS3Session()
-	bucket := "bucket-name" // replace with my bucket name
+	bucket := "filmpackager" // replace with my bucket name
 	key := file.Filename
 
 	_, err = s3Client.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key: aws.String(key),
 		Body: f,
-		ACL: aws.String("public-read"),
+		// ACL: aws.String("public-read"),
 	})
 	if err != nil {
 		log.Printf("Error uploading file: %v", err)
