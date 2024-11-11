@@ -36,7 +36,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/create-project/", CreateProject)
 	app.Get("/get-project/:id", GetProject)
 	app.Get("/logout/", Logout)
-	app.Post("/file-submit/", PostDocument)
+	app.Post("/file-submit/:project_id", PostDocument)
 	app.Post("/search-users/:id", SearchUsers)
 	app.Post("/invite-member/:id/:project_id", InviteMember)
 	app.Post("/join-org/:id/:project_id/:role", JoinOrg)
@@ -320,13 +320,27 @@ func getS3Session() *s3.S3 {
 }
 
 func PostDocument(c *fiber.Ctx) error {
-	// hit the thang?
+	projectId := c.Params("project_id")
+	projIdInt, err := strconv.Atoi(projectId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+
+	tokenString := c.Cookies("Authorization")
+	if tokenString == "" {
+		return c.Redirect("/login/")
+	}
+	tokenString = tokenString[len("Bearer "):]
+	userInfo, err := access.GetUserNameFromToken(tokenString)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+	}
 	file, err := c.FormFile("file")
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error uploading file")
 	}
-	// FIX THIS LATER TO STORE THE VALUES
-	// fileType := c.FormValue("file-type")
+	// FIX THIS LATER TO STORE THE VALUES in database
+	fileType := c.FormValue("file-type")
 	f, err := file.Open()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open file")
@@ -335,18 +349,24 @@ func PostDocument(c *fiber.Ctx) error {
 
 	// intialize the s3 client
 	s3Client := getS3Session()
-	bucket := "filmpackager" // replace with my bucket name
+	bucket := "filmpackager" // name of bucket
 	key := file.Filename
 
 	_, err = s3Client.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key: aws.String(key),
 		Body: f,
-		// ACL: aws.String("public-read"),
 	})
 	if err != nil {
 		log.Printf("Error uploading file: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
+	}
+
+	publicURL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucket, key)
+
+	err = db.SaveDocument(db.DBPool, projIdInt, publicURL, userInfo.Id, fileType)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed save file info to db")
 	}
 	return nil
 }

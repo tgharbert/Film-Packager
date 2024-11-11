@@ -482,3 +482,12 @@ func DeleteOrg(pool *pgxpool.Pool, orgId int, userId int) (error) {
 	}
 	return nil
 }
+
+func SaveDocument(pool *pgxpool.Pool, orgId int, docAddress string, userId int, docType string) (error) {
+	query := `INSERT INTO documents (organization_id, user_id, address, name, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	_, err := pool.Query(context.Background(), query, orgId, userId, docAddress, docType, time.Now(), "black", "staged")
+	if err != nil {
+		return fmt.Errorf("failed to insert doc info into db: %v", err)
+	}
+	return nil
+}
