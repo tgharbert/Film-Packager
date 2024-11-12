@@ -73,8 +73,6 @@ type SelectProject struct {
 	Pending []Org
 }
 
-// written to order the roles based on preference -- optimize later?
-// all of these are no eval to true????
 func OrderRoles(rolesStr string) []string {
 	var orderedRoles []string
 	if strings.Contains(rolesStr, "owner"){
@@ -490,4 +488,25 @@ func SaveDocument(pool *pgxpool.Pool, orgId int, docAddress string, userId int, 
 		return fmt.Errorf("failed to insert doc info into db: %v", err)
 	}
 	return nil
+}
+
+func GetDocKeysForOrgDelete(pool *pgxpool.Pool, orgId int) ([]string, error) {
+	query := `SELECT address FROM documents where organization_id = $1`
+	var keys []string
+	rows, err := pool.Query(context.Background(), query, orgId)
+	if err != nil {
+		return keys, fmt.Errorf("error retrieving address from db: %v", err)
+	}
+	for rows.Next() {
+		var key string
+		err = rows.Scan(&key)
+		if err != nil {
+			return keys, fmt.Errorf("error scanning rows: %v", err)
+		}
+		keys = append(keys, key)
+	}
+	if rows.Err() != nil {
+		return keys, rows.Err()
+	}
+	return keys, nil
 }

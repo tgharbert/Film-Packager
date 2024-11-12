@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/mail"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -295,6 +297,23 @@ func DeleteOrg(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
+	keys, err := db.GetDocKeysForOrgDelete(db.DBPool, projIdInt)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving keys")
+	}
+	if len(keys) != 0 {
+		s3Client := getS3Session()
+		err = godotenv.Load()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error loading .env file")
+		}
+		bucket := os.Getenv("S3_BUCKET_NAME")
+		err = DeleteMultipleS3Objects(s3Client, bucket, keys)
+		if err != nil {
+			fmt.Println("error here: ", err)
+			return c.Status(fiber.StatusInternalServerError).SendString("error deleting file from bucket")
+		}
+	}
 	err = db.DeleteOrg(db.DBPool, projIdInt, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying the database")
@@ -308,15 +327,38 @@ func DeleteOrg(c *fiber.Ctx) error {
 	})
 }
 
-// PROJECT DOCUMENT WORK
 func getS3Session() *s3.S3 {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-2"), // replace with my region
+		Region: aws.String("us-east-2"),
 	})
 	if err != nil {
 		log.Fatalf("Failed to create session: %v", err)
 	}
 	return s3.New(sess)
+}
+
+func DeleteMultipleS3Objects(s3Client *s3.S3, bucket string, keys []string) error {
+	objectsToDelete := make([]*s3.ObjectIdentifier, len(keys))
+	for i, key := range keys {
+		objectsToDelete[i] = &s3.ObjectIdentifier{
+			Key: aws.String(key),
+		}
+	}
+	input := &s3.DeleteObjectsInput{
+		Bucket : aws.String(bucket),
+		Delete: &s3.Delete{
+			Objects: objectsToDelete,
+			Quiet: aws.Bool(true),
+		},
+	}
+	output, err := s3Client.DeleteObjects(input)
+	if err != nil {
+		return fmt.Errorf("failed to delete objects: %w", err)
+	}
+	for _, deleted := range output.Deleted {
+		log.Printf("Deleted object: %s", *deleted.Key)
+	}
+	return nil
 }
 
 func PostDocument(c *fiber.Ctx) error {
@@ -325,7 +367,6 @@ func PostDocument(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-
 	tokenString := c.Cookies("Authorization")
 	if tokenString == "" {
 		return c.Redirect("/login/")
@@ -336,10 +377,18 @@ func PostDocument(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 	}
 	file, err := c.FormFile("file")
+
+	// 25MB file limit -- matches what GMail allows as an attachment
+	// at the moment I'm not hitting this with larger files
+	if file.Size > 25 * 1024 * 1024 {
+		fmt.Println("hit the test limiter")
+		// MODIFY to send HTML ERROR
+		return fmt.Errorf("file too large: %v", err)
+	}
+
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error uploading file")
 	}
-	// FIX THIS LATER TO STORE THE VALUES in database
 	fileType := c.FormValue("file-type")
 	f, err := file.Open()
 	if err != nil {
@@ -347,11 +396,15 @@ func PostDocument(c *fiber.Ctx) error {
 	}
 	defer f.Close()
 
-	// intialize the s3 client
 	s3Client := getS3Session()
-	bucket := "filmpackager" // name of bucket
+	err = godotenv.Load()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error loading .env file")
+	}
+	bucket := os.Getenv("S3_BUCKET_NAME")
 	key := file.Filename
 
+	// EXTRACT THE BELOW INTO A SEPARATE FUNC
 	_, err = s3Client.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key: aws.String(key),
@@ -361,12 +414,13 @@ func PostDocument(c *fiber.Ctx) error {
 		log.Printf("Error uploading file: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
 	}
-
-	publicURL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucket, key)
-
-	err = db.SaveDocument(db.DBPool, projIdInt, publicURL, userInfo.Id, fileType)
+	// publicURL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucket, key)
+	// Should this return anything for the HTML?
+	// also should I modify this query to limit the amount of documents that I'm storing
+	err = db.SaveDocument(db.DBPool, projIdInt, key, userInfo.Id, fileType)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed save file info to db")
 	}
+	// this will need to return the correct HTML with the data that I'm looking for
 	return nil
 }
