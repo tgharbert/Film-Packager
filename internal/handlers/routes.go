@@ -208,7 +208,6 @@ func CreateProject(c *fiber.Ctx) error {
 	})
 }
 
-
 // SHOULD RENDER THE HTML BASED ON ROLE??
 // USERS SHOULD SEE THE INVITED BUT NOT BE ABLE TO SEARCH MEMBERS UNLESS PROD, DIR, OR OWNER
 // how to do this??
@@ -379,7 +378,7 @@ func PostDocument(c *fiber.Ctx) error {
 	file, err := c.FormFile("file")
 
 	// 25MB file limit -- matches what GMail allows as an attachment
-	// at the moment I'm not hitting this with larger files
+	// at the moment I'm not hitting this with larger files...
 	if file.Size > 25 * 1024 * 1024 {
 		fmt.Println("hit the test limiter")
 		// MODIFY to send HTML ERROR

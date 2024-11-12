@@ -57,6 +57,7 @@ type DocInfo struct {
 	Id int
 	Name string
 	Date time.Time
+	Address string
 	Author int // user id of author??
 	Color string
 }
@@ -240,6 +241,8 @@ func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (error) {
 	return nil
 }
 
+
+// MODIFY - NEED TO ADDRESS NAMES TO BE MORE "CORRECT" - ADDRESS IS FILENAME - NAME IS TYPE, ETC
 func GetProjectPageData(pool *pgxpool.Pool, projectId int) (ProjectPageData, error) {
 	query := `WITH doc_types AS (
     SELECT
@@ -286,8 +289,7 @@ SELECT
     u.name AS user_name,
     u.email AS user_email,
     ur.roles AS user_roles,  -- Array of roles
-    ur.invite_status AS user_invite_status,
-    d.doc_type
+    ur.invite_status AS user_invite_status
 FROM organizations o
 LEFT JOIN user_roles ur ON o.id = ur.organization_id
 LEFT JOIN users u ON ur.user_id = u.id
@@ -304,7 +306,7 @@ ORDER BY o.id;
 	projectMap := make(map[string]DocInfo)
 
 	for rows.Next() {
-		var docName, userName, userEmail, docType sql.NullString
+		var docName, userName, userEmail sql.NullString
 		var docAddress, docColor sql.NullString
 		var userId, docAuthor sql.NullInt32
 		var userRoles sql.NullString
@@ -325,7 +327,6 @@ ORDER BY o.id;
 			&userEmail,
 			&userRoles,
 			&inviteStatus,
-			&docType,
 		)
 		if err != nil {
 			return projectData, fmt.Errorf("error scanning row: %w", err)
@@ -359,11 +360,12 @@ ORDER BY o.id;
 			})
 		}
 
-		if docType.Valid && docName.Valid && docDate.Valid {
+		if docName.Valid && docDate.Valid {
 			// Map documents to the project by their docType
-			projectMap[docType.String] = DocInfo{
+			projectMap[docName.String] = DocInfo{
 				Id:     int(docAuthor.Int32),  // Convert sql.NullInt32 to int
-				Name:   docName.String,
+				Name:   docAddress.String,
+				Address: docAddress.String,
 				Date:   docDate.Time,
 				Author: int(docAuthor.Int32),  // Convert sql.NullInt32 to int
 				Color:  docColor.String,
@@ -371,17 +373,16 @@ ORDER BY o.id;
 		}
 	}
 	// Assign each document type to the project struct
-	projectData.Project.Script = projectMap["Script"]
-	projectData.Project.Logline = projectMap["Logline"]
-	projectData.Project.Synopsis = projectMap["Synopsis"]
-	projectData.Project.PitchDeck = projectMap["Pitch Deck"]
-	projectData.Project.Schedule = projectMap["Schedule"]
-	projectData.Project.Budget = projectMap["Budget"]
-	projectData.Project.DirectorStatement = projectMap["DirectorStatement"]
-	projectData.Project.Shotlist = projectMap["Shotlist"]
-	projectData.Project.Lookbook = projectMap["Lookbook"]
-	projectData.Project.Bios = projectMap["Bios"]
-
+	projectData.Project.Script = projectMap["script"]
+	projectData.Project.Logline = projectMap["logline"]
+	projectData.Project.Synopsis = projectMap["synopsis"]
+	projectData.Project.PitchDeck = projectMap["pitch deck"]
+	projectData.Project.Schedule = projectMap["schedule"]
+	projectData.Project.Budget = projectMap["budget"]
+	projectData.Project.DirectorStatement = projectMap["directorStatement"]
+	projectData.Project.Shotlist = projectMap["shotlist"]
+	projectData.Project.Lookbook = projectMap["lookbook"]
+	projectData.Project.Bios = projectMap["bios"]
 	if rows.Err() != nil {
 		return projectData, rows.Err()
 	}

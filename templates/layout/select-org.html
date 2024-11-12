@@ -7,7 +7,12 @@
     hx-swap="innerHTML"
     hx-on::after-request="this.reset()"
   >
-    <input type="text" placeholder="enter project title" name="project-name" />
+    <input
+      id="text-input-std"
+      type="text"
+      placeholder="enter project title"
+      name="project-name"
+    />
     <button id="button-std">Create Project</button>
   </form>
   <h2 id="sub-title">Projects that you're a member of:</h2>
