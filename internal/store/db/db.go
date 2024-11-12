@@ -248,21 +248,21 @@ func GetProjectPageData(pool *pgxpool.Pool, projectId int) (ProjectPageData, err
     SELECT
         organization_id,
         user_id,
-        name,
+        file_type,
         date,
         color,
-        address,
+        file_name,
         CASE
-            WHEN name = 'Script' THEN 'Script'
-            WHEN name = 'Logline' THEN 'Logline'
-            WHEN name = 'Synopsis' THEN 'Synopsis'
-            WHEN name = 'Pitch Deck' THEN 'Pitch Deck'
-            WHEN name = 'Schedule' THEN 'Schedule'
-            WHEN name = 'Budget' THEN 'Budget'
-            WHEN name = 'Director Statement' THEN 'DirectorStatement'
-            WHEN name = 'Shotlist' THEN 'Shotlist'
-            WHEN name = 'Lookbook' THEN 'Lookbook'
-            WHEN name = 'Bios' THEN 'Bios'
+            WHEN file_type = 'Script' THEN 'Script'
+            WHEN file_type = 'Logline' THEN 'Logline'
+            WHEN file_type = 'Synopsis' THEN 'Synopsis'
+            WHEN file_type = 'Pitch Deck' THEN 'Pitch Deck'
+            WHEN file_type = 'Schedule' THEN 'Schedule'
+            WHEN file_type = 'Budget' THEN 'Budget'
+            WHEN file_type = 'Director Statement' THEN 'DirectorStatement'
+            WHEN file_type = 'Shotlist' THEN 'Shotlist'
+            WHEN file_type = 'Lookbook' THEN 'Lookbook'
+            WHEN file_type = 'Bios' THEN 'Bios'
             ELSE NULL
         END AS doc_type
     FROM documents
@@ -280,9 +280,9 @@ user_roles AS (
 SELECT
     o.id AS project_id,
     o.name AS project_name,
-    d.address AS doc_address,
+    d.file_name AS doc_file_name,
     d.user_id AS doc_author,
-    d.name AS doc_name,
+    d.file_type AS doc_file_type,
     d.date AS doc_date,
     d.color AS doc_color,
     u.id AS user_id,
@@ -359,6 +359,9 @@ ORDER BY o.id;
 				InviteStatus: inviteStatus.String,
 			})
 		}
+		fmt.Println("docAddress: ", docAddress)
+		fmt.Println("docName: ", docName)
+		fmt.Println("docAddress: ", docAddress)
 
 		if docName.Valid && docDate.Valid {
 			// Map documents to the project by their docType
@@ -386,6 +389,7 @@ ORDER BY o.id;
 	if rows.Err() != nil {
 		return projectData, rows.Err()
 	}
+	fmt.Println("script data: ", projectData.Project.Lookbook)
 	return projectData, nil
 }
 
@@ -482,9 +486,9 @@ func DeleteOrg(pool *pgxpool.Pool, orgId int, userId int) (error) {
 	return nil
 }
 
-func SaveDocument(pool *pgxpool.Pool, orgId int, docAddress string, userId int, docType string) (error) {
-	query := `INSERT INTO documents (organization_id, user_id, address, name, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := pool.Query(context.Background(), query, orgId, userId, docAddress, docType, time.Now(), "black", "staged")
+func SaveDocument(pool *pgxpool.Pool, orgId int, fileName string, userId int, docType string) (error) {
+	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	_, err := pool.Query(context.Background(), query, orgId, userId, fileName, docType, time.Now(), "black", "staged")
 	if err != nil {
 		return fmt.Errorf("failed to insert doc info into db: %v", err)
 	}
@@ -492,7 +496,7 @@ func SaveDocument(pool *pgxpool.Pool, orgId int, docAddress string, userId int, 
 }
 
 func GetDocKeysForOrgDelete(pool *pgxpool.Pool, orgId int) ([]string, error) {
-	query := `SELECT address FROM documents where organization_id = $1`
+	query := `SELECT file_name FROM documents where organization_id = $1`
 	var keys []string
 	rows, err := pool.Query(context.Background(), query, orgId)
 	if err != nil {

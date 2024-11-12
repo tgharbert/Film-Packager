@@ -309,7 +309,6 @@ func DeleteOrg(c *fiber.Ctx) error {
 		bucket := os.Getenv("S3_BUCKET_NAME")
 		err = DeleteMultipleS3Objects(s3Client, bucket, keys)
 		if err != nil {
-			fmt.Println("error here: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting file from bucket")
 		}
 	}
