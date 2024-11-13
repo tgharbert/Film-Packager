@@ -41,7 +41,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Post("/file-submit/:project_id", PostDocument)
 	app.Post("/search-users/:id", SearchUsers)
 	app.Post("/invite-member/:id/:project_id", InviteMember)
-	app.Post("/join-org/:id/:project_id/:role", JoinOrg)
+	app.Post("/join-org/:project_id/:role", JoinOrg)
 	app.Get("/delete-project/:project_id/", DeleteOrg)
 }
 
@@ -66,10 +66,8 @@ func HomePage(c *fiber.Ctx) error {
 	}
 	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
 	if err != nil {
-		fmt.Println(err)
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
-	// fmt.Println(orgs.Pending.Roles[0])
 	data := HomeData{User: userInfo, Orgs: orgs,}
 	return c.Render("index", data)
 }
@@ -196,7 +194,6 @@ func CreateProject(c *fiber.Ctx) error {
 	}
 	err = db.CreateProject(db.DBPool, projectName, userInfo.Id)
 	if err != nil {
-		fmt.Println("error here", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("error creating org")
 	}
 	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
@@ -261,23 +258,26 @@ func InviteMember(c *fiber.Ctx) error {
 }
 
 func JoinOrg(c *fiber.Ctx) error {
-	// MODIFY - GET USER ID FROM COOKIE?
-	userId := c.Params("id")
+	tokenString := c.Cookies("Authorization")
+	if tokenString == "" {
+		return c.Redirect("/login/")
+	}
+	tokenString = tokenString[len("Bearer "):]
+	userInfo, err := access.GetUserNameFromToken(tokenString)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+	}
 	projectId := c.Params("project_id")
 	role := c.Params("role")
-	id, err := strconv.Atoi(userId)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-	}
 	projIdInt, err := strconv.Atoi(projectId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	err = db.JoinOrg(db.DBPool, projIdInt, id, role)
+	err = db.JoinOrg(db.DBPool, projIdInt, userInfo.Id, role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying database")
 	}
-	orgs, err := db.GetProjects(db.DBPool, id)
+	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
@@ -383,7 +383,6 @@ func PostDocument(c *fiber.Ctx) error {
 		// MODIFY to send HTML ERROR
 		return fmt.Errorf("file too large: %v", err)
 	}
-
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error uploading file")
 	}

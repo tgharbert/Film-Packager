@@ -20,25 +20,26 @@
   <ul id="project-list-items">
     {{ range .Orgs.Memberships }} {{block "project-list-item" .}}
     <li id="{{.Id}}" class="project-list-item">
-      <p id="project-title">
-        <b
-          hx-get="/get-project/{{.Id}}"
-          hx-target="#project-list"
-          hx-swap="innerHTML"
-          >{{.Name}}:
-        </b>
-        {{range .Roles}} {{if eq . "owner"}}
-        <button
-          id="button-std"
-          hx-get="/delete-project/{{$.Id}}/"
-          hx-swap="innerHTML"
-          hx-target="#project-list"
-        >
-          Delete Org
-        </button>
-        {{end}}
+      <p
+        id="project-title"
+        hx-get="/get-project/{{.Id}}"
+        hx-target="#project-list"
+        hx-swap="innerHTML"
+      >
+        <b>{{.Name}}: </b>
+        {{range .Roles}}
         <span id="project-role">{{.}}</span>
       </p>
+      {{end}} {{$isOwner := false}} {{range .Roles}} {{ if eq . "owner"}}
+      {{$isOwner = true}} {{end}} {{end}} {{if $isOwner}}
+      <button
+        id="button-std"
+        hx-get="/delete-project/{{$.Id}}/"
+        hx-swap="innerHTML"
+        hx-target="#project-list"
+      >
+        Delete Org
+      </button>
       {{end}}
     </li>
     {{end}}{{end}}
@@ -53,7 +54,7 @@
       {{range .Roles}}
       <button
         id="button-std"
-        hx-post="/join-org/{{$.User.Id}}/{{$org.Id}}/{{.}}"
+        hx-post="/join-org/{{$org.Id}}/{{.}}"
         hx-swap="innerHTML"
         hx-target="#project-list"
       >

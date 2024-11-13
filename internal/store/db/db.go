@@ -210,18 +210,20 @@ GROUP BY
 	for rows.Next() {
 		var org Org
 		err := rows.Scan(&org.Id, &org.Name, &org.Roles, &org.InviteStatus)
+		roles := strings.Join(org.Roles, "") // ordering the roles by concating into single string
+		org.Roles = OrderRoles(roles)
 		if err != nil {
 			return selectProject, fmt.Errorf("error scanning row %v", err)
 		}
 		if org.InviteStatus == "pending" {
 			selectProject.Pending = append(selectProject.Pending, org)
-		} else if org.InviteStatus == "accepted" {
-			selectProject.Memberships = append(selectProject.Memberships, org)
+			} else if org.InviteStatus == "accepted" {
+				selectProject.Memberships = append(selectProject.Memberships, org)
+			}
 		}
-	}
-	if rows.Err() != nil {
-		return selectProject, rows.Err()
-	}
+		if rows.Err() != nil {
+			return selectProject, rows.Err()
+		}
 	return selectProject, nil
 }
 
@@ -240,7 +242,6 @@ func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (error) {
 	}
 	return nil
 }
-
 
 // MODIFY - NEED TO ADDRESS NAMES TO BE MORE "CORRECT" - ADDRESS IS FILENAME - NAME IS TYPE, ETC
 func GetProjectPageData(pool *pgxpool.Pool, projectId int) (ProjectPageData, error) {
@@ -359,10 +360,6 @@ ORDER BY o.id;
 				InviteStatus: inviteStatus.String,
 			})
 		}
-		fmt.Println("docAddress: ", docAddress)
-		fmt.Println("docName: ", docName)
-		fmt.Println("docAddress: ", docAddress)
-
 		if docName.Valid && docDate.Valid {
 			// Map documents to the project by their docType
 			projectMap[docName.String] = DocInfo{
@@ -389,7 +386,6 @@ ORDER BY o.id;
 	if rows.Err() != nil {
 		return projectData, rows.Err()
 	}
-	fmt.Println("script data: ", projectData.Project.Lookbook)
 	return projectData, nil
 }
 
