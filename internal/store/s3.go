@@ -32,6 +32,17 @@ func WriteToS3(s3Client *s3.S3, bucket string, key string, f multipart.File) (er
 	return nil
 }
 
+func DeleteS3Object (s3Client *s3.S3, bucket string, key string) error {
+	_, err := s3Client.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(bucket),
+		Key: aws.String(key),
+	})
+	if err != nil {
+		return fmt.Errorf("error deleting file from s3: %v", err)
+	}
+	return nil
+}
+
 func DeleteMultipleS3Objects(s3Client *s3.S3, bucket string, keys []string) error {
 	objectsToDelete := make([]*s3.ObjectIdentifier, len(keys))
 	for i, key := range keys {

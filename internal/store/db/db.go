@@ -486,16 +486,6 @@ func DeleteOrg(pool *pgxpool.Pool, orgId int) (error) {
 
 func SaveDocument(pool *pgxpool.Pool, orgId int, fileName string, userId int, fileType string) (error) {
 	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-// 	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status)
-// VALUES ($1, $2, $3, $4, $5, $6, $7)
-// ON CONFLICT (organization_id, file_type)
-// WHERE status = 'staged'
-// DO UPDATE SET
-//     user_id = EXCLUDED.user_id,
-//     file_name = EXCLUDED.file_name,
-//     date = EXCLUDED.date,
-//     color = EXCLUDED.color,
-//     status = EXCLUDED.status;`
 	_, err := pool.Query(context.Background(), query, orgId, userId, fileName, fileType, time.Now(), "black", "staged")
 	if err != nil {
 		return fmt.Errorf("failed to insert doc info into db: %v", err)
@@ -509,7 +499,6 @@ func CheckForStagedDoc(pool *pgxpool.Pool, orgId int, fileType string) (string, 
 	err := pool.QueryRow(context.Background(), checkStagedQuery, orgId, fileType).Scan(&fileName)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			fmt.Println("No staged doc found")
 			return "", nil
 		}
 		return "", fmt.Errorf("failed to return file name while checking for existing staged document: %v", err)
@@ -536,4 +525,23 @@ func GetDocKeysForOrgDelete(pool *pgxpool.Pool, orgId int) ([]string, error) {
 		return keys, rows.Err()
 	}
 	return keys, nil
+}
+
+// does this need to be a seperate query?
+func OverWriteDoc(pool *pgxpool.Pool, orgId int, fileName string, userId int, fileType string) (error){
+	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (organization_id, file_type)
+WHERE status = 'staged'
+DO UPDATE SET
+    user_id = EXCLUDED.user_id,
+    file_name = EXCLUDED.file_name,
+    date = EXCLUDED.date,
+    color = EXCLUDED.color,
+    status = EXCLUDED.status;`
+		_, err := pool.Query(context.Background(), query, orgId, userId, fileName, fileType, time.Now(), "black", "staged")
+	if err != nil {
+		return fmt.Errorf("failed to insert doc info into db: %v", err)
+	}
+	return nil
 }

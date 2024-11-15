@@ -5,7 +5,6 @@ import (
 	s3Conn "filmPackager/internal/store"
 	"filmPackager/internal/store/db"
 	"fmt"
-	"log"
 	"net/mail"
 	"os"
 	"strconv"
@@ -382,8 +381,18 @@ func PostDocument(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed save file info to db")
 		}
 	} else {
-		// delete the old file and then write the new one?
-		log.Printf("Found staged document: %s", oldFile)
+		err := s3Conn.DeleteS3Object(s3Client, bucket, oldFile)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete s3 file")
+		}
+		err = s3Conn.WriteToS3(s3Client, bucket, key, f)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
+		}
+		err = db.OverWriteDoc(db.DBPool, projIdInt, key, userInfo.Id, fileType)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to update doc in db")
+		}
 	}
 	// also should I modify this query to limit the amount of documents that I'm storing
 	// this will need to return the correct HTML with the data that I'm looking for
