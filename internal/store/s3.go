@@ -1,4 +1,4 @@
-package s3Conn
+package s3
 
 import (
 	"fmt"

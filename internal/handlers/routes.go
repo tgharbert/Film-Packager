@@ -2,7 +2,7 @@ package routes
 
 import (
 	access "filmPackager/internal/auth"
-	s3Conn "filmPackager/internal/store"
+	s3 "filmPackager/internal/store"
 	"filmPackager/internal/store/db"
 	"fmt"
 	"net/mail"
@@ -213,6 +213,7 @@ func GetProject(c *fiber.Ctx) error {
 	}
 	projectPageData, err := db.GetProjectPageData(db.DBPool, idInt)
 	if err != nil {
+		fmt.Println("error here: ", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
 	}
 	return c.Render("project-page", projectPageData)
@@ -298,13 +299,13 @@ func DeleteOrg(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving keys")
 	}
 	if len(keys) != 0 {
-		s3Client := s3Conn.GetS3Session()
+		s3Client := s3.GetS3Session()
 		err = godotenv.Load()
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error loading .env file")
 		}
 		bucket := os.Getenv("S3_BUCKET_NAME")
-		err = s3Conn.DeleteMultipleS3Objects(s3Client, bucket, keys)
+		err = s3.DeleteMultipleS3Objects(s3Client, bucket, keys)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting file from bucket")
 		}
@@ -360,7 +361,7 @@ func PostDocument(c *fiber.Ctx) error {
 	}
 	defer f.Close()
 
-	s3Client := s3Conn.GetS3Session()
+	s3Client := s3.GetS3Session()
 	err = godotenv.Load()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error loading .env file")
@@ -372,7 +373,7 @@ func PostDocument(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error checking for staged doc")
 	} else if oldFile == "" {
-		err = s3Conn.WriteToS3(s3Client, bucket, key, f)
+		err = s3.WriteToS3(s3Client, bucket, key, f)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
 		}
@@ -381,11 +382,11 @@ func PostDocument(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed save file info to db")
 		}
 	} else {
-		err := s3Conn.DeleteS3Object(s3Client, bucket, oldFile)
+		err := s3.DeleteS3Object(s3Client, bucket, oldFile)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete s3 file")
 		}
-		err = s3Conn.WriteToS3(s3Client, bucket, key, f)
+		err = s3.WriteToS3(s3Client, bucket, key, f)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
 		}

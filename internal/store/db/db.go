@@ -70,7 +70,7 @@ type ProjectPageData struct {
 	Invited []ProjectUser
 	FoundUsers []User // users on search in sidebar are placed here
 	// need to handle staged docs...
-	// Staged []DocInfo
+	Staged []DocInfo
 }
 
 type SelectProject struct {
@@ -254,6 +254,7 @@ func GetProjectPageData(pool *pgxpool.Pool, projectId int) (ProjectPageData, err
         file_type,
         date,
         color,
+				status,
         file_name,
         CASE
             WHEN file_type = 'Script' THEN 'Script'
@@ -286,6 +287,7 @@ SELECT
     d.file_name AS doc_file_name,
     d.user_id AS doc_author,
     d.file_type AS doc_file_type,
+		d.status AS doc_status,
     d.date AS doc_date,
     d.color AS doc_color,
     u.id AS user_id,
@@ -310,7 +312,7 @@ ORDER BY o.id;
 
 	for rows.Next() {
 		var docName, userName, userEmail sql.NullString
-		var docAddress, docColor sql.NullString
+		var docAddress, docStatus, docColor sql.NullString
 		var userId, docAuthor sql.NullInt32
 		var userRoles sql.NullString
 		var inviteStatus sql.NullString
@@ -323,6 +325,7 @@ ORDER BY o.id;
 			&docAddress,
 			&docAuthor,
 			&docName,
+			&docStatus,
 			&docDate,
 			&docColor,
 			&userId,
@@ -353,23 +356,33 @@ ORDER BY o.id;
 			})
 		}
 
+		doc := &DocInfo{
+			Name: docName.String,
+			Date: docDate.Time,
+			Address: docAddress.String,
+			Author: int(docAuthor.Int32),
+			Color: docColor.String,
+		}
+		if docStatus.String == "staged" {
+			projectData.Staged = append(projectData.Staged, *doc)
+		}
 		if inviteStatus.String == "accepted" {
 			projectData.Members = append(projectData.Members, ProjectUser{
-				Id:    int(userId.Int32),  // Convert sql.NullInt32 to int
+				Id:    int(userId.Int32),
 				Name:  userName.String,
 				Email: userEmail.String,
 				Roles: roles,
 				InviteStatus: inviteStatus.String,
 			})
 		}
-		if docName.Valid && docDate.Valid {
+		if docName.Valid && docDate.Valid && docStatus.String == "locked" {
 			// Map documents to the project by their docType
 			projectMap[docName.String] = DocInfo{
-				Id:     int(docAuthor.Int32),  // Convert sql.NullInt32 to int
+				Id:     int(docAuthor.Int32),
 				Name:   docAddress.String,
 				Address: docAddress.String,
 				Date:   docDate.Time,
-				Author: int(docAuthor.Int32),  // Convert sql.NullInt32 to int
+				Author: int(docAuthor.Int32),
 				Color:  docColor.String,
 			}
 		}
@@ -388,6 +401,8 @@ ORDER BY o.id;
 	if rows.Err() != nil {
 		return projectData, rows.Err()
 	}
+	fmt.Println("staged: ", projectData.Staged)
+	fmt.Println("script: ", projectData.Project.Script)
 	return projectData, nil
 }
 
