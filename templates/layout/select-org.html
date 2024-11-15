@@ -28,7 +28,7 @@
       >
         <b>{{.Name}}: </b>
         {{range .Roles}}
-        <span id="project-role">{{.}}</span>
+        <p id="project-role">{{.}}</p>
       </p>
       {{end}} {{$isOwner := false}} {{range .Roles}} {{ if eq . "owner"}}
       {{$isOwner = true}} {{end}} {{end}} {{if $isOwner}}

@@ -2,6 +2,7 @@ package routes
 
 import (
 	access "filmPackager/internal/auth"
+	s3Conn "filmPackager/internal/store"
 	"filmPackager/internal/store/db"
 	"fmt"
 	"log"
@@ -11,9 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 
@@ -301,18 +299,18 @@ func DeleteOrg(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving keys")
 	}
 	if len(keys) != 0 {
-		s3Client := getS3Session()
+		s3Client := s3Conn.GetS3Session()
 		err = godotenv.Load()
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error loading .env file")
 		}
 		bucket := os.Getenv("S3_BUCKET_NAME")
-		err = DeleteMultipleS3Objects(s3Client, bucket, keys)
+		err = s3Conn.DeleteMultipleS3Objects(s3Client, bucket, keys)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting file from bucket")
 		}
 	}
-	err = db.DeleteOrg(db.DBPool, projIdInt, userInfo.Id)
+	err = db.DeleteOrg(db.DBPool, projIdInt)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying the database")
 	}
@@ -325,40 +323,10 @@ func DeleteOrg(c *fiber.Ctx) error {
 	})
 }
 
-func getS3Session() *s3.S3 {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-2"),
-	})
-	if err != nil {
-		log.Fatalf("Failed to create session: %v", err)
-	}
-	return s3.New(sess)
-}
-
-func DeleteMultipleS3Objects(s3Client *s3.S3, bucket string, keys []string) error {
-	objectsToDelete := make([]*s3.ObjectIdentifier, len(keys))
-	for i, key := range keys {
-		objectsToDelete[i] = &s3.ObjectIdentifier{
-			Key: aws.String(key),
-		}
-	}
-	input := &s3.DeleteObjectsInput{
-		Bucket : aws.String(bucket),
-		Delete: &s3.Delete{
-			Objects: objectsToDelete,
-			Quiet: aws.Bool(true),
-		},
-	}
-	output, err := s3Client.DeleteObjects(input)
-	if err != nil {
-		return fmt.Errorf("failed to delete objects: %w", err)
-	}
-	for _, deleted := range output.Deleted {
-		log.Printf("Deleted object: %s", *deleted.Key)
-	}
-	return nil
-}
-
+// what should happen here is that we query the database to check for an already staged file
+// if this filetype then if one exists delete it from the s3 and then delete it from the database
+	// then write the new data to the database - continue with update db method??
+// otherwise simply write the file to the s3 and then write to the db
 func PostDocument(c *fiber.Ctx) error {
 	projectId := c.Params("project_id")
 	projIdInt, err := strconv.Atoi(projectId)
@@ -393,7 +361,7 @@ func PostDocument(c *fiber.Ctx) error {
 	}
 	defer f.Close()
 
-	s3Client := getS3Session()
+	s3Client := s3Conn.GetS3Session()
 	err = godotenv.Load()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error loading .env file")
@@ -401,23 +369,23 @@ func PostDocument(c *fiber.Ctx) error {
 	bucket := os.Getenv("S3_BUCKET_NAME")
 	key := file.Filename
 
-	// EXTRACT THE BELOW INTO A SEPARATE FUNC
-	_, err = s3Client.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(bucket),
-		Key: aws.String(key),
-		Body: f,
-	})
+	oldFile, err := db.CheckForStagedDoc(db.DBPool, projIdInt, fileType)
 	if err != nil {
-		log.Printf("Error uploading file: %v", err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
+		return c.Status(fiber.StatusInternalServerError).SendString("Error checking for staged doc")
+	} else if oldFile == "" {
+		err = s3Conn.WriteToS3(s3Client, bucket, key, f)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
+		}
+		err = db.SaveDocument(db.DBPool, projIdInt, key, userInfo.Id, fileType)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed save file info to db")
+		}
+	} else {
+		// delete the old file and then write the new one?
+		log.Printf("Found staged document: %s", oldFile)
 	}
-	// publicURL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucket, key)
-	// Should this return anything for the HTML?
 	// also should I modify this query to limit the amount of documents that I'm storing
-	err = db.SaveDocument(db.DBPool, projIdInt, key, userInfo.Id, fileType)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed save file info to db")
-	}
 	// this will need to return the correct HTML with the data that I'm looking for
 	return nil
 }

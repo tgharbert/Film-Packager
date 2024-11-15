@@ -3,11 +3,13 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
@@ -67,6 +69,8 @@ type ProjectPageData struct {
 	Members []ProjectUser
 	Invited []ProjectUser
 	FoundUsers []User // users on search in sidebar are placed here
+	// need to handle staged docs...
+	// Staged []DocInfo
 }
 
 type SelectProject struct {
@@ -104,8 +108,7 @@ func CheckPasswordHash(hashedPassword string, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
-// globally available db pool to connect
-var DBPool *pgxpool.Pool
+var DBPool *pgxpool.Pool // globally available db pool for connections
 
 func PoolConnect() {
 	err := godotenv.Load()
@@ -170,7 +173,6 @@ func GetUser(pool *pgxpool.Pool, email string, password string) (User, error) {
 	if !rows.Next() {
 		return user, fmt.Errorf("no user found with email: %s", email)
 	}
-	// var storedPassword string
 	err = rows.Scan(&user.Id, &user.Email, &user.Name, &user.Role, &user.Password)
 	if err != nil {
 		return user, fmt.Errorf("error scanning row: %v", err)
@@ -473,7 +475,7 @@ func JoinOrg(pool *pgxpool.Pool, projectId int, memberId int, role string) (erro
 	return nil
 }
 
-func DeleteOrg(pool *pgxpool.Pool, orgId int, userId int) (error) {
+func DeleteOrg(pool *pgxpool.Pool, orgId int) (error) {
 	deleteProjectQuery := `DELETE FROM organizations WHERE id = $1;`
 	_, err := pool.Query(context.Background(), deleteProjectQuery, orgId)
 	if err != nil {
@@ -482,13 +484,37 @@ func DeleteOrg(pool *pgxpool.Pool, orgId int, userId int) (error) {
 	return nil
 }
 
-func SaveDocument(pool *pgxpool.Pool, orgId int, fileName string, userId int, docType string) (error) {
+func SaveDocument(pool *pgxpool.Pool, orgId int, fileName string, userId int, fileType string) (error) {
 	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := pool.Query(context.Background(), query, orgId, userId, fileName, docType, time.Now(), "black", "staged")
+// 	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status)
+// VALUES ($1, $2, $3, $4, $5, $6, $7)
+// ON CONFLICT (organization_id, file_type)
+// WHERE status = 'staged'
+// DO UPDATE SET
+//     user_id = EXCLUDED.user_id,
+//     file_name = EXCLUDED.file_name,
+//     date = EXCLUDED.date,
+//     color = EXCLUDED.color,
+//     status = EXCLUDED.status;`
+	_, err := pool.Query(context.Background(), query, orgId, userId, fileName, fileType, time.Now(), "black", "staged")
 	if err != nil {
 		return fmt.Errorf("failed to insert doc info into db: %v", err)
 	}
 	return nil
+}
+
+func CheckForStagedDoc(pool *pgxpool.Pool, orgId int, fileType string) (string, error) {
+	checkStagedQuery := `SELECT file_name FROM documents WHERE organization_id = $1 AND status = 'staged' AND file_type = $2`
+	var fileName string
+	err := pool.QueryRow(context.Background(), checkStagedQuery, orgId, fileType).Scan(&fileName)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			fmt.Println("No staged doc found")
+			return "", nil
+		}
+		return "", fmt.Errorf("failed to return file name while checking for existing staged document: %v", err)
+	}
+	return fileName, nil
 }
 
 func GetDocKeysForOrgDelete(pool *pgxpool.Pool, orgId int) ([]string, error) {

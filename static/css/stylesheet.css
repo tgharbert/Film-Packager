@@ -42,6 +42,11 @@ body {
   width: 100vh;
 }
 
+#project-role {
+  margin-left: -0.5rem;
+  margin-right: 0.5rem;
+}
+
 #doc-list {
   margin-left: 2rem;
   padding-left: 2rem;
