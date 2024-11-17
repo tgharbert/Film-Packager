@@ -1,0 +1,8 @@
+{{define "project-page"}}
+<div>
+  <div id="back-to-projects">
+    <button id="button-std" hx-get="/">Back to Projects</button>
+  </div>
+  <div id="main">{{template "sidebarHTML" .}} {{template "docListHTML" .}}</div>
+</div>
+{{end}}

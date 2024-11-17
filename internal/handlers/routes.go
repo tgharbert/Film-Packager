@@ -323,10 +323,7 @@ func DeleteOrg(c *fiber.Ctx) error {
 	})
 }
 
-// what should happen here is that we query the database to check for an already staged file
-// if this filetype then if one exists delete it from the s3 and then delete it from the database
-	// then write the new data to the database - continue with update db method??
-// otherwise simply write the file to the s3 and then write to the db
+// needs to get the list of staged documents??
 func PostDocument(c *fiber.Ctx) error {
 	projectId := c.Params("project_id")
 	projIdInt, err := strconv.Atoi(projectId)
@@ -370,6 +367,7 @@ func PostDocument(c *fiber.Ctx) error {
 	key := file.Filename
 
 	oldFile, err := db.CheckForStagedDoc(db.DBPool, projIdInt, fileType)
+
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error checking for staged doc")
 	} else if oldFile == "" {

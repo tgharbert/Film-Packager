@@ -43,6 +43,11 @@ type Org struct {
 type Project struct {
 	Id int
 	Name string
+	Locked ProjectDocs
+	Staged ProjectDocs
+}
+
+type ProjectDocs struct{
 	Script DocInfo
 	Logline DocInfo
 	Synopsis DocInfo
@@ -58,9 +63,9 @@ type Project struct {
 type DocInfo struct {
 	Id int
 	Name string
-	Date time.Time
+	Date string
 	Address string
-	Author int // user id of author??
+	Author int // user id -- should replace with user name
 	Color string
 }
 
@@ -69,8 +74,6 @@ type ProjectPageData struct {
 	Members []ProjectUser
 	Invited []ProjectUser
 	FoundUsers []User // users on search in sidebar are placed here
-	// need to handle staged docs...
-	Staged []DocInfo
 }
 
 type SelectProject struct {
@@ -355,17 +358,43 @@ ORDER BY o.id;
 				InviteStatus: inviteStatus.String,
 			})
 		}
+		formattedTime := docDate.Time.Format("01-02-06")
 
-		doc := &DocInfo{
-			Name: docName.String,
-			Date: docDate.Time,
+		projectMap[docName.String] = DocInfo{
+			Id:     int(docAuthor.Int32),
+			Name:   docAddress.String,
 			Address: docAddress.String,
+			Date:   formattedTime,
 			Author: int(docAuthor.Int32),
-			Color: docColor.String,
+			Color:  docColor.String,
 		}
+
+		// should be separate func?
 		if docStatus.String == "staged" {
-			projectData.Staged = append(projectData.Staged, *doc)
+			projectData.Project.Staged.Script = projectMap["script"]
+			projectData.Project.Staged.Logline = projectMap["logline"]
+			projectData.Project.Staged.Synopsis = projectMap["synopsis"]
+			projectData.Project.Staged.PitchDeck = projectMap["pitch deck"]
+			projectData.Project.Staged.Schedule = projectMap["schedule"]
+			projectData.Project.Staged.Budget = projectMap["budget"]
+			projectData.Project.Staged.DirectorStatement = projectMap["directorStatement"]
+			projectData.Project.Staged.Shotlist = projectMap["shotlist"]
+			projectData.Project.Staged.Lookbook = projectMap["lookbook"]
+			projectData.Project.Staged.Bios = projectMap["bios"]
+			// projectData.Project.Staged[docType.String] = append(projectData.Staged, *doc)
+		} else if docStatus.String == "locked" {
+			projectData.Project.Locked.Script = projectMap["script"]
+			projectData.Project.Locked.Logline = projectMap["logline"]
+			projectData.Project.Locked.Synopsis = projectMap["synopsis"]
+			projectData.Project.Locked.PitchDeck = projectMap["pitch deck"]
+			projectData.Project.Locked.Schedule = projectMap["schedule"]
+			projectData.Project.Locked.Budget = projectMap["budget"]
+			projectData.Project.Locked.DirectorStatement = projectMap["directorStatement"]
+			projectData.Project.Locked.Shotlist = projectMap["shotlist"]
+			projectData.Project.Locked.Lookbook = projectMap["lookbook"]
+			projectData.Project.Locked.Bios = projectMap["bios"]
 		}
+
 		if inviteStatus.String == "accepted" {
 			projectData.Members = append(projectData.Members, ProjectUser{
 				Id:    int(userId.Int32),
@@ -375,34 +404,10 @@ ORDER BY o.id;
 				InviteStatus: inviteStatus.String,
 			})
 		}
-		if docName.Valid && docDate.Valid && docStatus.String == "locked" {
-			// Map documents to the project by their docType
-			projectMap[docName.String] = DocInfo{
-				Id:     int(docAuthor.Int32),
-				Name:   docAddress.String,
-				Address: docAddress.String,
-				Date:   docDate.Time,
-				Author: int(docAuthor.Int32),
-				Color:  docColor.String,
-			}
-		}
 	}
-	// Assign each document type to the project struct
-	projectData.Project.Script = projectMap["script"]
-	projectData.Project.Logline = projectMap["logline"]
-	projectData.Project.Synopsis = projectMap["synopsis"]
-	projectData.Project.PitchDeck = projectMap["pitch deck"]
-	projectData.Project.Schedule = projectMap["schedule"]
-	projectData.Project.Budget = projectMap["budget"]
-	projectData.Project.DirectorStatement = projectMap["directorStatement"]
-	projectData.Project.Shotlist = projectMap["shotlist"]
-	projectData.Project.Lookbook = projectMap["lookbook"]
-	projectData.Project.Bios = projectMap["bios"]
 	if rows.Err() != nil {
 		return projectData, rows.Err()
 	}
-	fmt.Println("staged: ", projectData.Staged)
-	fmt.Println("script: ", projectData.Project.Script)
 	return projectData, nil
 }
 
@@ -542,19 +547,18 @@ func GetDocKeysForOrgDelete(pool *pgxpool.Pool, orgId int) ([]string, error) {
 	return keys, nil
 }
 
-// does this need to be a seperate query?
 func OverWriteDoc(pool *pgxpool.Pool, orgId int, fileName string, userId int, fileType string) (error){
 	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (organization_id, file_type)
 WHERE status = 'staged'
 DO UPDATE SET
-    user_id = EXCLUDED.user_id,
-    file_name = EXCLUDED.file_name,
-    date = EXCLUDED.date,
-    color = EXCLUDED.color,
-    status = EXCLUDED.status;`
-		_, err := pool.Query(context.Background(), query, orgId, userId, fileName, fileType, time.Now(), "black", "staged")
+	user_id = EXCLUDED.user_id,
+	file_name = EXCLUDED.file_name,
+	date = EXCLUDED.date,
+	color = EXCLUDED.color,
+	status = EXCLUDED.status;`
+	_, err := pool.Query(context.Background(), query, orgId, userId, fileName, fileType, time.Now(), "black", "staged")
 	if err != nil {
 		return fmt.Errorf("failed to insert doc info into db: %v", err)
 	}

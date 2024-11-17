@@ -1,0 +1,27 @@
+{{define "staged-listHTML"}}
+<h3 id="table-title">Staged Documents:</h3>
+<table id="table">
+  <tr>
+    <th id="table-header">Script</th>
+    <th id="table-header">Lookbook</th>
+    <th id="table-header">Shotlist</th>
+    <th id="table-header">Budget</th>
+    <th id="table-header">Schedule</th>
+    <th id="table-header">Synopsis</th>
+    <th id="table-header">Logline</th>
+    <th id="table-header">Story</th>
+  </tr>
+  <tr>
+    <td>{{.Project.Staged.Script.Date}}</td>
+    <td>{{.Project.Staged.Logline.Date}}</td>
+    <td>{{.Project.Staged.Synopsis.Date}}</td>
+    <td>{{.Project.Staged.PitchDeck.Date}}</td>
+    <td>{{.Project.Staged.Schedule.Date}}</td>
+    <td>{{.Project.Staged.Budget.Date}}</td>
+    <td>{{.Project.Staged.DirectorStatement.Date}}</td>
+    <td>{{.Project.Staged.Shotlist.Date}}</td>
+    <td>{{.Project.Staged.Lookbook.Date}}</td>
+    <td>{{.Project.Staged.Bios.Date}}</td>
+  </tr>
+</table>
+{{end}}
