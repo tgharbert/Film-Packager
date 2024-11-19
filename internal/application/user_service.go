@@ -3,10 +3,9 @@ package application
 import (
 	"context"
 	"errors"
+	access "filmPackager/internal/auth"
 	"filmPackager/internal/domain"
 	"fmt"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserRepository interface {
@@ -25,11 +24,10 @@ func NewUserService(userRepo UserRepository, projRepo ProjectRepository) *UserSe
 }
 
 func (s *UserService) UserLogin(ctx context.Context, email string, password string) (*domain.User, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedStr, err := access.HashPassword(password)
 	if err != nil {
 		return nil, fmt.Errorf("error hashing password: %v", err)
 	}
-	hashedStr := string(hash)
 	user, err := s.userRepo.GetUserByEmail(ctx, email, hashedStr)
 	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
 		return nil, fmt.Errorf("error checking for existing user: %v", err)
@@ -56,11 +54,10 @@ func (s *UserService) UserLogin(ctx context.Context, email string, password stri
 }
 
 func (s *UserService) CreateUserAccount(ctx context.Context, user *domain.User) (*domain.User, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedStr, err := access.HashPassword(user.Password)
 	if err != nil {
 		return nil, fmt.Errorf("error hashing password: %v", err)
 	}
-	hashedStr := string(hash)
 	user, err = s.userRepo.GetUserByEmail(ctx, user.Email, hashedStr)
 	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
 		return nil, domain.ErrUserAlreadyExists
@@ -74,7 +71,7 @@ func (s *UserService) CreateUserAccount(ctx context.Context, user *domain.User) 
 	if err != nil {
 		return nil, fmt.Errorf("error creating user: %v", err)
 	}
-	// I don't need to get the projects here right??
+	// I don't need to get the projects here bc the new user won't have any
 	return user, nil
 }
 

@@ -2,6 +2,7 @@ package routes
 
 import (
 	access "filmPackager/internal/auth"
+	"filmPackager/internal/domain"
 	s3 "filmPackager/internal/store"
 	"filmPackager/internal/store/db"
 	"fmt"
@@ -18,7 +19,7 @@ import (
 )
 
 type HomeData struct {
-	User *access.UserInfo
+	User *domain.User
 	Orgs db.SelectProject
 }
 
@@ -83,7 +84,7 @@ func PostLoginSubmit(c *fiber.Ctx) error {
 		mess.Error = "Error: cannot find user, please verify correct login!"
 		return c.Render("login-formHTML", mess)
 	}
-	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email, user.Role)
+	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 	}
@@ -148,7 +149,7 @@ func PostCreateAccount(c *fiber.Ctx) error {
 		mess.Error = "Error: user already exists with this email!"
 		return c.Render("create-accountHTML", mess)
 	}
-	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email, user.Role)
+	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 	}
