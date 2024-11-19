@@ -20,11 +20,11 @@ func GetS3Session() *s3.S3 {
 	return s3.New(sess)
 }
 
-func WriteToS3(s3Client *s3.S3, bucket string, key string, f multipart.File) (error) {
+func WriteToS3(s3Client *s3.S3, bucket string, key string, f multipart.File) error {
 	_, err := s3Client.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(bucket),
-		Key: aws.String(key),
-		Body: f,
+		Key:    aws.String(key),
+		Body:   f,
 	})
 	if err != nil {
 		return fmt.Errorf("error uploading file: %v", err)
@@ -32,10 +32,10 @@ func WriteToS3(s3Client *s3.S3, bucket string, key string, f multipart.File) (er
 	return nil
 }
 
-func DeleteS3Object (s3Client *s3.S3, bucket string, key string) error {
+func DeleteS3Object(s3Client *s3.S3, bucket string, key string) error {
 	_, err := s3Client.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
-		Key: aws.String(key),
+		Key:    aws.String(key),
 	})
 	if err != nil {
 		return fmt.Errorf("error deleting file from s3: %v", err)
@@ -51,10 +51,10 @@ func DeleteMultipleS3Objects(s3Client *s3.S3, bucket string, keys []string) erro
 		}
 	}
 	input := &s3.DeleteObjectsInput{
-		Bucket : aws.String(bucket),
+		Bucket: aws.String(bucket),
 		Delete: &s3.Delete{
 			Objects: objectsToDelete,
-			Quiet: aws.Bool(true),
+			Quiet:   aws.Bool(true),
 		},
 	}
 	output, err := s3Client.DeleteObjects(input)

@@ -16,92 +16,92 @@ import (
 )
 
 type User struct {
-	Id int
-	Name string
-	Email string
-	Role string // I'm not really using this at the moment. only writing "readonly"
-	Password string
+	Id           int
+	Name         string
+	Email        string
+	Role         string // I'm not really using this at the moment. only writing "readonly"
+	Password     string
 	InviteStatus string
 }
 
 type ProjectUser struct {
-	Id int
-	Name string
-	Email string
-	Roles []string
-	Password string
+	Id           int
+	Name         string
+	Email        string
+	Roles        []string
+	Password     string
 	InviteStatus string
 }
 
 type Org struct {
-	Id int
-	Name string
-	Roles []string
+	Id           int
+	Name         string
+	Roles        []string
 	InviteStatus string
 }
 
 type Project struct {
-	Id int
-	Name string
+	Id     int
+	Name   string
 	Locked ProjectDocs
 	Staged ProjectDocs
 }
 
-type ProjectDocs struct{
-	Script DocInfo
-	Logline DocInfo
-	Synopsis DocInfo
-	PitchDeck DocInfo
-	Schedule DocInfo
-	Budget DocInfo
+type ProjectDocs struct {
+	Script            DocInfo
+	Logline           DocInfo
+	Synopsis          DocInfo
+	PitchDeck         DocInfo
+	Schedule          DocInfo
+	Budget            DocInfo
 	DirectorStatement DocInfo
-	Shotlist DocInfo
-	Lookbook DocInfo
-	Bios DocInfo
+	Shotlist          DocInfo
+	Lookbook          DocInfo
+	Bios              DocInfo
 }
 
 type DocInfo struct {
-	Id int
-	Name string
-	Date string
+	Id      int
+	Name    string
+	Date    string
 	Address string
-	Author int // user id -- should replace with user name
-	Color string
+	Author  int // user id -- should replace with user name
+	Color   string
 }
 
 type ProjectPageData struct {
-	Project Project
-	Members []ProjectUser
-	Invited []ProjectUser
+	Project    Project
+	Members    []ProjectUser
+	Invited    []ProjectUser
 	FoundUsers []User // users on search in sidebar are placed here
 }
 
 type SelectProject struct {
 	Memberships []Org
-	Pending []Org
+	Pending     []Org
 }
 
 func OrderRoles(rolesStr string) []string {
 	var orderedRoles []string
-	if strings.Contains(rolesStr, "owner"){
+	if strings.Contains(rolesStr, "owner") {
 		orderedRoles = append(orderedRoles, "owner")
 	}
-	if strings.Contains(rolesStr, "director"){
+	if strings.Contains(rolesStr, "director") {
 		orderedRoles = append(orderedRoles, "director")
 	}
-	if strings.Contains(rolesStr, "producer"){
+	if strings.Contains(rolesStr, "producer") {
 		orderedRoles = append(orderedRoles, "producer")
 	}
-	if strings.Contains(rolesStr, "writer"){
+	if strings.Contains(rolesStr, "writer") {
 		orderedRoles = append(orderedRoles, "writer")
 	}
-	if strings.Contains(rolesStr, "cinematographer"){
+	if strings.Contains(rolesStr, "cinematographer") {
 		orderedRoles = append(orderedRoles, "cinematographer")
 	}
-	if strings.Contains(rolesStr, "production designer"){
+	if strings.Contains(rolesStr, "production designer") {
 		orderedRoles = append(orderedRoles, "production designer")
 	}
-	if strings.Contains(rolesStr, "reader"){
+	if strings.Contains(rolesStr, "reader") {
 		orderedRoles = append(orderedRoles, "reader")
 	}
 	return orderedRoles
@@ -116,19 +116,19 @@ var DBPool *pgxpool.Pool // globally available db pool for connections
 func PoolConnect() {
 	err := godotenv.Load()
 	if err != nil {
-			fmt.Println("Error loading .env file")
-			panic(err)
+		fmt.Println("Error loading .env file")
+		panic(err)
 	}
 	dbURL := os.Getenv("DEV_DATABASE_URL")
 	if dbURL == "" {
-			fmt.Println("DEV_DATABASE_URL not found in environment")
-			os.Exit(1)
+		fmt.Println("DEV_DATABASE_URL not found in environment")
+		os.Exit(1)
 	}
 	// later need to work on pool settings
 	pool, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-			os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+		os.Exit(1)
 	}
 	DBPool = pool
 }
@@ -222,18 +222,18 @@ GROUP BY
 		}
 		if org.InviteStatus == "pending" {
 			selectProject.Pending = append(selectProject.Pending, org)
-			} else if org.InviteStatus == "accepted" {
-				selectProject.Memberships = append(selectProject.Memberships, org)
-			}
+		} else if org.InviteStatus == "accepted" {
+			selectProject.Memberships = append(selectProject.Memberships, org)
 		}
-		if rows.Err() != nil {
-			return selectProject, rows.Err()
-		}
+	}
+	if rows.Err() != nil {
+		return selectProject, rows.Err()
+	}
 	return selectProject, nil
 }
 
 // MODIFY THIS FUNCTION TO CHECK IF THERE ARE OTHER PROJECTS WITH THIS NAME? OR NAME AND OWNER?
-func CreateProject(pool *pgxpool.Pool, name string, ownerId int) (error) {
+func CreateProject(pool *pgxpool.Pool, name string, ownerId int) error {
 	orgQuery := `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
 	var org Org
 	err := pool.QueryRow(context.Background(), orgQuery, name).Scan(&org.Id, &org.Name)
@@ -351,22 +351,22 @@ ORDER BY o.id;
 		roles = OrderRoles(roles[0])
 		if inviteStatus.String == "pending" {
 			projectData.Invited = append(projectData.Invited, ProjectUser{
-				Id:    int(userId.Int32),  // Convert sql.NullInt32 to int
-				Name:  userName.String,
-				Email: userEmail.String,
-				Roles: roles,
+				Id:           int(userId.Int32), // Convert sql.NullInt32 to int
+				Name:         userName.String,
+				Email:        userEmail.String,
+				Roles:        roles,
 				InviteStatus: inviteStatus.String,
 			})
 		}
 		formattedTime := docDate.Time.Format("01-02-06")
 
 		projectMap[docName.String] = DocInfo{
-			Id:     int(docAuthor.Int32),
-			Name:   docAddress.String,
+			Id:      int(docAuthor.Int32),
+			Name:    docAddress.String,
 			Address: docAddress.String,
-			Date:   formattedTime,
-			Author: int(docAuthor.Int32),
-			Color:  docColor.String,
+			Date:    formattedTime,
+			Author:  int(docAuthor.Int32),
+			Color:   docColor.String,
 		}
 
 		// should be separate func?
@@ -397,10 +397,10 @@ ORDER BY o.id;
 
 		if inviteStatus.String == "accepted" {
 			projectData.Members = append(projectData.Members, ProjectUser{
-				Id:    int(userId.Int32),
-				Name:  userName.String,
-				Email: userEmail.String,
-				Roles: roles,
+				Id:           int(userId.Int32),
+				Name:         userName.String,
+				Email:        userEmail.String,
+				Roles:        roles,
 				InviteStatus: inviteStatus.String,
 			})
 		}
@@ -482,7 +482,7 @@ func InviteUserToOrg(pool *pgxpool.Pool, memberId int, organizationId int, role 
 	return users, nil
 }
 
-func JoinOrg(pool *pgxpool.Pool, projectId int, memberId int, role string) (error) {
+func JoinOrg(pool *pgxpool.Pool, projectId int, memberId int, role string) error {
 	updateQuery := `
 		UPDATE memberships
 		SET invite_status = 'accepted'
@@ -495,7 +495,7 @@ func JoinOrg(pool *pgxpool.Pool, projectId int, memberId int, role string) (erro
 	return nil
 }
 
-func DeleteOrg(pool *pgxpool.Pool, orgId int) (error) {
+func DeleteOrg(pool *pgxpool.Pool, orgId int) error {
 	deleteProjectQuery := `DELETE FROM organizations WHERE id = $1;`
 	_, err := pool.Query(context.Background(), deleteProjectQuery, orgId)
 	if err != nil {
@@ -504,7 +504,7 @@ func DeleteOrg(pool *pgxpool.Pool, orgId int) (error) {
 	return nil
 }
 
-func SaveDocument(pool *pgxpool.Pool, orgId int, fileName string, userId int, fileType string) (error) {
+func SaveDocument(pool *pgxpool.Pool, orgId int, fileName string, userId int, fileType string) error {
 	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	_, err := pool.Query(context.Background(), query, orgId, userId, fileName, fileType, time.Now(), "black", "staged")
 	if err != nil {
@@ -547,7 +547,7 @@ func GetDocKeysForOrgDelete(pool *pgxpool.Pool, orgId int) ([]string, error) {
 	return keys, nil
 }
 
-func OverWriteDoc(pool *pgxpool.Pool, orgId int, fileName string, userId int, fileType string) (error){
+func OverWriteDoc(pool *pgxpool.Pool, orgId int, fileName string, userId int, fileType string) error {
 	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (organization_id, file_type)

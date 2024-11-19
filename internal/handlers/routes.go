@@ -65,7 +65,7 @@ func HomePage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
-	data := HomeData{User: userInfo, Orgs: orgs,}
+	data := HomeData{User: userInfo, Orgs: orgs}
 	return c.Render("index", data)
 }
 
@@ -88,11 +88,11 @@ func PostLoginSubmit(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 	}
 	c.Cookie(&fiber.Cookie{
-		Name:  "Authorization",
-		Value: "Bearer " + tokenString,
+		Name:     "Authorization",
+		Value:    "Bearer " + tokenString,
 		HTTPOnly: true,
-		Path:  "/",
-		Expires: time.Now().Add(48 * time.Hour),
+		Path:     "/",
+		Expires:  time.Now().Add(48 * time.Hour),
 	})
 	return c.Redirect("/")
 }
@@ -153,11 +153,11 @@ func PostCreateAccount(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 	}
 	c.Cookie(&fiber.Cookie{
-		Name:  "Authorization",
-		Value: "Bearer " + tokenString,
+		Name:     "Authorization",
+		Value:    "Bearer " + tokenString,
 		HTTPOnly: true,
-		Path:  "/",
-		Expires: time.Now().Add(48 * time.Hour),
+		Path:     "/",
+		Expires:  time.Now().Add(48 * time.Hour),
 	})
 	return c.Redirect("/")
 }
@@ -197,7 +197,7 @@ func CreateProject(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving all orgs")
 	}
-	return c.Render("selectOrgHTML" , fiber.Map{
+	return c.Render("selectOrgHTML", fiber.Map{
 		"Orgs": orgs,
 	})
 }
@@ -228,7 +228,7 @@ func SearchUsers(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
 	}
 	return c.Render("search-resultsHTML", fiber.Map{
-		"ProjectId": id,
+		"ProjectId":  id,
 		"FoundUsers": users,
 	})
 }
@@ -279,7 +279,7 @@ func JoinOrg(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
-	return c.Render("selectOrgHTML" , fiber.Map{
+	return c.Render("selectOrgHTML", fiber.Map{
 		"Orgs": orgs,
 	})
 }
@@ -318,7 +318,7 @@ func DeleteOrg(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
-	return c.Render("selectOrgHTML" , fiber.Map{
+	return c.Render("selectOrgHTML", fiber.Map{
 		"Orgs": orgs,
 	})
 }
@@ -343,7 +343,7 @@ func PostDocument(c *fiber.Ctx) error {
 
 	// 25MB file limit -- matches what GMail allows as an attachment
 	// at the moment I'm not hitting this with larger files...
-	if file.Size > 25 * 1024 * 1024 {
+	if file.Size > 25*1024*1024 {
 		fmt.Println("hit the test limiter")
 		// MODIFY to send HTML ERROR
 		return fmt.Errorf("file too large: %v", err)
