@@ -29,7 +29,7 @@ func NewDocumentService(docRepo DocumentRepository, s3Repo S3Repository) *Docume
 	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo}
 }
 
-// this should return the
+// this should return the data for the html frag with the date or whatever
 func (s *DocumentService) UploadDocument(ctx context.Context, doc *domain.Document, fileBody interface{}) error {
 	existingDoc, err := s.docRepo.FindStagedByType(ctx, doc.OrganizationID, doc.FileType)
 	if err != nil {

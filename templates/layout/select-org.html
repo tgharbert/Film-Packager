@@ -18,7 +18,7 @@
   <h2 id="sub-title">Projects that you're a member of:</h2>
   {{block "project-list" .}}
   <ul id="project-list-items">
-    {{ range .Orgs.Memberships }} {{block "project-list-item" .}}
+    {{ range .Memberships }} {{block "project-list-item" .}}
     <li id="{{.Id}}" class="project-list-item">
       <p
         id="project-title"
@@ -46,7 +46,7 @@
   </ul>
   <h2 id="sub-title">Projects Invites:</h2>
   <ul id="pending-list">
-    {{ range .Orgs.Pending }} {{ $org := . }}
+    {{ range .Invited }} {{ $org := . }}
     <li id="{{.Id}}" class="project-list-item">
       <p id="project-title">
         <b>{{.Name}}: </b>

@@ -4,6 +4,8 @@ import (
 	"filmPackager/internal/application"
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/domain"
+	"filmPackager/internal/store/db"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -11,9 +13,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+type HomeData struct {
+	User *domain.User
+	Orgs db.SelectProject
+}
+
 func RegisterRoutes(app *fiber.App, userService *application.UserService, projectService *application.ProjectService, documentService *application.DocumentService) {
-	// app.Get("/", HomePage)
-	// app.Get("/login/", GetLoginPage)
+	app.Get("/", GetHomePage(projectService))
+	app.Get("/login/", GetLoginPage(userService))
 	app.Post("/post-login/", LoginUserHandler(userService))
 	// app.Post("/post-create-account", PostCreateAccount)
 	// app.Get("/get-create-account/", DirectToCreateAccount)
@@ -28,6 +35,21 @@ func RegisterRoutes(app *fiber.App, userService *application.UserService, projec
 }
 
 // user handlers:
+func GetLoginPage(svc *application.UserService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tokenString := c.Cookies("Authorization")
+		if tokenString == "" {
+			return c.Render("login-form", nil)
+		}
+		tokenString = tokenString[len("Bearer "):]
+		err := access.VerifyToken(tokenString)
+		if err != nil {
+			return c.Render("login-form", nil)
+		}
+		return c.Redirect("/")
+	}
+}
+
 func LoginUserHandler(svc *application.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		email := strings.TrimSpace(c.FormValue("email"))
@@ -39,6 +61,7 @@ func LoginUserHandler(svc *application.UserService) fiber.Handler {
 		}
 		user, err := svc.UserLogin(c.Context(), email, password)
 		if err != nil {
+			fmt.Println("error: ", err)
 			return c.Render("login-formHTML", fiber.Map{
 				"Error": "Error: both fields must be filled!",
 			})
@@ -55,6 +78,29 @@ func LoginUserHandler(svc *application.UserService) fiber.Handler {
 			Expires:  time.Now().Add(48 * time.Hour),
 		})
 		return c.Redirect("/")
+	}
+}
+
+func GetHomePage(svc *application.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tokenString := c.Cookies("Authorization")
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/") // Redirect to homepage or desired URL
+			return nil
+		}
+		if tokenString == "" {
+			return c.Redirect("/login/")
+		}
+		tokenString = tokenString[len("Bearer "):]
+		userInfo, err := access.GetUserNameFromToken(tokenString)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+		}
+		user, err := svc.GetUsersProjects(c.Context(), userInfo)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
+		}
+		return c.Render("index", user)
 	}
 }
 

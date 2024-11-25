@@ -21,7 +21,7 @@ func (r *PostgresProjectRepository) GetProjectsForUserSelection(ctx context.Cont
         SELECT
             o.id,
             o.name,
-            array_agg(m.role) AS roles,
+            array_agg(m.access_tier) AS roles,
             m.invite_status
         FROM
             organizations o

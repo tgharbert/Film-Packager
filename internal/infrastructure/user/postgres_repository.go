@@ -19,7 +19,7 @@ func NewPostgresUserRepository(db *pgxpool.Pool) *PostgresUserRepository {
 }
 
 func (r *PostgresUserRepository) GetUserByEmail(ctx context.Context, email string, password string) (*domain.User, error) {
-	query := `SELECT id, name, email, password FROM user WHERE email = $1`
+	query := `SELECT id, name, email, password FROM users WHERE email = $1`
 	var user domain.User
 	err := r.db.QueryRow(ctx, query, email).Scan(&user.Id, &user.Name, &user.Email, &user.Password)
 	if err != nil {
