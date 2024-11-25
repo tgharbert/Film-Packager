@@ -95,14 +95,14 @@ h2 {
   text-align: center;
 }
 
-#button-std {
+.button-std {
   border: 1px solid rgb(240, 233, 221);
   color: rgb(240, 233, 221);
   border-radius: 0.5rem;
   padding: 0.4rem;
   background-color: rgb(90, 71, 106);
 }
-#button-std:hover {
+.button-std:hover {
   background-color: rgb(118, 102, 131);
   cursor: pointer;
 }
@@ -145,7 +145,7 @@ h2 {
   padding-left: 2rem;
 }
 
-#login-input {
+.login-input {
   text-align: right;
   margin-right: 4rem;
   margin-bottom: 1rem;

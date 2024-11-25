@@ -10,7 +10,7 @@ type Project struct {
 }
 
 type ProjectOverview struct {
-	ID     int
+	Id     int
 	Name   string
 	Status string
 	Roles  []string

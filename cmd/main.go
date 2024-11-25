@@ -28,11 +28,14 @@ func main() {
 	})
 	app.Static("/static", "./static")
 	// routes.RegisterRoutes(app)
+	// wrap this up in a different file/struct??
 	userRepo := userInf.NewPostgresUserRepository(conn)
 	projectRepo := projectInf.NewPostgresProjectRepository(conn)
-
+	// docPGRepo := docInf.NewPostgresDocumentRepository(conn)
+	// docS3Repo := docInf.NewS3DocumentRepository(&s3.Client{}, bucket)
 	userService := application.NewUserService(userRepo, projectRepo)
 	projService := application.NewProjectService(projectRepo)
+	// docService := application.NewDocumentService(docPGRepo, docS3Repo)
 
 	interfaces.RegisterRoutes(app, userService, projService, &application.DocumentService{})
 	log.Print("Listening on port 3000...")

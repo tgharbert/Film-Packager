@@ -9,6 +9,8 @@ import (
 type ProjectRepository interface {
 	GetProjectsForUserSelection(ctx context.Context, userId int) ([]*domain.ProjectOverview, error)
 	// GetProjectById(projectId int) (*domain.Project, error)
+	CreateNewProject(ctx context.Context, projectName string, userId int) (*domain.ProjectOverview, error)
+	DeleteProject(ctx context.Context, projectId int) error
 }
 
 type ProjectService struct {
@@ -31,8 +33,39 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *domain.User
 		if project.Status == "invited" {
 			user.Invited = append(user.Invited, *project)
 		}
-		if project.Status == "member" {
-			user.Memberships = append(user.Invited, *project)
+		if project.Status == "accepted" {
+			user.Memberships = append(user.Memberships, *project)
+		}
+	}
+	return user, nil
+}
+
+func (s *ProjectService) CreateNewProject(ctx context.Context, projectName string, userId int) (*domain.ProjectOverview, error) {
+	project, err := s.projRepo.CreateNewProject(ctx, projectName, userId)
+	if err != nil {
+		return nil, fmt.Errorf("error with project creation: %v", err)
+	}
+	return project, nil
+}
+
+func (s *ProjectService) DeleteProject(ctx context.Context, projectId int, user *domain.User) (*domain.User, error) {
+	err := s.projRepo.DeleteProject(ctx, projectId)
+	if err != nil {
+		return nil, fmt.Errorf("error deleting projects from db: %v", err)
+	}
+	projects, err := s.projRepo.GetProjectsForUserSelection(ctx, user.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving user projects: %v", err)
+	}
+	// var user *domain.User
+	for _, project := range projects {
+		fmt.Println("internal project: ", *project)
+		// sort the roles in each project here as well
+		if project.Status == "invited" {
+			user.Invited = append(user.Invited, *project)
+		}
+		if project.Status == "accepted" {
+			user.Memberships = append(user.Memberships, *project)
 		}
 	}
 	return user, nil

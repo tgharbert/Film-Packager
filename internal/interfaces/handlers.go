@@ -23,15 +23,15 @@ func RegisterRoutes(app *fiber.App, userService *application.UserService, projec
 	app.Get("/login/", GetLoginPage(userService))
 	app.Post("/post-login/", LoginUserHandler(userService))
 	// app.Post("/post-create-account", PostCreateAccount)
-	// app.Get("/get-create-account/", DirectToCreateAccount)
-	// app.Get("/create-project/", CreateProject)
+	app.Get("/get-create-account/", GetCreateAccount(userService))
+	app.Get("/create-project/", CreateProject(projectService))
 	// app.Get("/get-project/:id", GetProject)
-	// app.Get("/logout/", Logout)
+	app.Get("/logout/", LogoutUser(userService))
 	app.Post("/file-submit/:project_id", UploadDocumentHandler(documentService))
 	// app.Post("/search-users/:id", SearchUsers)
 	// app.Post("/invite-member/:id/:project_id", InviteMember)
 	// app.Post("/join-org/:project_id/:role", JoinOrg)
-	// app.Get("/delete-project/:project_id/", DeleteOrg)
+	app.Get("/delete-project/:project_id/", DeleteProject(projectService))
 }
 
 // user handlers:
@@ -47,6 +47,12 @@ func GetLoginPage(svc *application.UserService) fiber.Handler {
 			return c.Render("login-form", nil)
 		}
 		return c.Redirect("/")
+	}
+}
+
+func GetCreateAccount(svc *application.UserService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return c.Render("create-account", nil)
 	}
 }
 
@@ -81,6 +87,20 @@ func LoginUserHandler(svc *application.UserService) fiber.Handler {
 	}
 }
 
+func LogoutUser(svc *application.UserService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		c.Cookie(&fiber.Cookie{
+			Name:     "Authorization",
+			Value:    "",
+			Expires:  time.Now().Add(-time.Hour), // Set expiration to the past to delete the cookie
+			Path:     "/",                        // Ensure the path is the same as when the cookie was set
+			HTTPOnly: true,                       // Ensure other flags match those of the original cookie
+			Secure:   true,                       // Set to true if the original cookie was secure
+		})
+		return c.Redirect("/login/")
+	}
+}
+
 func GetHomePage(svc *application.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		tokenString := c.Cookies("Authorization")
@@ -100,7 +120,50 @@ func GetHomePage(svc *application.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 		}
-		return c.Render("index", user)
+		return c.Render("index", *user)
+	}
+}
+
+func CreateProject(svc *application.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		projectName := c.FormValue("project-name")
+		tokenString := c.Cookies("Authorization")
+		if tokenString == "" {
+			return c.Redirect("/login/")
+		}
+		tokenString = tokenString[len("Bearer "):]
+		userInfo, err := access.GetUserNameFromToken(tokenString)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+		}
+		project, err := svc.CreateNewProject(c.Context(), projectName, userInfo.Id)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error creating org")
+		}
+		return c.Render("project-list-item", *project)
+	}
+}
+
+func DeleteProject(svc *application.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userInfo, err := access.GetUserDataFromCookie(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
+		}
+		projectId := c.Params("project_id")
+		projIdInt, err := strconv.Atoi(projectId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+		user, err := svc.DeleteProject(c.Context(), projIdInt, userInfo)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error deleting project")
+		}
+		// need to delete s3 items from bucket as well!
+		fmt.Println("user info: ", user)
+		return c.Render("project-list", fiber.Map{
+			"Memberships": user.Memberships,
+		})
 	}
 }
 

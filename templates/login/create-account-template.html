@@ -1,23 +1,23 @@
 {{define "create-accountHTML"}}
 <form hx-post="/post-create-account/" hx-swap="innerHTML" hx-target="#login">
   <h2 id="subheader">Create Account:</h2>
-  <div id="login-input">
+  <div class="login-input">
     <label>First Name: </label>
     <input type="text" name="firstName" />
   </div>
-  <div id="login-input">
+  <div class="login-input">
     <label>Last Name: </label>
     <input type="text" name="lastName" />
   </div>
-  <div id="login-input">
+  <div class="login-input">
     <label>Email: </label>
     <input type="text" name="email" />
   </div>
-  <div id="login-input">
+  <div class="login-input">
     <label>Password: </label>
     <input name="password" type="password" />
   </div>
-  <div id="login-input">
+  <div class="login-input">
     <label>Verify Password: </label>
     <input name="secondPassword" type="password" />
   </div>
@@ -32,7 +32,7 @@
         >here</span
       >
     </p>
-    <button id="button-std">Create Account</button>
+    <button class="button-std" type="submit">Create Account</button>
     <p>{{.Error}}</p>
   </div>
 </form>
