@@ -3,19 +3,27 @@
   <h2 id="sub-header">Members</h2>
   <div id="list-of-accepted-members">
     <ul>
-      {{range .Members}} {{if eq .InviteStatus "accepted"}}
-      <li id="{{.Id}}">{{.Name}} <i>{{.Role}}</i></li>
-      {{end}} {{end}}
+      {{range .Members}}
+      <li id="{{.Id}}">
+        <b>{{.Name}}</b> {{range .Roles}}
+        <div>{{.}}</div>
+        {{end}}
+      </li>
+      {{end}}
     </ul>
   </div>
 
   <div id="invites">
     {{template "search-membersHTML" .}}
-    <h2 id="sub-header">Invited</h2>
+    <h2 id="sub-header">Invited Members:</h2>
     <ul>
-      {{range .Members}} {{if eq .InviteStatus "pending"}}
-      <li id="{{.Id}}">{{.Name}} <i>{{.Role}}</i></li>
-      {{end}} {{end}}
+      {{range .Invited}}
+      <li id="{{.Id}}">
+        {{.Name}} {{range .Roles}}
+        <span>{{.}}</span>
+        {{end}}
+      </li>
+      {{end}}
     </ul>
   </div>
 </div>

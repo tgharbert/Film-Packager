@@ -28,8 +28,8 @@ CREATE TABLE "documents" (
     "id" serial PRIMARY KEY,
     "organization_id" int REFERENCES organizations(id) ON DELETE CASCADE,
     "user_id" int,
-    "address" VARCHAR(100),
-    "name" VARCHAR(50),
+    "file_name" VARCHAR(100),
+    "file_type" VARCHAR(50),
     "date" date,
     "color" VARCHAR(50),
     "status" VARCHAR(50)

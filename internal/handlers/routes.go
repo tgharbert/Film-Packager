@@ -1,26 +1,25 @@
 package routes
 
 import (
-	"context"
 	access "filmPackager/internal/auth"
+	"filmPackager/internal/domain"
+	s3 "filmPackager/internal/store"
 	"filmPackager/internal/store/db"
 	"fmt"
-	"log"
 	"net/mail"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type HomeData struct {
-	User *access.UserInfo
+	User *domain.User
 	Orgs db.SelectProject
 }
 
@@ -37,10 +36,10 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/create-project/", CreateProject)
 	app.Get("/get-project/:id", GetProject)
 	app.Get("/logout/", Logout)
-	app.Post("/file-submit/", PostDocument)
+	app.Post("/file-submit/:project_id", PostDocument)
 	app.Post("/search-users/:id", SearchUsers)
 	app.Post("/invite-member/:id/:project_id", InviteMember)
-	app.Post("/join-org/:id/:project_id/:role", JoinOrg)
+	app.Post("/join-org/:project_id/:role", JoinOrg)
 	app.Get("/delete-project/:project_id/", DeleteOrg)
 }
 
@@ -63,42 +62,38 @@ func HomePage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 	}
-	pool := db.PoolConnect()
-	defer pool.Close()
-	orgs, err := db.GetProjects(pool, userInfo.Id)
+	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
-	data := HomeData{User: userInfo, Orgs: orgs,}
+	data := HomeData{User: userInfo, Orgs: orgs}
 	return c.Render("index", data)
 }
 
+// AUTH ROUTES
 func PostLoginSubmit(c *fiber.Ctx) error {
 	email := strings.TrimSpace(c.FormValue("email"))
 	password := strings.TrimSpace(c.FormValue("password"))
+	var mess Message
 	if email == "" || password == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Email or password cannot be empty")
+		mess.Error = "Error: both fields must be filled!"
+		return c.Render("login-formHTML", mess)
 	}
-	conn := db.Connect()
-	defer conn.Close(context.Background())
-	user, err := db.GetUser(conn, email, password)
+	user, err := db.GetUser(db.DBPool, email, password)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving user")
+		mess.Error = "Error: cannot find user, please verify correct login!"
+		return c.Render("login-formHTML", mess)
 	}
-	if user.Password == "" {
-		mess := Message{Error: "Incorrect Password"}
-		return c.Render("login-error", mess) // Fiber automatically handles the template rendering
-	}
-	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email, user.Role)
+	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 	}
 	c.Cookie(&fiber.Cookie{
-		Name:  "Authorization",
-		Value: "Bearer " + tokenString,
+		Name:     "Authorization",
+		Value:    "Bearer " + tokenString,
 		HTTPOnly: true,
-		Path:  "/",
-		Expires: time.Now().Add(48 * time.Hour),
+		Path:     "/",
+		Expires:  time.Now().Add(48 * time.Hour),
 	})
 	return c.Redirect("/")
 }
@@ -122,50 +117,48 @@ func PostCreateAccount(c *fiber.Ctx) error {
 	email := strings.Trim(c.FormValue("email"), " ")
 	password := strings.Trim(c.FormValue("password"), " ")
 	secondPassword := strings.Trim(c.FormValue("secondPassword"), " ")
-	// concat the first and last names
 	username := fmt.Sprintf("%s %s", firstName, lastName)
 	var mess Message
-	if username == "" {
-		mess.Error = "blank username"
-		return c.Render("login-error", mess)
+	if firstName == "" || lastName == "" {
+		mess.Error = "Error: please enter first and last name!"
+		return c.Render("create-accountHTML", mess)
 	}
 	if email == "" {
-		mess.Error = "blank email"
-		return c.Render("login-error", mess)
+		mess.Error = "Error: email field left blank!"
+		return c.Render("create-accountHTML", mess)
 	}
 	if password != secondPassword {
-		mess.Error = "passwords do not match"
-		return c.Render("login-error", mess)
+		mess.Error = "Error: passwords do not match!"
+		return c.Render("create-accountHTML", mess)
 	}
 	if len(password) < 6 || len(secondPassword) < 6 {
-		mess.Error = "password is too short"
-		return c.Render("login-error", mess)
+		mess.Error = "Error: password need to be at least 6 characters!"
+		return c.Render("create-accountHTML", mess)
 	}
 	if !isValidEmail(email) {
-		mess.Error = "invalid email"
-		return c.Render("login-error", mess)
+		mess.Error = "Error: invalid email address"
+		return c.Render("create-accountHTML", mess)
 	}
-	conn := db.Connect()
-	defer conn.Close(context.Background())
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error hashing password")
 	}
 	hashedStr := string(hash)
-	user, err := db.CreateUser(conn, username, email, hashedStr)
+	user, err := db.CreateUser(db.DBPool, username, email, hashedStr)
 	if err != nil {
-		panic(err)
+		mess.Error = "Error: user already exists with this email!"
+		return c.Render("create-accountHTML", mess)
 	}
-	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email, user.Role)
+	tokenString, err := access.GenerateJWT(user.Id, user.Name, user.Email)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 	}
 	c.Cookie(&fiber.Cookie{
-		Name:  "Authorization",
-		Value: "Bearer " + tokenString,
+		Name:     "Authorization",
+		Value:    "Bearer " + tokenString,
 		HTTPOnly: true,
-		Path:  "/",
-		Expires: time.Now().Add(48 * time.Hour),
+		Path:     "/",
+		Expires:  time.Now().Add(48 * time.Hour),
 	})
 	return c.Redirect("/")
 }
@@ -187,7 +180,6 @@ func Logout(c *fiber.Ctx) error {
 }
 
 func CreateProject(c *fiber.Ctx) error {
-	// send the project list updated with new project data...
 	projectName := c.FormValue("project-name")
 	tokenString := c.Cookies("Authorization")
 	if tokenString == "" {
@@ -198,92 +190,55 @@ func CreateProject(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 	}
-	conn := db.Connect()
-	defer conn.Close(context.Background())
-	org, err := db.CreateProject(conn, projectName, userInfo.Id)
+	err = db.CreateProject(db.DBPool, projectName, userInfo.Id)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving org")
+		return c.Status(fiber.StatusInternalServerError).SendString("error creating org")
 	}
-	return c.Render("project-list-item", org)
+	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving all orgs")
+	}
+	return c.Render("selectOrgHTML", fiber.Map{
+		"Orgs": orgs,
+	})
 }
 
+// SHOULD RENDER THE HTML BASED ON ROLE??
+// USERS SHOULD SEE THE INVITED BUT NOT BE ABLE TO SEARCH MEMBERS UNLESS PROD, DIR, OR OWNER
+// how to do this??
 func GetProject(c *fiber.Ctx) error {
 	id := c.Params("id")
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	conn := db.Connect()
-	defer conn.Close(context.Background())
-	projectPageData, err := db.GetProjectPageData(conn, idInt)
+	projectPageData, err := db.GetProjectPageData(db.DBPool, idInt)
 	if err != nil {
+		fmt.Println("error here: ", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
 	}
 	return c.Render("project-page", projectPageData)
 }
 
-func getS3Session() *s3.S3 {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-west-2"), // replace with my region
-	})
-	if err != nil {
-		log.Fatalf("Failed to create session: %v", err)
-	}
-	return s3.New(sess)
-}
-
-func PostDocument(c *fiber.Ctx) error {
-	// hit the thang?
-	file, err := c.FormFile("file")
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error uploading file")
-	}
-	// FIX THIS LATER TO STORE THE VALUES
-	// fileType := c.FormValue("file-type")
-	f, err := file.Open()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open file")
-	}
-	defer f.Close()
-
-	// intialize the s3 client
-	s3Client := getS3Session()
-	bucket := "bucket-name" // replace with my bucket name
-	key := file.Filename
-
-	_, err = s3Client.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(bucket),
-		Key: aws.String(key),
-		Body: f,
-		ACL: aws.String("public-read"),
-	})
-	if err != nil {
-		log.Printf("Error uploading file: %v", err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
-	}
-	return nil
-}
-
+// JOINING AND INVITING TO ORGS WORK
 func SearchUsers(c *fiber.Ctx) error {
 	username := c.FormValue("username")
 	id := c.Params("id")
-	conn := db.Connect()
-	users, err := db.SearchForUsers(conn, username)
+	users, err := db.SearchForUsers(db.DBPool, username)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
 	}
 	return c.Render("search-resultsHTML", fiber.Map{
-		"ProjectId": id,
+		"ProjectId":  id,
 		"FoundUsers": users,
 	})
 }
 
 func InviteMember(c *fiber.Ctx) error {
+	// MODIFY - GET USER ID FROM COOKIE?
 	memberId := c.Params("id")
 	role := c.FormValue("role")
 	projectId := c.Params("project_id")
-	conn := db.Connect()
-	defer conn.Close(context.Background())
 	memIdInt, err := strconv.Atoi(memberId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
@@ -292,7 +247,7 @@ func InviteMember(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	users, err := db.InviteUserToOrg(conn, memIdInt, projIdInt, role)
+	users, err := db.InviteUserToOrg(db.DBPool, memIdInt, projIdInt, role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error adding user to db")
 	}
@@ -302,54 +257,144 @@ func InviteMember(c *fiber.Ctx) error {
 }
 
 func JoinOrg(c *fiber.Ctx) error {
-	userId := c.Params("id")
+	tokenString := c.Cookies("Authorization")
+	if tokenString == "" {
+		return c.Redirect("/login/")
+	}
+	tokenString = tokenString[len("Bearer "):]
+	userInfo, err := access.GetUserNameFromToken(tokenString)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+	}
 	projectId := c.Params("project_id")
 	role := c.Params("role")
-	pool := db.PoolConnect()
-	defer pool.Close()
-	id, err := strconv.Atoi(userId)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-	}
 	projIdInt, err := strconv.Atoi(projectId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	projects, err := db.JoinOrg(pool, projIdInt, id, role)
+	err = db.JoinOrg(db.DBPool, projIdInt, userInfo.Id, role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying database")
 	}
-	return c.Render("selectOrgHTML" , fiber.Map{
-		"Orgs": projects,
+	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
+	}
+	return c.Render("selectOrgHTML", fiber.Map{
+		"Orgs": orgs,
 	})
 }
 
 func DeleteOrg(c *fiber.Ctx) error {
-	// getting the user info from the cookie
 	userInfo, err := access.GetUserDataFromCookie(c)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
 	}
 	projectId := c.Params("project_id")
-	pool := db.PoolConnect()
-	defer pool.Close()
 	projIdInt, err := strconv.Atoi(projectId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 	}
-	// passing the proj id correctly
-	err = db.DeleteOrg(pool, projIdInt, userInfo.Id)
+	keys, err := db.GetDocKeysForOrgDelete(db.DBPool, projIdInt)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error retrieving keys")
+	}
+	if len(keys) != 0 {
+		s3Client := s3.GetS3Session()
+		err = godotenv.Load()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error loading .env file")
+		}
+		bucket := os.Getenv("S3_BUCKET_NAME")
+		err = s3.DeleteMultipleS3Objects(s3Client, bucket, keys)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error deleting file from bucket")
+		}
+	}
+	err = db.DeleteOrg(db.DBPool, projIdInt)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("error querying the database")
 	}
-	// call the db, get projects??
-	orgs, err := db.GetProjects(pool, userInfo.Id)
+	orgs, err := db.GetProjects(db.DBPool, userInfo.Id)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 	}
-
-	fmt.Println("orgs: ", orgs)
-	return c.Render("selectOrgHTML" , fiber.Map{
+	return c.Render("selectOrgHTML", fiber.Map{
 		"Orgs": orgs,
 	})
+}
+
+// needs to get the list of staged documents??
+func PostDocument(c *fiber.Ctx) error {
+	projectId := c.Params("project_id")
+	projIdInt, err := strconv.Atoi(projectId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+	}
+	tokenString := c.Cookies("Authorization")
+	if tokenString == "" {
+		return c.Redirect("/login/")
+	}
+	tokenString = tokenString[len("Bearer "):]
+	userInfo, err := access.GetUserNameFromToken(tokenString)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+	}
+	file, err := c.FormFile("file")
+
+	// 25MB file limit -- matches what GMail allows as an attachment
+	// at the moment I'm not hitting this with larger files...
+	if file.Size > 25*1024*1024 {
+		fmt.Println("hit the test limiter")
+		// MODIFY to send HTML ERROR
+		return fmt.Errorf("file too large: %v", err)
+	}
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error uploading file")
+	}
+	fileType := c.FormValue("file-type")
+	f, err := file.Open()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open file")
+	}
+	defer f.Close()
+
+	s3Client := s3.GetS3Session()
+	err = godotenv.Load()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("error loading .env file")
+	}
+	bucket := os.Getenv("S3_BUCKET_NAME")
+	key := file.Filename
+
+	oldFile, err := db.CheckForStagedDoc(db.DBPool, projIdInt, fileType)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error checking for staged doc")
+	} else if oldFile == "" {
+		err = s3.WriteToS3(s3Client, bucket, key, f)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
+		}
+		err = db.SaveDocument(db.DBPool, projIdInt, key, userInfo.Id, fileType)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed save file info to db")
+		}
+	} else {
+		err := s3.DeleteS3Object(s3Client, bucket, oldFile)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete s3 file")
+		}
+		err = s3.WriteToS3(s3Client, bucket, key, f)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to upload file to s3")
+		}
+		err = db.OverWriteDoc(db.DBPool, projIdInt, key, userInfo.Id, fileType)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to update doc in db")
+		}
+	}
+	// also should I modify this query to limit the amount of documents that I'm storing
+	// this will need to return the correct HTML with the data that I'm looking for
+	return nil
 }
