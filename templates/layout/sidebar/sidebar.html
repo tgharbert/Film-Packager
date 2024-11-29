@@ -4,8 +4,8 @@
   <div id="list-of-accepted-members">
     <ul>
       {{range .Members}}
-      <li id="{{.Id}}">
-        <b>{{.Name}}</b> {{range .Roles}}
+      <li id="{{.UserId}}">
+        <b>{{.UserName}}</b> {{range .Roles}}
         <div>{{.}}</div>
         {{end}}
       </li>
@@ -18,11 +18,7 @@
     <h2 id="sub-header">Invited Members:</h2>
     <ul>
       {{range .Invited}}
-      <li id="{{.Id}}">
-        {{.Name}} {{range .Roles}}
-        <span>{{.}}</span>
-        {{end}}
-      </li>
+      <li id="{{.UserId}}">{{.UserName}}</li>
       {{end}}
     </ul>
   </div>

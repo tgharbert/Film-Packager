@@ -1,7 +1,7 @@
 {{define "fileUploadHTML" }}
 <div id="doc-input">
   <form
-    hx-post="/file-submit/{{.Project.Id}}"
+    hx-post="/file-submit/{{.Id}}"
     name="file-form"
     hx-encoding="multipart/form-data"
     enctype="multipart/form-data"

@@ -25,10 +25,10 @@ func RegisterRoutes(app *fiber.App, userService *application.UserService, projec
 	// app.Post("/post-create-account", PostCreateAccount)
 	app.Get("/get-create-account/", GetCreateAccount(userService))
 	app.Get("/create-project/", CreateProject(projectService))
-	// app.Get("/get-project/:id", GetProject)
+	app.Get("/get-project/:project_id", GetProject(projectService))
 	app.Get("/logout/", LogoutUser(userService))
 	app.Post("/file-submit/:project_id", UploadDocumentHandler(documentService))
-	// app.Post("/search-users/:id", SearchUsers)
+	app.Post("/search-users/:id", SearchUsers(projectService))
 	// app.Post("/invite-member/:id/:project_id", InviteMember)
 	// app.Post("/join-org/:project_id/:role", JoinOrg)
 	app.Get("/delete-project/:project_id/", DeleteProject(projectService))
@@ -67,7 +67,6 @@ func LoginUserHandler(svc *application.UserService) fiber.Handler {
 		}
 		user, err := svc.UserLogin(c.Context(), email, password)
 		if err != nil {
-			fmt.Println("error: ", err)
 			return c.Render("login-formHTML", fiber.Map{
 				"Error": "Error: both fields must be filled!",
 			})
@@ -160,10 +159,26 @@ func DeleteProject(svc *application.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting project")
 		}
 		// need to delete s3 items from bucket as well!
-		fmt.Println("user info: ", user)
 		return c.Render("project-list", fiber.Map{
 			"Memberships": user.Memberships,
 		})
+	}
+}
+
+// I AM HERE!!
+func GetProject(svc *application.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		projectId := c.Params("project_id")
+		projIdInt, err := strconv.Atoi(projectId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+		project, err := svc.GetProjectDetails(c.Context(), projIdInt)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error retrieving project data")
+		}
+		// fmt.Println("project", *project)
+		return c.Render("project-page", *project)
 	}
 }
 
@@ -192,5 +207,21 @@ func UploadDocumentHandler(svc *application.DocumentService) fiber.Handler {
 		}
 		// return the HTML fragment/template
 		return c.JSON(doc)
+	}
+}
+
+func SearchUsers(svc *application.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		username := c.FormValue("username")
+		// id := c.Params("id")
+		users, err := db.SearchForUsers(db.DBPool, username)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
+		}
+		fmt.Println("users from search: ", users)
+
+		return c.Render("invite-memberHTML", fiber.Map{
+			"SearchedMembers": users,
+		})
 	}
 }
