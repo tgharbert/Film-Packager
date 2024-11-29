@@ -8,9 +8,12 @@ import (
 
 type ProjectRepository interface {
 	GetProjectsForUserSelection(ctx context.Context, userId int) ([]*domain.ProjectOverview, error)
-	// GetProjectById(projectId int) (*domain.Project, error)
+	// GetProjectById(ctx, projectId int) (*domain.Project, error)
 	CreateNewProject(ctx context.Context, projectName string, userId int) (*domain.ProjectOverview, error)
 	DeleteProject(ctx context.Context, projectId int) error
+	GetProjectDetails(ctx context.Context, projectId int) (*domain.Project, error)
+	GetProjectUsers(ctx context.Context, projectId int) ([]*domain.ProjectMembership, error)
+	SearchForUsers(ctx context.Context, userName string) ([]*domain.ProjectMembership, error)
 }
 
 type ProjectService struct {
@@ -18,7 +21,9 @@ type ProjectService struct {
 }
 
 func NewProjectService(projRepo ProjectRepository) *ProjectService {
-	return &ProjectService{projRepo: projRepo}
+	return &ProjectService{
+		projRepo: projRepo,
+	}
 }
 
 // should this take in the User then get the projects and sort them for the user??
@@ -48,6 +53,7 @@ func (s *ProjectService) CreateNewProject(ctx context.Context, projectName strin
 	return project, nil
 }
 
+// should this be in the user service??
 func (s *ProjectService) DeleteProject(ctx context.Context, projectId int, user *domain.User) (*domain.User, error) {
 	err := s.projRepo.DeleteProject(ctx, projectId)
 	if err != nil {
@@ -59,7 +65,6 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId int, user 
 	}
 	// var user *domain.User
 	for _, project := range projects {
-		fmt.Println("internal project: ", *project)
 		// sort the roles in each project here as well
 		if project.Status == "invited" {
 			user.Invited = append(user.Invited, *project)
@@ -69,4 +74,32 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId int, user 
 		}
 	}
 	return user, nil
+}
+
+func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (*domain.Project, error) {
+	// get the project from the db
+	project, err := s.projRepo.GetProjectDetails(ctx, projectId)
+	if err != nil {
+		return nil, fmt.Errorf("error getting project from db: %v", err)
+	}
+	members, err := s.projRepo.GetProjectUsers(ctx, projectId)
+	if err != nil {
+		return nil, fmt.Errorf("error getting project users from db: %v", err)
+	}
+	// i have the data, but I need to sort the roles
+	// I would also like to sort the members if possible
+	for _, member := range members {
+		project.Members = append(project.Members, *member)
+		// fmt.Println("members: ", *member)
+	}
+	// sort the roles??
+	return project, nil
+}
+
+func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([]*domain.ProjectMembership, error) {
+	users, err := s.projRepo.SearchForUsers(ctx, userName)
+	if err != nil {
+		return nil, fmt.Errorf("error searching for users: %v", err)
+	}
+	return users, nil
 }
