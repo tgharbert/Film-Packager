@@ -1,7 +1,8 @@
 package access
 
 import (
-	"filmPackager/internal/domain"
+	"filmPackager/internal/domain/user"
+
 	"fmt"
 	"os"
 	"time"
@@ -89,7 +90,7 @@ func VerifyToken(tokenString string) error {
 	return nil
 }
 
-func GetUserNameFromToken(tokenString string) (*domain.User, error) {
+func GetUserNameFromToken(tokenString string) (*user.User, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		// Check token signing method etc. here
@@ -104,7 +105,7 @@ func GetUserNameFromToken(tokenString string) (*domain.User, error) {
 	if !token.Valid {
 		return nil, fmt.Errorf("invalid token")
 	}
-	userInfo := &domain.User{
+	userInfo := &user.User{
 		Id:    claims.UserID,
 		Name:  claims.Name,
 		Email: claims.Email,
@@ -122,7 +123,7 @@ func CheckAccess(role string, orgID int, requiredTier string) (bool, error) {
 	return false, nil
 }
 
-func GetUserDataFromCookie(c *fiber.Ctx) (*domain.User, error) {
+func GetUserDataFromCookie(c *fiber.Ctx) (*user.User, error) {
 	tokenString := c.Cookies("Authorization")
 	if tokenString == "" {
 		return nil, fmt.Errorf("no token string on cookie")

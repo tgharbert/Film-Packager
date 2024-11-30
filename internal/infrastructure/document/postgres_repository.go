@@ -3,7 +3,7 @@ package infrastructure
 import (
 	"context"
 	"database/sql"
-	"filmPackager/internal/domain"
+	"filmPackager/internal/domain/document"
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,16 +17,16 @@ func NewPostgresDocumentRepository(db *pgxpool.Pool) *PostgresDocumentRepository
 	return &PostgresDocumentRepository{db: db}
 }
 
-func (r *PostgresDocumentRepository) Save(ctx context.Context, doc *domain.Document) error {
+func (r *PostgresDocumentRepository) Save(ctx context.Context, doc *document.Document) error {
 	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	_, err := r.db.Exec(ctx, query, doc.OrganizationID, doc.UserID, doc.FileName, doc.FileType, doc.Date, doc.Color, doc.Status)
 	return err
 }
 
-func (r *PostgresDocumentRepository) FindStagedByType(ctx context.Context, orgID int, fileType string) (*domain.Document, error) {
+func (r *PostgresDocumentRepository) FindStagedByType(ctx context.Context, orgID int, fileType string) (*document.Document, error) {
 	checkStagedQuery := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE organization_id = $1 AND status = 'staged' AND file_type = $2`
 	row := r.db.QueryRow(ctx, checkStagedQuery, orgID, fileType)
-	var doc domain.Document
+	var doc document.Document
 	err := row.Scan(&doc.ID, &doc.OrganizationID, &doc.UserID, &doc.FileName, &doc.FileType, &doc.Status, &doc.Date, &doc.Color)
 	if err != sql.ErrNoRows {
 		return nil, nil
@@ -34,7 +34,7 @@ func (r *PostgresDocumentRepository) FindStagedByType(ctx context.Context, orgID
 	return &doc, nil
 }
 
-func (r *PostgresDocumentRepository) Delete(ctx context.Context, doc *domain.Document) error {
+func (r *PostgresDocumentRepository) Delete(ctx context.Context, doc *document.Document) error {
 	deleteQuery := `DELETE FROM documents WHERE id = $1`
 	_, err := r.db.Exec(ctx, deleteQuery, doc.ID)
 	return err

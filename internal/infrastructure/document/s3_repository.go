@@ -2,7 +2,7 @@ package infrastructure
 
 import (
 	"context"
-	"filmPackager/internal/domain"
+	"filmPackager/internal/domain/document"
 	"fmt"
 	"io"
 	"log"
@@ -22,7 +22,7 @@ func NewS3DocumentRepository(client *s3.Client, bucket string) *S3DocumentReposi
 	return &S3DocumentRepository{client: client, bucket: bucket}
 }
 
-func (r *S3DocumentRepository) UploadFile(ctx context.Context, doc *domain.Document, file multipart.File) error {
+func (r *S3DocumentRepository) UploadFile(ctx context.Context, doc *document.Document, file multipart.File) error {
 	key := doc.FileName
 	_, err := r.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(r.bucket),

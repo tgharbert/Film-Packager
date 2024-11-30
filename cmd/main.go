@@ -22,11 +22,15 @@ func main() {
 	// 	panic("pool issues!")
 	// }
 	// defer conn.Release()
-	engine := html.New("./templates", ".html")
+	engine := html.New("./views", ".html")
+	if err := engine.Load(); err != nil {
+		log.Fatalf("Failed to load templates: %v", err)
+	}
 	app := fiber.New(fiber.Config{
 		Views: engine,
 	})
 	app.Static("/static", "./static")
+
 	// routes.RegisterRoutes(app)
 	// wrap this up in a different file/struct??
 	userRepo := userInf.NewPostgresUserRepository(conn)

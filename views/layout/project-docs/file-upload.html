@@ -1,0 +1,23 @@
+{{define "fileUploadHTML" }}
+<div id="doc-input">
+  <form
+    hx-post="/file-submit/{{.Id}}"
+    name="file-form"
+    hx-encoding="multipart/form-data"
+    enctype="multipart/form-data"
+  >
+    <input type="file" name="file" />
+    <select name="file-type">
+      <option value="script">Script</option>
+      <option value="lookbook">Lookbook</option>
+      <option value="shotlist">Shotlist</option>
+      <option value="Budget">Budget</option>
+      <option value="schedule">Schedule</option>
+      <option value="synopsis">Synopsis</option>
+      <option value="logline">Logline</option>
+      <option value="story">Story</option>
+    </select>
+    <button class="button-std" type="submit">Submit File</button>
+  </form>
+</div>
+{{end}}

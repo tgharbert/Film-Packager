@@ -2,32 +2,24 @@ package application
 
 import (
 	"context"
-	"filmPackager/internal/domain"
+	"filmPackager/internal/domain/project"
+	"filmPackager/internal/domain/user"
+
 	"fmt"
 )
 
-type ProjectRepository interface {
-	GetProjectsForUserSelection(ctx context.Context, userId int) ([]*domain.ProjectOverview, error)
-	// GetProjectById(ctx, projectId int) (*domain.Project, error)
-	CreateNewProject(ctx context.Context, projectName string, userId int) (*domain.ProjectOverview, error)
-	DeleteProject(ctx context.Context, projectId int) error
-	GetProjectDetails(ctx context.Context, projectId int) (*domain.Project, error)
-	GetProjectUsers(ctx context.Context, projectId int) ([]*domain.ProjectMembership, error)
-	SearchForUsers(ctx context.Context, userName string) ([]*domain.ProjectMembership, error)
-}
-
 type ProjectService struct {
-	projRepo ProjectRepository
+	projRepo project.ProjectRepository
 }
 
-func NewProjectService(projRepo ProjectRepository) *ProjectService {
+func NewProjectService(projRepo project.ProjectRepository) *ProjectService {
 	return &ProjectService{
 		projRepo: projRepo,
 	}
 }
 
 // should this take in the User then get the projects and sort them for the user??
-func (s *ProjectService) GetUsersProjects(ctx context.Context, user *domain.User) (*domain.User, error) {
+func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) (*user.User, error) {
 	// do auth work here?
 	projects, err := s.projRepo.GetProjectsForUserSelection(ctx, user.Id)
 	if err != nil {
@@ -45,7 +37,7 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *domain.User
 	return user, nil
 }
 
-func (s *ProjectService) CreateNewProject(ctx context.Context, projectName string, userId int) (*domain.ProjectOverview, error) {
+func (s *ProjectService) CreateNewProject(ctx context.Context, projectName string, userId int) (*project.ProjectOverview, error) {
 	project, err := s.projRepo.CreateNewProject(ctx, projectName, userId)
 	if err != nil {
 		return nil, fmt.Errorf("error with project creation: %v", err)
@@ -54,7 +46,7 @@ func (s *ProjectService) CreateNewProject(ctx context.Context, projectName strin
 }
 
 // should this be in the user service??
-func (s *ProjectService) DeleteProject(ctx context.Context, projectId int, user *domain.User) (*domain.User, error) {
+func (s *ProjectService) DeleteProject(ctx context.Context, projectId int, user *user.User) (*user.User, error) {
 	err := s.projRepo.DeleteProject(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error deleting projects from db: %v", err)
@@ -76,7 +68,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId int, user 
 	return user, nil
 }
 
-func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (*domain.Project, error) {
+func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (*project.Project, error) {
 	// get the project from the db
 	project, err := s.projRepo.GetProjectDetails(ctx, projectId)
 	if err != nil {
@@ -96,10 +88,19 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (
 	return project, nil
 }
 
-func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([]*domain.ProjectMembership, error) {
+func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([]*project.ProjectMembership, error) {
 	users, err := s.projRepo.SearchForUsers(ctx, userName)
 	if err != nil {
 		return nil, fmt.Errorf("error searching for users: %v", err)
 	}
+	return users, nil
+}
+
+func (s *ProjectService) InviteUserToProject(ctx context.Context, projectId int, userId int, role string) ([]*project.ProjectMembership, error) {
+	err := s.projRepo.InviteUserToProject(ctx, projectId, userId, role)
+	if err != nil {
+		return nil, fmt.Errorf("error inviting user to project: %v", err)
+	}
+	users, err := s.projRepo.GetProjectUsers(ctx, projectId)
 	return users, nil
 }

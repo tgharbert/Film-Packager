@@ -4,62 +4,61 @@ import (
 	"context"
 	"errors"
 	access "filmPackager/internal/auth"
-	"filmPackager/internal/domain"
+
+	// "filmPackager/internal/domain"
+	"filmPackager/internal/domain/project"
+	"filmPackager/internal/domain/user"
 	"fmt"
 )
 
-type UserRepository interface {
-	CreateNewUser(ctx context.Context, user *domain.User) error
-	// InviteUserToOrg(ctx context.Context, user *domain.User)
-	GetUserByEmail(ctx context.Context, email string, password string) (*domain.User, error)
-}
+// type UserRepository interface {
+// 	CreateNewUser(ctx context.Context, user *user.User) error
+// 	// InviteUserToOrg(ctx context.Context, user *user.User)
+// 	GetUserByEmail(ctx context.Context, email string, password string) (*user.User, error)
+// }
 
 type UserService struct {
-	userRepo UserRepository
-	projRepo ProjectRepository
+	userRepo user.UserRepository
+	projRepo project.ProjectRepository
 }
 
-func NewUserService(userRepo UserRepository, projRepo ProjectRepository) *UserService {
+func NewUserService(userRepo user.UserRepository, projRepo project.ProjectRepository) *UserService {
 	return &UserService{userRepo: userRepo, projRepo: projRepo}
 }
 
-func (s *UserService) UserLogin(ctx context.Context, email string, password string) (*domain.User, error) {
+func (s *UserService) UserLogin(ctx context.Context, email string, password string) (*user.User, error) {
 	hashedStr, err := access.HashPassword(password)
 	if err != nil {
 		return nil, fmt.Errorf("error hashing password: %v", err)
 	}
-	user, err := s.userRepo.GetUserByEmail(ctx, email, hashedStr)
-	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
+	existingUser, err := s.userRepo.GetUserByEmail(ctx, email, hashedStr)
+	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
+		fmt.Println("error checking for existing user", err)
 		return nil, fmt.Errorf("error checking for existing user: %v", err)
 	}
-	if errors.Is(err, domain.ErrUserNotFound) {
-		return nil, domain.ErrUserNotFound
-	} else if errors.Is(err, domain.ErrUserAlreadyExists) {
-		return nil, domain.ErrUserAlreadyExists
+	if errors.Is(err, user.ErrUserNotFound) {
+		return nil, user.ErrUserNotFound
+	} else if errors.Is(err, user.ErrUserAlreadyExists) {
+		return nil, user.ErrUserAlreadyExists
 	}
-	return user, nil
+	return existingUser, nil
 }
 
-func (s *UserService) CreateUserAccount(ctx context.Context, user *domain.User) (*domain.User, error) {
-	hashedStr, err := access.HashPassword(user.Password)
+func (s *UserService) CreateUserAccount(ctx context.Context, newUser *user.User) (*user.User, error) {
+	hashedStr, err := access.HashPassword(newUser.Password)
 	if err != nil {
 		return nil, fmt.Errorf("error hashing password: %v", err)
 	}
-	user, err = s.userRepo.GetUserByEmail(ctx, user.Email, hashedStr)
-	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
-		return nil, domain.ErrUserAlreadyExists
+	_, err = s.userRepo.GetUserByEmail(ctx, newUser.Email, hashedStr)
+	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
+		return nil, user.ErrUserAlreadyExists
 	}
-	user = &domain.User{
-		Name:     user.Name,
-		Email:    user.Email,
-		Password: hashedStr,
-	}
-	err = s.userRepo.CreateNewUser(ctx, user)
+	err = s.userRepo.CreateNewUser(ctx, newUser)
 	if err != nil {
 		return nil, fmt.Errorf("error creating user: %v", err)
 	}
 	// I don't need to get the projects here bc the new user won't have any
-	return user, nil
+	return newUser, nil
 }
 
 func (s *UserService) InviteUserToOrg(ctx context.Context, userID int) error {

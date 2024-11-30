@@ -2,35 +2,20 @@ package application
 
 import (
 	"context"
-	"filmPackager/internal/domain"
+	"filmPackager/internal/domain/document"
 )
 
-type DocumentRepository interface {
-	Save(ctx context.Context, doc *domain.Document) error
-	FindStagedByType(ctx context.Context, orgID int, fileType string) (*domain.Document, error)
-	Delete(ctx context.Context, doc *domain.Document) error
-	GetKeysForDeleteAll(ctx context.Context, orgID int) ([]string, error)
-}
-
-type S3Repository interface {
-	UploadFile(ctx context.Context, doc *domain.Document, fileBody interface{}) (string, error)
-	DeleteFile(ctx context.Context, fileName string) error
-	DeleteAllOrgFiles(ctx context.Context, keys []string) error
-	// yet to write
-	DownloadFile(ctx context.Context, key string) error
-}
-
 type DocumentService struct {
-	docRepo DocumentRepository
-	s3Repo  S3Repository
+	docRepo document.DocumentRepository
+	s3Repo  document.S3Repository
 }
 
-func NewDocumentService(docRepo DocumentRepository, s3Repo S3Repository) *DocumentService {
+func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3Repository) *DocumentService {
 	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo}
 }
 
 // this should return the data for the html frag with the date or whatever
-func (s *DocumentService) UploadDocument(ctx context.Context, doc *domain.Document, fileBody interface{}) error {
+func (s *DocumentService) UploadDocument(ctx context.Context, doc *document.Document, fileBody interface{}) error {
 	existingDoc, err := s.docRepo.FindStagedByType(ctx, doc.OrganizationID, doc.FileType)
 	if err != nil {
 		return err
