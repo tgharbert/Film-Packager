@@ -3,9 +3,7 @@ package infrastructure
 import (
 	"context"
 	"errors"
-
 	"filmPackager/internal/domain/user"
-
 	"fmt"
 
 	"github.com/jackc/pgx/v5"

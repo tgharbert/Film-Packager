@@ -33,7 +33,6 @@ func (s *UserService) UserLogin(ctx context.Context, email string, password stri
 	}
 	existingUser, err := s.userRepo.GetUserByEmail(ctx, email, hashedStr)
 	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
-		fmt.Println("error checking for existing user", err)
 		return nil, fmt.Errorf("error checking for existing user: %v", err)
 	}
 	if errors.Is(err, user.ErrUserNotFound) {
@@ -49,8 +48,11 @@ func (s *UserService) CreateUserAccount(ctx context.Context, newUser *user.User)
 	if err != nil {
 		return nil, fmt.Errorf("error hashing password: %v", err)
 	}
-	_, err = s.userRepo.GetUserByEmail(ctx, newUser.Email, hashedStr)
+	existingUser, err := s.userRepo.GetUserByEmail(ctx, newUser.Email, hashedStr)
 	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
+		return nil, user.ErrUserAlreadyExists
+	}
+	if existingUser != nil {
 		return nil, user.ErrUserAlreadyExists
 	}
 	err = s.userRepo.CreateNewUser(ctx, newUser)
@@ -59,13 +61,4 @@ func (s *UserService) CreateUserAccount(ctx context.Context, newUser *user.User)
 	}
 	// I don't need to get the projects here bc the new user won't have any
 	return newUser, nil
-}
-
-func (s *UserService) InviteUserToOrg(ctx context.Context, userID int) error {
-	// check that the user doesn't already belong to the org
-
-	// invite the user to the org
-
-	// add user to the "staged" project data
-	return nil
 }

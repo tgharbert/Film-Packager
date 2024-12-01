@@ -8,7 +8,6 @@ import (
 	"filmPackager/internal/domain/user"
 	"filmPackager/internal/store/db"
 	"fmt"
-	"net/mail"
 	"strconv"
 	"strings"
 	"time"
@@ -33,14 +32,9 @@ func RegisterRoutes(app *fiber.App, userService *application.UserService, projec
 	app.Get("/logout/", LogoutUser(userService))
 	app.Post("/file-submit/:project_id", UploadDocumentHandler(documentService))
 	app.Post("/search-users/:id", SearchUsers(projectService))
-	app.Post("/invite-member/:id/:project_id", InviteMember(projectService))
-	// app.Post("/join-org/:project_id/:role", JoinOrg)
+	app.Post("/invite-member/:id/:project_id/", InviteMember(projectService))
+	app.Post("/join-org/:project_id/:role", JoinOrg(projectService))
 	app.Get("/delete-project/:project_id/", DeleteProject(projectService))
-}
-
-func isValidEmail(email string) bool {
-	_, err := mail.ParseAddress(email)
-	return err == nil
 }
 
 // user handlers:
@@ -71,40 +65,47 @@ func PostCreateAccount(svc *application.UserService) fiber.Handler {
 		var mess string
 		if firstName == "" || lastName == "" {
 			mess = "Error: please enter first and last name!"
-			return c.Render("create-accountHTML", mess)
+			return c.Render("create-accountHTML", fiber.Map{
+				"Error": mess,
+			})
 		}
 		if email == "" {
 			mess = "Error: email field left blank!"
-			return c.Render("create-accountHTML", mess)
+			return c.Render("create-accountHTML", fiber.Map{
+				"Error": mess,
+			})
 		}
 		if password != secondPassword {
 			mess = "Error: passwords do not match!"
-			return c.Render("create-accountHTML", mess)
+			return c.Render("create-accountHTML", fiber.Map{
+				"Error": mess,
+			})
 		}
 		if len(password) < 6 || len(secondPassword) < 6 {
 			mess = "Error: password need to be at least 6 characters!"
-			return c.Render("create-accountHTML", mess)
+			return c.Render("create-accountHTML", fiber.Map{
+				"Error": mess,
+			})
 		}
-		if !isValidEmail(email) {
+		if !user.IsValidEmail(email) {
 			mess = "Error: invalid email address"
-			return c.Render("create-accountHTML", mess)
+			return c.Render("create-accountHTML", fiber.Map{
+				"Error": mess,
+			})
 		}
 		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error hashing password")
 		}
 		hashedStr := string(hash)
-		var newUser = &user.User{
-			Email:    email,
-			Name:     username,
-			Password: hashedStr,
-		}
+		newUser := user.CreateNewUser(username, email, hashedStr)
 		createdUser, err := svc.CreateUserAccount(c.Context(), newUser)
 		if err != nil {
-			// if the user already exists, return an error
 			if errors.Is(err, user.ErrUserAlreadyExists) {
 				mess = "Error: user already exists!"
-				return c.Render("create-accountHTML", mess)
+				return c.Render("create-accountHTML", fiber.Map{
+					"Error": mess,
+				})
 			}
 			return c.Status(fiber.StatusInternalServerError).SendString("error creating user")
 		}
@@ -119,7 +120,6 @@ func PostCreateAccount(svc *application.UserService) fiber.Handler {
 			Path:     "/",
 			Expires:  time.Now().Add(48 * time.Hour),
 		})
-		fmt.Println("createdUser", createdUser)
 		return c.Redirect("/")
 	}
 }
@@ -177,7 +177,7 @@ func InviteMember(svc *application.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing user Id from request")
 		}
-		users, err := svc.InviteUserToProject(c.Context(), userIdInt, projIdInt, role)
+		users, err := svc.InviteMember(c.Context(), userIdInt, projIdInt, role)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error inviting user to project")
 		}
@@ -190,12 +190,16 @@ func InviteMember(svc *application.ProjectService) fiber.Handler {
 func LogoutUser(svc *application.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		c.Cookie(&fiber.Cookie{
-			Name:     "Authorization",
-			Value:    "",
-			Expires:  time.Now().Add(-time.Hour), // Set expiration to the past to delete the cookie
-			Path:     "/",                        // Ensure the path is the same as when the cookie was set
-			HTTPOnly: true,                       // Ensure other flags match those of the original cookie
-			Secure:   true,                       // Set to true if the original cookie was secure
+			Name:  "Authorization",
+			Value: "",
+			// Set expiration to the past to delete the cookie
+			Expires: time.Now().Add(-time.Hour),
+			// Ensure the path is the same as when the cookie was set
+			Path: "/",
+			// Ensure other flags match those of the original cookie
+			HTTPOnly: true,
+			// Set to true if the original cookie was secure
+			Secure: true,
 		})
 		return c.Redirect("/login/")
 	}
@@ -266,7 +270,6 @@ func DeleteProject(svc *application.ProjectService) fiber.Handler {
 	}
 }
 
-// I AM HERE!!
 func GetProject(svc *application.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		projectId := c.Params("project_id")
@@ -278,7 +281,6 @@ func GetProject(svc *application.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error retrieving project data")
 		}
-		// fmt.Println("project", *project)
 		return c.Render("project-page", *project)
 	}
 }
@@ -314,13 +316,34 @@ func UploadDocumentHandler(svc *application.DocumentService) fiber.Handler {
 func SearchUsers(svc *application.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		username := c.FormValue("username")
-		// id := c.Params("id")
-		users, err := db.SearchForUsers(db.DBPool, username)
+		id := c.Params("id")
+		users, err := svc.SearchForUsers(c.Context(), username)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
 		}
-		return c.Render("invite-memberHTML", fiber.Map{
+		return c.Render("search-resultsHTML", fiber.Map{
 			"SearchedMembers": users,
+			"ProjectId":       id,
 		})
+	}
+}
+
+func JoinOrg(svc *application.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		projectId := c.Params("project_id")
+		role := c.Params("role")
+		projIdInt, err := strconv.Atoi(projectId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+		userInfo, err := access.GetUserDataFromCookie(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
+		}
+		user, err := svc.JoinProject(c.Context(), projIdInt, userInfo.Id, role)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error joining project")
+		}
+		return c.Render("selectOrgHTML", fiber.Map{"Memberships": user})
 	}
 }

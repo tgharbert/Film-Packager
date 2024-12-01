@@ -142,11 +142,22 @@ func (r *PostgresProjectRepository) SearchForUsers(ctx context.Context, name str
 	return users, nil
 }
 
-func (r *PostgresProjectRepository) InviteUserToProject(ctx context.Context, projectId int, userId int, role string) error {
-	query := `INSERT INTO memberships (user_id, organization_id, access_tier, invite_status) VALUES ($1, $2, $3, $4)`
-	_, err := r.db.Exec(ctx, query, userId, projectId, role, "invited")
+func (r *PostgresProjectRepository) InviteMember(ctx context.Context, userId int, projectId int, role string) error {
+	// query to write membership to db
+	query := `INSERT INTO memberships (user_id, organization_id, access_tier) VALUES ($1, $2, $3)`
+	_, err := r.db.Exec(ctx, query, userId, projectId, role)
 	if err != nil {
 		return fmt.Errorf("error inviting user to project: %v", err)
+	}
+	return nil
+}
+
+func (r *PostgresProjectRepository) JoinProject(ctx context.Context, projectId int, userId int, role string) error {
+	query := `UPDATE memberships SET invite_status = 'accepted' WHERE user_id = $1 AND organization_id = $2 AND access_tier = $3`
+	fmt.Printf("Debug: userId=%d, projectId=%d, role=%s\n", userId, projectId, role)
+	_, err := r.db.Exec(ctx, query, userId, projectId, role)
+	if err != nil {
+		return fmt.Errorf("error joining project: %v", err)
 	}
 	return nil
 }

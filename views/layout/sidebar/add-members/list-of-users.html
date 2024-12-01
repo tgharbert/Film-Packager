@@ -2,7 +2,7 @@
 <li>
   {{.UserName}}
   <form
-    hx-post="/invite-member/{{.UserId}}/{{$.ProjectId}}"
+    hx-post="/invite-member/{{.UserId}}/{{$.ProjectId}}/"
     hx-swap="innerHTML"
     hx-target="#invites"
   >

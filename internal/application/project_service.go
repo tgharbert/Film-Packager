@@ -27,7 +27,7 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 	}
 	for _, project := range projects {
 		// sort the roles in each project here as well
-		if project.Status == "invited" {
+		if project.Status == "pending" {
 			user.Invited = append(user.Invited, *project)
 		}
 		if project.Status == "accepted" {
@@ -82,25 +82,40 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (
 	// I would also like to sort the members if possible
 	for _, member := range members {
 		project.Members = append(project.Members, *member)
-		// fmt.Println("members: ", *member)
 	}
 	// sort the roles??
 	return project, nil
 }
 
-func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([]*project.ProjectMembership, error) {
+func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([]project.ProjectMembership, error) {
 	users, err := s.projRepo.SearchForUsers(ctx, userName)
 	if err != nil {
 		return nil, fmt.Errorf("error searching for users: %v", err)
 	}
-	return users, nil
+	foundMembers := []project.ProjectMembership{}
+	for _, user := range users {
+		foundMembers = append(foundMembers, *user)
+	}
+	return foundMembers, nil
 }
 
-func (s *ProjectService) InviteUserToProject(ctx context.Context, projectId int, userId int, role string) ([]*project.ProjectMembership, error) {
-	err := s.projRepo.InviteUserToProject(ctx, projectId, userId, role)
+func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId int, role string) ([]*project.ProjectMembership, error) {
+	err := s.projRepo.InviteMember(ctx, projectId, userId, role)
 	if err != nil {
 		return nil, fmt.Errorf("error inviting user to project: %v", err)
 	}
 	users, err := s.projRepo.GetProjectUsers(ctx, projectId)
 	return users, nil
+}
+
+// should this be in the user service??
+func (s *ProjectService) JoinProject(ctx context.Context, projectId int, userId int, role string) ([]*project.ProjectOverview, error) {
+	err := s.projRepo.JoinProject(ctx, projectId, userId, role)
+	if err != nil {
+		return nil, fmt.Errorf("error joining project: %v", err)
+	}
+	projects, err := s.projRepo.GetProjectsForUserSelection(ctx, userId)
+
+	// users, err := s.projRepo.GetProjectUsers(ctx, projectId)
+	return projects, nil
 }

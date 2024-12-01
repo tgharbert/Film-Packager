@@ -101,13 +101,11 @@ func PostLoginSubmit(c *fiber.Ctx) error {
 func GetLoginPage(c *fiber.Ctx) error {
 	tokenString := c.Cookies("Authorization")
 	if tokenString == "" {
-		fmt.Println("here is the error point")
 		return c.Render("login-form", nil)
 	}
 	tokenString = tokenString[len("Bearer "):]
 	err := access.VerifyToken(tokenString)
 	if err != nil {
-		fmt.Println("hit the second error")
 		return c.Render("login-form", nil)
 	}
 	return c.Redirect("/")
@@ -216,7 +214,6 @@ func GetProject(c *fiber.Ctx) error {
 	}
 	projectPageData, err := db.GetProjectPageData(db.DBPool, idInt)
 	if err != nil {
-		fmt.Println("error here: ", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("error retriving project information")
 	}
 	return c.Render("project-page", projectPageData)

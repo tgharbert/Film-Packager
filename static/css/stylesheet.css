@@ -176,3 +176,8 @@ h2 {
   padding: 0.4rem;
   margin: 0.2rem;
 }
+
+.login-error {
+  font: 400;
+  margin-top: 0.5rem;
+}
