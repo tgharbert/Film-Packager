@@ -138,7 +138,7 @@ func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId
 }
 
 // should this be in the user service??
-func (s *ProjectService) JoinProject(ctx context.Context, projectId int, userId int, role string) ([]*project.ProjectOverview, error) {
+func (s *ProjectService) JoinProject(ctx context.Context, projectId int, userId int) ([]*project.ProjectOverview, error) {
 	err := s.projRepo.JoinProject(ctx, projectId, userId)
 	if err != nil {
 		return nil, fmt.Errorf("error joining project: %v", err)

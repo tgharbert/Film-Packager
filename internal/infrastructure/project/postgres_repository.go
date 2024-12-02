@@ -167,8 +167,7 @@ func (r *PostgresProjectRepository) InviteMember(ctx context.Context, projectId 
 }
 
 func (r *PostgresProjectRepository) JoinProject(ctx context.Context, projectId int, userId int) error {
-	query := `UPDATE memberships SET invite_status = 'accepted' WHERE user_id = $1 AND organization_id = $2 AND access_tier = $3`
-	fmt.Printf("Debug: userId=%d, projectId=%d\n", userId, projectId)
+	query := `UPDATE memberships SET invite_status = 'accepted' WHERE user_id = $1 AND organization_id = $2`
 	_, err := r.db.Exec(ctx, query, userId, projectId)
 	if err != nil {
 		return fmt.Errorf("error joining project: %v", err)
