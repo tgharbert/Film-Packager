@@ -70,7 +70,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId int, user 
 
 func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (*project.Project, error) {
 	// get the project from the db
-	project, err := s.projRepo.GetProjectDetails(ctx, projectId)
+	projectDetails, err := s.projRepo.GetProjectDetails(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project from db: %v", err)
 	}
@@ -78,13 +78,15 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (
 	if err != nil {
 		return nil, fmt.Errorf("error getting project users from db: %v", err)
 	}
-	// i have the data, but I need to sort the roles
-	// I would also like to sort the members if possible
 	for _, member := range members {
-		project.Members = append(project.Members, *member)
+		member.Roles = project.SortRoles(member.Roles)
+		if member.InviteStatus == "pending" {
+			projectDetails.Invited = append(projectDetails.Invited, *member)
+		} else if member.InviteStatus == "accepted" {
+			projectDetails.Members = append(projectDetails.Members, *member)
+		}
 	}
-	// sort the roles??
-	return project, nil
+	return projectDetails, nil
 }
 
 func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([]project.ProjectMembership, error) {
@@ -105,6 +107,7 @@ func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId
 		return nil, fmt.Errorf("error inviting user to project: %v", err)
 	}
 	users, err := s.projRepo.GetProjectUsers(ctx, projectId)
+	// here the users need to be sorted
 	return users, nil
 }
 
@@ -115,7 +118,6 @@ func (s *ProjectService) JoinProject(ctx context.Context, projectId int, userId 
 		return nil, fmt.Errorf("error joining project: %v", err)
 	}
 	projects, err := s.projRepo.GetProjectsForUserSelection(ctx, userId)
-
 	// users, err := s.projRepo.GetProjectUsers(ctx, projectId)
 	return projects, nil
 }

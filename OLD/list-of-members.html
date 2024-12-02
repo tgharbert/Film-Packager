@@ -3,9 +3,9 @@
   {{template "search-membersHTML" .}}
   <h2 id="sub-header">Invited</h2>
   <ul>
-    {{range .Members}} {{if eq .InviteStatus "pending"}}
+    {{range .Invited}}
     <li id="{{.Id}}">{{.Name}} <i>{{.Role}}</i></li>
-    {{end}} {{end}}
+    {{end}}
   </ul>
 </div>
 {{end}}

@@ -2,7 +2,7 @@ package project
 
 import (
 	"filmPackager/internal/domain/document"
-	"strings"
+	"slices"
 )
 
 type Project struct {
@@ -16,10 +16,11 @@ type Project struct {
 }
 
 type ProjectMembership struct {
-	UserId    int
-	UserName  string
-	UserEmail string
-	Roles     []string
+	UserId       int
+	UserName     string
+	UserEmail    string
+	Roles        []string
+	InviteStatus string
 }
 
 type ProjectOverview struct {
@@ -42,27 +43,27 @@ type ProjectDocs struct {
 	Bios              document.Document
 }
 
-func SortRoles(rolesStr string) []string {
+func SortRoles(rolesSlc []string) []string {
 	var orderedRoles []string
-	if strings.Contains(rolesStr, "owner") {
+	if slices.Contains(rolesSlc, "owner") {
 		orderedRoles = append(orderedRoles, "owner")
 	}
-	if strings.Contains(rolesStr, "director") {
+	if slices.Contains(rolesSlc, "director") {
 		orderedRoles = append(orderedRoles, "director")
 	}
-	if strings.Contains(rolesStr, "producer") {
+	if slices.Contains(rolesSlc, "producer") {
 		orderedRoles = append(orderedRoles, "producer")
 	}
-	if strings.Contains(rolesStr, "writer") {
+	if slices.Contains(rolesSlc, "writer") {
 		orderedRoles = append(orderedRoles, "writer")
 	}
-	if strings.Contains(rolesStr, "cinematographer") {
+	if slices.Contains(rolesSlc, "cinematographer") {
 		orderedRoles = append(orderedRoles, "cinematographer")
 	}
-	if strings.Contains(rolesStr, "production designer") {
+	if slices.Contains(rolesSlc, "production designer") {
 		orderedRoles = append(orderedRoles, "production designer")
 	}
-	if strings.Contains(rolesStr, "reader") {
+	if slices.Contains(rolesSlc, "reader") {
 		orderedRoles = append(orderedRoles, "reader")
 	}
 	return orderedRoles

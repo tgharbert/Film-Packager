@@ -94,6 +94,7 @@ func (r *PostgresProjectRepository) GetProjectUsers(ctx context.Context, project
     u.id AS user_id,
     u.name AS user_name,
     u.email AS user_email,
+		m.invite_status AS status,
     array_agg(m.access_tier) AS user_roles
 FROM
     memberships m
@@ -102,16 +103,18 @@ JOIN
 WHERE
     m.organization_id = $1
 GROUP BY
-    u.id, u.name, u.email;
+    u.id, u.name, u.email, m.invite_status;
 `
 	var members []*project.ProjectMembership
 	rows, err := r.db.Query(ctx, query, projectId)
 	if err != nil {
+		fmt.Println("here is the error: ", err)
+
 		return nil, fmt.Errorf("error getting project's users: %v", err)
 	}
 	for rows.Next() {
 		member := &project.ProjectMembership{}
-		err := rows.Scan(&member.UserId, &member.UserName, &member.UserEmail, &member.Roles)
+		err := rows.Scan(&member.UserId, &member.UserName, &member.UserEmail, &member.InviteStatus, &member.Roles)
 		if err != nil {
 			return nil, err
 		}
