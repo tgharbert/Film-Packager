@@ -101,19 +101,42 @@ func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([
 	return foundMembers, nil
 }
 
-func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId int, role string) ([]*project.ProjectMembership, error) {
-	err := s.projRepo.InviteMember(ctx, projectId, userId, role)
+func (s *ProjectService) GetProjectUser(ctx context.Context, projectId int, userId int) (*project.ProjectMembership, error) {
+	user, err := s.projRepo.GetProjectUser(ctx, projectId, userId)
 	if err != nil {
-		return nil, fmt.Errorf("error inviting user to project: %v", err)
+		return nil, fmt.Errorf("error getting user from project: %v", err)
 	}
+	return user, nil
+}
+
+func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId int) ([]*project.ProjectMembership, error) {
+	// check if member is already invited
+	user, err := s.projRepo.GetProjectUser(ctx, projectId, userId)
+	if err != nil && err != project.ErrMemberNotFound {
+		return nil, fmt.Errorf("error getting user from project: %v", err)
+	}
+	if err == project.ErrMemberNotFound {
+		err = s.projRepo.InviteMember(ctx, projectId, userId)
+		if err != nil {
+			return nil, fmt.Errorf("error inviting user to project: %v", err)
+		}
+	}
+	fmt.Println("user: ", user)
+	// if user != nil {
+	// 	fmt.Println("user: ", user)
+	// }
+	// if user.InviteStatus == "pending" {
+	// 	return nil, project.ErrMemberAlreadyInvited
+	// }
+	// err = s.projRepo.InviteMember(ctx, projectId, userId)
 	users, err := s.projRepo.GetProjectUsers(ctx, projectId)
-	// here the users need to be sorted
+	fmt.Println("users: ", users)
 	return users, nil
 }
 
 // should this be in the user service??
 func (s *ProjectService) JoinProject(ctx context.Context, projectId int, userId int, role string) ([]*project.ProjectOverview, error) {
-	err := s.projRepo.JoinProject(ctx, projectId, userId, role)
+	err := s.projRepo.JoinProject(ctx, projectId, userId)
 	if err != nil {
 		return nil, fmt.Errorf("error joining project: %v", err)
 	}

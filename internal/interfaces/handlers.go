@@ -5,6 +5,7 @@ import (
 	"filmPackager/internal/application"
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/domain/document"
+	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"filmPackager/internal/store/db"
 	"fmt"
@@ -168,7 +169,6 @@ func InviteMember(svc *application.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userId := c.Params("id")
 		projectId := c.Params("project_id")
-		role := c.FormValue("role")
 		projIdInt, err := strconv.Atoi(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing project Id from request")
@@ -177,8 +177,16 @@ func InviteMember(svc *application.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing user Id from request")
 		}
-		users, err := svc.InviteMember(c.Context(), userIdInt, projIdInt, role)
+		var errMess string
+		users, err := svc.InviteMember(c.Context(), userIdInt, projIdInt)
 		if err != nil {
+			if err == project.ErrMemberAlreadyInvited {
+				// return the proper html fragment
+				errMess = "You've already invited this user!"
+				return c.Render("project-list", fiber.Map{
+					"Error": errMess,
+				})
+			}
 			return c.Status(fiber.StatusInternalServerError).SendString("error inviting user to project")
 		}
 		return c.Render("project-list", fiber.Map{

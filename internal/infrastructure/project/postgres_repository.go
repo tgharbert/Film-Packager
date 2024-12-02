@@ -2,11 +2,13 @@ package infrastructure
 
 import (
 	"context"
+	"errors"
 
 	"fmt"
 
 	"filmPackager/internal/domain/project"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,22 +23,21 @@ func NewPostgresProjectRepository(db *pgxpool.Pool) *PostgresProjectRepository {
 func (r *PostgresProjectRepository) GetProjectsForUserSelection(ctx context.Context, userId int) ([]*project.ProjectOverview, error) {
 	query := `
         SELECT
-            o.id,
-            o.name,
-            array_agg(m.access_tier) AS roles,
-            m.invite_status
-        FROM
-            organizations o
-        JOIN
-            memberships m ON o.id = m.organization_id
-        WHERE
-            m.user_id = $1
-        GROUP BY
-            o.id, o.name, m.invite_status;
+    o.id,
+    o.name,
+    m.access_tier AS roles, -- Directly retrieve the array from the column
+    m.invite_status
+FROM
+    organizations o
+JOIN
+    memberships m ON o.id = m.organization_id
+WHERE
+    m.user_id = $1;
     `
 	var projects []*project.ProjectOverview
 	rows, err := r.db.Query(ctx, query, userId)
 	if err != nil {
+		fmt.Println("error in query: ", err)
 		return nil, fmt.Errorf("error querying db: %v", err)
 	}
 	defer rows.Close()
@@ -54,19 +55,35 @@ func (r *PostgresProjectRepository) GetProjectsForUserSelection(ctx context.Cont
 }
 
 func (r *PostgresProjectRepository) CreateNewProject(ctx context.Context, projectName string, ownerId int) (*project.ProjectOverview, error) {
+	// ensure that both transactions fail or succeed together
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %v", err)
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback(ctx)
+			panic(p)
+		} else if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
 	orgQuery := `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
 	var project project.ProjectOverview
-	err := r.db.QueryRow(context.Background(), orgQuery, projectName).Scan(&project.Id, &project.Name)
-	project.Roles = append(project.Roles, "owner")
-	// project.Status = "accepted"
+	err = r.db.QueryRow(ctx, orgQuery, projectName).Scan(&project.Id, &project.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert into organizations: %v", err)
 	}
+	accessTiers := []string{"owner"}
 	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier, invite_status) VALUES ($1, $2, $3, $4) RETURNING access_tier, invite_status`
-	_, err = r.db.Exec(context.Background(), memberQuery, ownerId, project.Id, "owner", "accepted")
+	_, err = r.db.Exec(ctx, memberQuery, ownerId, project.Id, accessTiers, "accepted")
 	if err != nil {
+		fmt.Println("error in query: ", err)
 		return nil, fmt.Errorf("failed to insert into memberships: %v", err)
 	}
+	project.Roles = accessTiers
 	return &project, nil
 }
 
@@ -145,22 +162,47 @@ func (r *PostgresProjectRepository) SearchForUsers(ctx context.Context, name str
 	return users, nil
 }
 
-func (r *PostgresProjectRepository) InviteMember(ctx context.Context, userId int, projectId int, role string) error {
-	// query to write membership to db
-	query := `INSERT INTO memberships (user_id, organization_id, access_tier) VALUES ($1, $2, $3)`
-	_, err := r.db.Exec(ctx, query, userId, projectId, role)
+func (r *PostgresProjectRepository) InviteMember(ctx context.Context, userId int, projectId int) error {
+	query := `INSERT INTO memberships (user_id, organization_id) VALUES ($1, $2)`
+	_, err := r.db.Exec(ctx, query, userId, projectId)
 	if err != nil {
 		return fmt.Errorf("error inviting user to project: %v", err)
 	}
 	return nil
 }
 
-func (r *PostgresProjectRepository) JoinProject(ctx context.Context, projectId int, userId int, role string) error {
+func (r *PostgresProjectRepository) JoinProject(ctx context.Context, projectId int, userId int) error {
 	query := `UPDATE memberships SET invite_status = 'accepted' WHERE user_id = $1 AND organization_id = $2 AND access_tier = $3`
-	fmt.Printf("Debug: userId=%d, projectId=%d, role=%s\n", userId, projectId, role)
-	_, err := r.db.Exec(ctx, query, userId, projectId, role)
+	fmt.Printf("Debug: userId=%d, projectId=%d\n", userId, projectId)
+	_, err := r.db.Exec(ctx, query, userId, projectId)
 	if err != nil {
 		return fmt.Errorf("error joining project: %v", err)
 	}
 	return nil
+}
+
+func (r *PostgresProjectRepository) GetProjectUser(ctx context.Context, userId int, projectId int) (*project.ProjectMembership, error) {
+	query := `SELECT
+    u.id AS user_id,
+    u.name AS user_name,
+    u.email AS user_email,
+    m.invite_status AS status,
+    m.access_tier AS user_role
+FROM
+    memberships m
+JOIN
+    users u ON m.user_id = u.id
+WHERE
+    m.organization_id = $1 AND m.user_id = $2;
+`
+	user := project.ProjectMembership{}
+	err := r.db.QueryRow(ctx, query, projectId, userId).Scan(&user.UserId, &user.UserName, &user.UserEmail, &user.InviteStatus, &user.Roles)
+	// check if there are no rows for this user/project
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, project.ErrMemberNotFound
+		}
+		return nil, fmt.Errorf("error getting user from project: %v", err)
+	}
+	return &user, nil
 }

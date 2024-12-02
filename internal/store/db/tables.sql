@@ -20,7 +20,7 @@ CREATE TABLE "memberships" (
     "id" serial PRIMARY KEY,
     "user_id" int,
     "organization_id" int REFERENCES organizations(id) ON DELETE CASCADE,
-    "access_tier" VARCHAR(20),
+    "access_tier" TEXT[] DEFAULT ARRAY['reader'],
     "invite_status" invite_status DEFAULT 'pending'
 );
 
