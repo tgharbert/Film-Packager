@@ -4,7 +4,7 @@
   <form
     hx-post="/invite-member/{{.UserId}}/{{$.ProjectId}}/"
     hx-swap="innerHTML"
-    hx-target="#invites"
+    hx-target="#invited-members"
   >
     <button class="button-std" type="submit">Invite</button>
   </form>

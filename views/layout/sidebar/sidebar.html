@@ -16,11 +16,7 @@
   <div id="invites">
     {{template "search-membersHTML" .}}
     <h2 id="sub-header">Invited Members:</h2>
-    <ul>
-      {{range .Invited}}
-      <li id="{{.UserId}}">{{.UserName}}</li>
-      {{end}}
-    </ul>
+    <div id="invited-members">{{template "invited-membersHTML" .}}</div>
   </div>
 </div>
 {{end}}

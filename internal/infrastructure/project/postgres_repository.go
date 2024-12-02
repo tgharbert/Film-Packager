@@ -80,7 +80,6 @@ func (r *PostgresProjectRepository) CreateNewProject(ctx context.Context, projec
 	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier, invite_status) VALUES ($1, $2, $3, $4) RETURNING access_tier, invite_status`
 	_, err = r.db.Exec(ctx, memberQuery, ownerId, project.Id, accessTiers, "accepted")
 	if err != nil {
-		fmt.Println("error in query: ", err)
 		return nil, fmt.Errorf("failed to insert into memberships: %v", err)
 	}
 	project.Roles = accessTiers
@@ -123,22 +122,16 @@ WHERE
 	var members []*project.ProjectMembership
 	rows, err := r.db.Query(ctx, query, projectId)
 	if err != nil {
-		fmt.Println("here is the error: ", err)
 		return nil, fmt.Errorf("error getting project's users: %v", err)
 	}
 	for rows.Next() {
 		member := &project.ProjectMembership{}
 		err := rows.Scan(&member.UserId, &member.UserName, &member.UserEmail, &member.InviteStatus, &member.Roles)
 		if err != nil {
-			fmt.Println("error scanning rows: ", err)
 			return nil, err
 		}
 		members = append(members, member)
 	}
-	for _, member := range members {
-		fmt.Println("member: ", member)
-	}
-
 	return members, nil
 }
 
@@ -164,7 +157,7 @@ func (r *PostgresProjectRepository) SearchForUsers(ctx context.Context, name str
 	return users, nil
 }
 
-func (r *PostgresProjectRepository) InviteMember(ctx context.Context, userId int, projectId int) error {
+func (r *PostgresProjectRepository) InviteMember(ctx context.Context, projectId int, userId int) error {
 	query := `INSERT INTO memberships (user_id, organization_id) VALUES ($1, $2)`
 	_, err := r.db.Exec(ctx, query, userId, projectId)
 	if err != nil {
@@ -183,7 +176,7 @@ func (r *PostgresProjectRepository) JoinProject(ctx context.Context, projectId i
 	return nil
 }
 
-func (r *PostgresProjectRepository) GetProjectUser(ctx context.Context, userId int, projectId int) (*project.ProjectMembership, error) {
+func (r *PostgresProjectRepository) GetProjectUser(ctx context.Context, projectId int, userId int) (*project.ProjectMembership, error) {
 	query := `SELECT
     u.id AS user_id,
     u.name AS user_name,

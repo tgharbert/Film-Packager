@@ -109,7 +109,7 @@ func (s *ProjectService) GetProjectUser(ctx context.Context, projectId int, user
 	return user, nil
 }
 
-func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId int) (*project.ProjectMembership, error) {
+func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId int) ([]project.ProjectMembership, error) {
 	// check if member is already invited
 	user, err := s.projRepo.GetProjectUser(ctx, projectId, userId)
 	if err != nil && err != project.ErrMemberNotFound {
@@ -121,16 +121,20 @@ func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId
 			return nil, fmt.Errorf("error inviting user to project: %v", err)
 		}
 	}
-	if user != nil {
-		fmt.Println("user: ", user)
-		return user, nil
+	if user != nil && user.InviteStatus == "pending" {
+		return nil, project.ErrMemberAlreadyInvited
 	}
-	invited, err := s.projRepo.GetProjectUser(ctx, projectId, userId)
-	fmt.Println("invited: ", invited)
+	members, err := s.projRepo.GetProjectUsers(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project members: %v", err)
 	}
-	return invited, nil
+	membersInfo := []project.ProjectMembership{}
+	for _, member := range members {
+		if member.InviteStatus == "pending" {
+			membersInfo = append(membersInfo, *member)
+		}
+	}
+	return membersInfo, nil
 }
 
 // should this be in the user service??
