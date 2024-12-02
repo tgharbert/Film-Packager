@@ -109,7 +109,7 @@ func (s *ProjectService) GetProjectUser(ctx context.Context, projectId int, user
 	return user, nil
 }
 
-func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId int) ([]*project.ProjectMembership, error) {
+func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId int) (*project.ProjectMembership, error) {
 	// check if member is already invited
 	user, err := s.projRepo.GetProjectUser(ctx, projectId, userId)
 	if err != nil && err != project.ErrMemberNotFound {
@@ -121,17 +121,16 @@ func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId
 			return nil, fmt.Errorf("error inviting user to project: %v", err)
 		}
 	}
-	fmt.Println("user: ", user)
-	// if user != nil {
-	// 	fmt.Println("user: ", user)
-	// }
-	// if user.InviteStatus == "pending" {
-	// 	return nil, project.ErrMemberAlreadyInvited
-	// }
-	// err = s.projRepo.InviteMember(ctx, projectId, userId)
-	users, err := s.projRepo.GetProjectUsers(ctx, projectId)
-	fmt.Println("users: ", users)
-	return users, nil
+	if user != nil {
+		fmt.Println("user: ", user)
+		return user, nil
+	}
+	invited, err := s.projRepo.GetProjectUser(ctx, projectId, userId)
+	fmt.Println("invited: ", invited)
+	if err != nil {
+		return nil, fmt.Errorf("error getting project members: %v", err)
+	}
+	return invited, nil
 }
 
 // should this be in the user service??

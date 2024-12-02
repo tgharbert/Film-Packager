@@ -112,31 +112,33 @@ func (r *PostgresProjectRepository) GetProjectUsers(ctx context.Context, project
     u.name AS user_name,
     u.email AS user_email,
 		m.invite_status AS status,
-    array_agg(m.access_tier) AS user_roles
+    m.access_tier AS user_roles
 FROM
     memberships m
 JOIN
     users u ON m.user_id = u.id
 WHERE
     m.organization_id = $1
-GROUP BY
-    u.id, u.name, u.email, m.invite_status;
 `
 	var members []*project.ProjectMembership
 	rows, err := r.db.Query(ctx, query, projectId)
 	if err != nil {
 		fmt.Println("here is the error: ", err)
-
 		return nil, fmt.Errorf("error getting project's users: %v", err)
 	}
 	for rows.Next() {
 		member := &project.ProjectMembership{}
 		err := rows.Scan(&member.UserId, &member.UserName, &member.UserEmail, &member.InviteStatus, &member.Roles)
 		if err != nil {
+			fmt.Println("error scanning rows: ", err)
 			return nil, err
 		}
 		members = append(members, member)
 	}
+	for _, member := range members {
+		fmt.Println("member: ", member)
+	}
+
 	return members, nil
 }
 
