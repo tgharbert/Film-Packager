@@ -344,7 +344,6 @@ func SearchUsers(svc *application.ProjectService) fiber.Handler {
 func JoinOrg(svc *application.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		projectId := c.Params("project_id")
-		// role := c.Params("role")
 		projIdInt, err := strconv.Atoi(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
