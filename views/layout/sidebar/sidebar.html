@@ -5,7 +5,13 @@
     <ul>
       {{range .Members}}
       <li id="{{.UserId}}">
-        <b>{{.UserName}}</b> {{range .Roles}}
+        <b
+          hx-get="/get-member/{{$.Id}}/{{.UserId}}/"
+          hx-target="#sidebar"
+          hx-swap="innerHTML"
+          >{{.UserName}}</b
+        >
+        {{range .Roles}}
         <div>{{.}}</div>
         {{end}}
       </li>

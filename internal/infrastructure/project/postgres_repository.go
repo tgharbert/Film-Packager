@@ -200,3 +200,12 @@ WHERE
 	}
 	return &user, nil
 }
+
+func (r *PostgresProjectRepository) UpdateMemberRoles(ctx context.Context, projectId int, userId int, role string) error {
+	query := `UPDATE memberships SET access_tier = array_append(array_remove(access_tier, $1), $2) WHERE organization_id = $3 AND user_id = $4`
+	_, err := r.db.Query(ctx, query, "reader", role, projectId, userId)
+	if err != nil {
+		return fmt.Errorf("error updating member roles: %v", err)
+	}
+	return nil
+}

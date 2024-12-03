@@ -36,6 +36,8 @@ func RegisterRoutes(app *fiber.App, userService *application.UserService, projec
 	app.Post("/invite-member/:id/:project_id/", InviteMember(projectService))
 	app.Post("/join-org/:project_id/:role", JoinOrg(projectService))
 	app.Get("/delete-project/:project_id/", DeleteProject(projectService))
+	app.Get("/get-member/:project_id/:member_id/", GetMemberPage(projectService))
+	app.Post("/update-member-roles/:project_id/:member_id/", UpdateMemberRoles(projectService))
 }
 
 // user handlers:
@@ -356,5 +358,59 @@ func JoinOrg(svc *application.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error joining project")
 		}
 		return c.Render("selectOrgHTML", fiber.Map{"Memberships": user})
+	}
+}
+
+// replace the sidebar with the user clicked, then have a dropdown for adding roles to the member
+// you can only do this if you are the owner, director, or producer on a project
+func GetMemberPage(svc *application.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		memberId := c.Params("member_id")
+		memberIdInt, err := strconv.Atoi(memberId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+		projectId := c.Params("project_id")
+		projectIdInt, err := strconv.Atoi(projectId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+		member, err := svc.GetProjectUser(c.Context(), projectIdInt, memberIdInt)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting project user")
+		}
+		// passthe project id to the template
+		return c.Render("member-detailsHTML", fiber.Map{"Member": *member, "ProjectId": projectId})
+		// should I only render the roles that the user doesn't have for selection?
+		// return c.Render("member-detailsHTML", *member)
+	}
+}
+
+func UpdateMemberRoles(svc *application.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		memberId := c.Params("member_id")
+		memberIdInt, err := strconv.Atoi(memberId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+		userInfo, err := access.GetUserDataFromCookie(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
+		}
+		projectId := c.Params("project_id")
+		projectIdInt, err := strconv.Atoi(projectId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+		role := c.FormValue("role-select")
+		// update the member's roles
+		member, err := svc.UpdateMemberRoles(c.Context(), projectIdInt, memberIdInt, userInfo.Id, role)
+		if err != nil {
+			fmt.Println("error: ", err)
+			return c.Status(fiber.StatusInternalServerError).SendString("error updating member roles")
+		}
+		fmt.Println("member: ", *member)
+		// should I just re-render the member on the page???
+		return c.Render("member-detailsHTML", fiber.Map{"Member": *member, "ProjectId": projectId})
 	}
 }

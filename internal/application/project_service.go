@@ -103,6 +103,8 @@ func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([
 
 func (s *ProjectService) GetProjectUser(ctx context.Context, projectId int, userId int) (*project.ProjectMembership, error) {
 	user, err := s.projRepo.GetProjectUser(ctx, projectId, userId)
+	// sort the roles here
+	user.Roles = project.SortRoles(user.Roles)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user from project: %v", err)
 	}
@@ -144,6 +146,23 @@ func (s *ProjectService) JoinProject(ctx context.Context, projectId int, userId 
 		return nil, fmt.Errorf("error joining project: %v", err)
 	}
 	projects, err := s.projRepo.GetProjectsForUserSelection(ctx, userId)
-	// users, err := s.projRepo.GetProjectUsers(ctx, projectId)
 	return projects, nil
+}
+
+func (s *ProjectService) UpdateMemberRoles(ctx context.Context, projectId int, memberId int, userId int, role string) (*project.ProjectMembership, error) {
+	// check user permissions...
+	user, err := s.projRepo.GetProjectUser(ctx, projectId, userId)
+	if err != nil {
+		return nil, fmt.Errorf("error getting user from project: %v", err)
+	}
+	// TO ADD: establish slice of roles that allow for role updates
+	if user.Roles[0] != "owner" {
+		return nil, fmt.Errorf("user does not have permission to update roles")
+	}
+	err = s.projRepo.UpdateMemberRoles(ctx, projectId, memberId, role)
+	if err != nil {
+		return nil, fmt.Errorf("error updating member roles: %v", err)
+	}
+	member, err := s.projRepo.GetProjectUser(ctx, projectId, memberId)
+	return member, nil
 }
