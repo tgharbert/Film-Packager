@@ -9,6 +9,7 @@ import (
 	"filmPackager/internal/domain/user"
 	"filmPackager/internal/store/db"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -361,8 +362,6 @@ func JoinOrg(svc *application.ProjectService) fiber.Handler {
 	}
 }
 
-// replace the sidebar with the user clicked, then have a dropdown for adding roles to the member
-// you can only do this if you are the owner, director, or producer on a project
 func GetMemberPage(svc *application.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		memberId := c.Params("member_id")
@@ -379,10 +378,16 @@ func GetMemberPage(svc *application.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting project user")
 		}
-		// passthe project id to the template
-		return c.Render("member-detailsHTML", fiber.Map{"Member": *member, "ProjectId": projectId})
-		// should I only render the roles that the user doesn't have for selection?
-		// return c.Render("member-detailsHTML", *member)
+		var availRoles []string
+		allRoles := []string{"director", "producer", "writer", "cinematographer", "production_designer"}
+		for _, role := range allRoles {
+			if slices.Contains(member.Roles, role) {
+				continue
+			} else {
+				availRoles = append(availRoles, role)
+			}
+		}
+		return c.Render("member-detailsHTML", fiber.Map{"Member": *member, "ProjectId": projectId, "Roles": availRoles})
 	}
 }
 
@@ -403,14 +408,19 @@ func UpdateMemberRoles(svc *application.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 		role := c.FormValue("role-select")
-		// update the member's roles
 		member, err := svc.UpdateMemberRoles(c.Context(), projectIdInt, memberIdInt, userInfo.Id, role)
 		if err != nil {
-			fmt.Println("error: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error updating member roles")
 		}
-		fmt.Println("member: ", *member)
-		// should I just re-render the member on the page???
-		return c.Render("member-detailsHTML", fiber.Map{"Member": *member, "ProjectId": projectId})
+		var availRoles []string
+		allRoles := []string{"director", "producer", "writer", "cinematographer", "production_designer"}
+		for _, role := range allRoles {
+			if slices.Contains(member.Roles, role) {
+				continue
+			} else {
+				availRoles = append(availRoles, role)
+			}
+		}
+		return c.Render("member-detailsHTML", fiber.Map{"Member": *member, "ProjectId": projectId, "Roles": availRoles})
 	}
 }

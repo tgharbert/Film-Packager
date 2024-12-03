@@ -17,11 +17,9 @@
       hx-swap="innerHTML"
     >
       <select name="role-select">
-        <option value="director">Director</option>
-        <option value="producer">Producer</option>
-        <option value="writer">Writer</option>
-        <option value="cinematographer">Cinematographer</option>
-        <option value="production-designer">Production Designer</option>
+        {{range .Roles}}
+        <option value="{{.}}">{{.}}</option>
+        {{end}}
       </select>
       <button class="button-std" type="submit">Add Role</button>
     </form>
