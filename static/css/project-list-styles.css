@@ -1,0 +1,23 @@
+#project-list-items {
+  list-style: none;
+}
+
+.project-list-item {
+  align-items: center;
+  margin: 0.5rem;
+  display: flex;
+  font-size: large;
+}
+
+.project-list-item:hover {
+  color: cadetblue;
+  cursor: pointer;
+}
+
+#project-title {
+  padding-right: 2rem;
+}
+
+#project-role {
+  margin-left: 1rem;
+}

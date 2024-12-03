@@ -1,0 +1,28 @@
+{{define "sidebarHTML"}}
+<div id="sidebar">
+  <h2 id="sub-header">Members</h2>
+  <div id="list-of-accepted-members">
+    <ul>
+      {{range .Members}}
+      <li id="{{.UserId}}">
+        <b
+          hx-get="/get-member/{{$.Id}}/{{.UserId}}/"
+          hx-target="#sidebar"
+          hx-swap="innerHTML"
+          >{{.UserName}}</b
+        >
+        {{range .Roles}}
+        <div>{{.}}</div>
+        {{end}}
+      </li>
+      {{end}}
+    </ul>
+  </div>
+
+  <div id="invites">
+    {{template "search-membersHTML" .}}
+    <h2 id="sub-header">Invited Members:</h2>
+    <div id="invited-members">{{template "invited-membersHTML" .}}</div>
+  </div>
+</div>
+{{end}}

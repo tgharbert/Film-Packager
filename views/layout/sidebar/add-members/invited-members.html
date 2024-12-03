@@ -1,0 +1,7 @@
+{{define "invited-membersHTML"}}
+<ul>
+  {{range .Invited}}
+  <li id="{{.UserId}}">{{.UserName}}</li>
+  {{end}}
+</ul>
+{{end}}
