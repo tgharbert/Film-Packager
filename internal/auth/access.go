@@ -12,32 +12,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// type User struct {
-// 	ID       int
-// 	Name     string
-// 	Email    string
-// 	Password string // For storing hashed password
-// 	Role     string // Roles - writer, producer, director, cinematographer, production designer
-// }
-
-// type Organization struct {
-// 	ID   int
-// 	Name string
-// }
-
-// type Membership struct {
-// 	UserID         int
-// 	OrganizationID int
-// 	AccessTier     string // roles specific to film - owner, producer, director, writer, pd, cinematographer, etc.
-// }
-
-// type UserInfo struct {
-// 	Id    int
-// 	Name  string
-// 	Email string
-// 	Role  string
-// }
-
 // hashing function is here:
 func HashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

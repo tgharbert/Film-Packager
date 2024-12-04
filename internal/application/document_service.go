@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"filmPackager/internal/domain/document"
+	"fmt"
 )
 
 type DocumentService struct {
@@ -14,27 +15,40 @@ func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3R
 	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo}
 }
 
-// this should return the data for the html frag with the date or whatever
-func (s *DocumentService) UploadDocument(ctx context.Context, doc *document.Document, fileBody interface{}) error {
+func (s *DocumentService) UploadDocument(ctx context.Context, doc *document.Document, fileBody interface{}) (string, error) {
+	// check if repos are nil
+	if s.docRepo == nil || s.s3Repo == nil {
+		return "", fmt.Errorf("nil repository")
+	}
+	if doc == nil {
+		return "", fmt.Errorf("nil document")
+	}
+
 	existingDoc, err := s.docRepo.FindStagedByType(ctx, doc.OrganizationID, doc.FileType)
 	if err != nil {
-		return err
+		fmt.Println("error finding existing doc", err)
+		return "", err
 	}
 	if existingDoc != nil {
+		// delete the file from s3
 		err = s.s3Repo.DeleteFile(ctx, existingDoc.FileName)
 		if err != nil {
-			return err
+			return "", err
 		}
+		// delete the doc info from the pg db
 		err = s.docRepo.Delete(ctx, existingDoc)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 	fileName, err := s.s3Repo.UploadFile(ctx, doc, fileBody)
 	if err != nil {
-		return err
+		fmt.Println(" HERE : error uploading file", err)
+		return "", err
 	}
+	// do some work with the Time and send it back?
 	doc.FileName = fileName
-	doc.Status = "staged"
-	return s.docRepo.Save(ctx, doc)
+	timeStr := doc.Date.Format("2006-01-02")
+	fmt.Println("timeStr", timeStr)
+	return timeStr, s.docRepo.Save(ctx, doc)
 }

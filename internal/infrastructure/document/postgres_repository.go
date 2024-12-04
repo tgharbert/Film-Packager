@@ -17,6 +17,7 @@ func NewPostgresDocumentRepository(db *pgxpool.Pool) *PostgresDocumentRepository
 	return &PostgresDocumentRepository{db: db}
 }
 
+// should this return the document too?
 func (r *PostgresDocumentRepository) Save(ctx context.Context, doc *document.Document) error {
 	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	_, err := r.db.Exec(ctx, query, doc.OrganizationID, doc.UserID, doc.FileName, doc.FileType, doc.Date, doc.Color, doc.Status)

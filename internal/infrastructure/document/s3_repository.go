@@ -22,17 +22,17 @@ func NewS3DocumentRepository(client *s3.Client, bucket string) *S3DocumentReposi
 	return &S3DocumentRepository{client: client, bucket: bucket}
 }
 
-func (r *S3DocumentRepository) UploadFile(ctx context.Context, doc *document.Document, file multipart.File) error {
+func (r *S3DocumentRepository) UploadFile(ctx context.Context, doc *document.Document, file interface{}) (string, error) {
 	key := doc.FileName
 	_, err := r.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(r.bucket),
 		Key:    aws.String(key),
-		Body:   file,
+		Body:   file.(multipart.File),
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return doc.FileName, nil
 }
 
 func (r *S3DocumentRepository) DeleteFile(ctx context.Context, fileName string) error {

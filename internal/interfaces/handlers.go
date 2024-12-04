@@ -300,29 +300,38 @@ func GetProject(svc *application.ProjectService) fiber.Handler {
 
 func UploadDocumentHandler(svc *application.DocumentService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		orgID := c.FormValue("organization_id")
-		fileType := c.FormValue("file_type")
+		orgID := c.Params("project_id")
+		fileType := c.FormValue("file-type")
 		file, err := c.FormFile("file")
+		userInfo, err := access.GetUserDataFromCookie(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
+		}
+
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).SendString("File is required")
 		}
-		f, _ := file.Open()
+		f, err := file.Open()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error opening file")
+		}
 		defer f.Close()
+
 		orgIDInt, err := strconv.Atoi(orgID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		doc := &document.Document{
-			OrganizationID: orgIDInt,
-			FileName:       file.Filename,
-			FileType:       fileType,
-		}
-		err = svc.UploadDocument(c.Context(), doc, f)
+		now := time.Now()
+
+		doc := document.NewDocument(orgIDInt, userInfo.Id, file.Filename, fileType, "staged", "black", &now)
+
+		date, err := svc.UploadDocument(c.Context(), doc, f)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
 		// return the HTML fragment/template
-		return c.JSON(doc)
+		return c.Render("staged-listHTML", fiber.Map{
+			"Document": date})
 	}
 }
 
