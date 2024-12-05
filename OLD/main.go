@@ -1,5 +1,6 @@
 package main
 
+
 import (
 	"log"
 
@@ -15,6 +16,7 @@ func main() {
 	app := fiber.New(fiber.Config{
 		Views: engine,
 	})
+	fmt.Println()
 	app.Static("/static", "./static")
 	routes.RegisterRoutes(app)
 	log.Print("Listening on port 3000...")

@@ -2,19 +2,23 @@ package application
 
 import (
 	"context"
+	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
+	"reflect"
 
 	"fmt"
 )
 
 type ProjectService struct {
 	projRepo project.ProjectRepository
+	docRepo  document.DocumentRepository
 }
 
-func NewProjectService(projRepo project.ProjectRepository) *ProjectService {
+func NewProjectService(projRepo project.ProjectRepository, docRepo document.DocumentRepository) *ProjectService {
 	return &ProjectService{
 		projRepo: projRepo,
+		docRepo:  docRepo,
 	}
 }
 
@@ -74,6 +78,22 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (
 	if err != nil {
 		return nil, fmt.Errorf("error getting project from db: %v", err)
 	}
+
+	// get the project documents from the db
+	documents, err := s.docRepo.GetAllByOrgId(ctx, projectId)
+	if err != nil {
+		return nil, fmt.Errorf("error getting project documents from db: %v", err)
+	}
+	// sort the projects by staged or not
+	for _, doc := range documents {
+		if doc.Status == "staged" {
+			setField(&projectDetails.Staged, doc.FileType, doc)
+		} else {
+			setField(&projectDetails.Locked, doc.FileType, doc)
+		}
+	}
+
+	// get project members
 	members, err := s.projRepo.GetProjectUsers(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project users from db: %v", err)
@@ -87,6 +107,23 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (
 		}
 	}
 	return projectDetails, nil
+}
+
+// MOVE TO DOMAIN?
+func setField(obj interface{}, fieldName string, value interface{}) {
+	structValue := reflect.ValueOf(obj).Elem()
+	structFieldValue := structValue.FieldByName(fieldName)
+	if !structFieldValue.IsValid() {
+		return
+	}
+	if !structFieldValue.CanSet() {
+		return
+	}
+	structFieldType := structFieldValue.Type()
+	val := reflect.ValueOf(value)
+	if structFieldType == val.Type() {
+		structFieldValue.Set(val)
+	}
 }
 
 func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([]project.ProjectMembership, error) {

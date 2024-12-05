@@ -6,7 +6,9 @@ type DocumentRepository interface {
 	Save(ctx context.Context, doc *Document) error
 	FindStagedByType(ctx context.Context, orgID int, fileType string) (*Document, error)
 	Delete(ctx context.Context, doc *Document) error
+	GetAllByOrgId(ctx context.Context, orgID int) ([]*Document, error)
 	// GetKeysForDeleteAll(ctx context.Context, orgID int) ([]string, error)
+	GetDocumentDetails(ctx context.Context, docID int) (*Document, error)
 }
 
 type S3Repository interface {

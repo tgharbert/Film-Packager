@@ -39,6 +39,7 @@ func RegisterRoutes(app *fiber.App, userService *application.UserService, projec
 	app.Get("/delete-project/:project_id/", DeleteProject(projectService))
 	app.Get("/get-member/:project_id/:member_id/", GetMemberPage(projectService))
 	app.Post("/update-member-roles/:project_id/:member_id/", UpdateMemberRoles(projectService))
+	app.Get("/get-doc-details/:doc_id", GetDocDetails(documentService))
 }
 
 // user handlers:
@@ -303,13 +304,12 @@ func UploadDocumentHandler(svc *application.DocumentService) fiber.Handler {
 		orgID := c.Params("project_id")
 		fileType := c.FormValue("file-type")
 		file, err := c.FormFile("file")
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).SendString("File is required")
+		}
 		userInfo, err := access.GetUserDataFromCookie(c)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-		}
-
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString("File is required")
 		}
 		f, err := file.Open()
 		if err != nil {
@@ -321,17 +321,30 @@ func UploadDocumentHandler(svc *application.DocumentService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		now := time.Now()
-
-		doc := document.NewDocument(orgIDInt, userInfo.Id, file.Filename, fileType, "staged", "black", &now)
-
+		doc := document.NewDocument(orgIDInt, userInfo.Id, file.Filename, fileType)
 		date, err := svc.UploadDocument(c.Context(), doc, f)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
+		// NOT WORKING PROPERLY
 		// return the HTML fragment/template
 		return c.Render("staged-listHTML", fiber.Map{
 			"Document": date})
+	}
+}
+
+func GetDocDetails(svc *application.DocumentService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		docId := c.Params("doc_id")
+		docIdInt, err := strconv.Atoi(docId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+		doc, err := svc.GetDocumentDetails(c.Context(), docIdInt)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting document details")
+		}
+		return c.Render("document-detailsHTML", *doc)
 	}
 }
 

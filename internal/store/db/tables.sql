@@ -30,7 +30,7 @@ CREATE TABLE "documents" (
     "user_id" int,
     "file_name" VARCHAR(100),
     "file_type" VARCHAR(50),
-    "date" date,
+    "date" TIMESTAMP,
     "color" VARCHAR(50),
     "status" VARCHAR(50)
 );
@@ -53,3 +53,5 @@ ALTER TABLE "documents" ADD FOREIGN KEY ("organization_id") REFERENCES "organiza
 ALTER TABLE "doc_comments" ADD FOREIGN KEY ("document_id") REFERENCES "documents" ("id");
 ALTER TABLE "doc_comments" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 ALTER TABLE "documents" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+CREATE UNIQUE INDEX unique_org_file_status ON documents (organization_id, file_type) WHERE status IN ('staged', 'locked');
+

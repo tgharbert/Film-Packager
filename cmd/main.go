@@ -22,12 +22,10 @@ func main() {
 	db.PoolConnect()
 	conn := db.GetPool()
 	s3Client := s3Conn.GetS3Client(context.Background())
-
 	bucket := os.Getenv("S3_BUCKET_NAME")
 	if bucket == "" {
 		log.Fatal("BUCKET env var not set")
 	}
-
 	engine := html.New("./views", ".html")
 	if err := engine.Load(); err != nil {
 		log.Fatalf("Failed to load templates: %v", err)
@@ -42,10 +40,11 @@ func main() {
 	docPGRepo := docInf.NewPostgresDocumentRepository(conn)
 	docS3Repo := docInf.NewS3DocumentRepository(s3Client, bucket)
 	userService := application.NewUserService(userRepo, projectRepo)
-	projService := application.NewProjectService(projectRepo)
+	projService := application.NewProjectService(projectRepo, docPGRepo)
 	docService := application.NewDocumentService(docPGRepo, docS3Repo)
 
 	interfaces.RegisterRoutes(app, userService, projService, docService)
+
 	log.Print("Listening on port 3000...")
 	log.Fatal(app.Listen(":3000"))
 }

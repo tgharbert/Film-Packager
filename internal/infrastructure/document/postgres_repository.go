@@ -17,11 +17,45 @@ func NewPostgresDocumentRepository(db *pgxpool.Pool) *PostgresDocumentRepository
 	return &PostgresDocumentRepository{db: db}
 }
 
+// GetAllByOrgId returns all documents for a given organization
+func (r *PostgresDocumentRepository) GetAllByOrgId(ctx context.Context, orgID int) ([]*document.Document, error) {
+	query := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE organization_id = $1`
+	rows, err := r.db.Query(ctx, query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving documents from db: %v", err)
+	}
+	defer rows.Close()
+	var docs []*document.Document
+	for rows.Next() {
+		var doc document.Document
+		err = rows.Scan(&doc.ID, &doc.OrganizationID, &doc.UserID, &doc.FileName, &doc.FileType, &doc.Status, &doc.Date, &doc.Color)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning rows: %v", err)
+		}
+		docs = append(docs, &doc)
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return docs, nil
+}
+
 // should this return the document too?
 func (r *PostgresDocumentRepository) Save(ctx context.Context, doc *document.Document) error {
 	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	_, err := r.db.Exec(ctx, query, doc.OrganizationID, doc.UserID, doc.FileName, doc.FileType, doc.Date, doc.Color, doc.Status)
 	return err
+}
+
+func (r *PostgresDocumentRepository) GetDocumentDetails(ctx context.Context, docID int) (*document.Document, error) {
+	query := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE id = $1`
+	row := r.db.QueryRow(ctx, query, docID)
+	var doc document.Document
+	err := row.Scan(&doc.ID, &doc.OrganizationID, &doc.UserID, &doc.FileName, &doc.FileType, &doc.Status, &doc.Date, &doc.Color)
+	if err != nil {
+		return nil, fmt.Errorf("error scanning row: %v", err)
+	}
+	return &doc, nil
 }
 
 func (r *PostgresDocumentRepository) FindStagedByType(ctx context.Context, orgID int, fileType string) (*document.Document, error) {

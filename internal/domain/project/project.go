@@ -31,16 +31,16 @@ type ProjectOverview struct {
 }
 
 type ProjectDocs struct {
-	Script            document.Document
-	Logline           document.Document
-	Synopsis          document.Document
-	PitchDeck         document.Document
-	Schedule          document.Document
-	Budget            document.Document
-	DirectorStatement document.Document
-	Shotlist          document.Document
-	Lookbook          document.Document
-	Bios              document.Document
+	Script            *document.Document
+	Logline           *document.Document
+	Synopsis          *document.Document
+	PitchDeck         *document.Document
+	Schedule          *document.Document
+	Budget            *document.Document
+	DirectorStatement *document.Document
+	Shotlist          *document.Document
+	Lookbook          *document.Document
+	Bios              *document.Document
 }
 
 func SortRoles(rolesSlc []string) []string {
