@@ -3,16 +3,18 @@ package application
 import (
 	"context"
 	"filmPackager/internal/domain/document"
+	"filmPackager/internal/domain/user"
 	"fmt"
 )
 
 type DocumentService struct {
-	docRepo document.DocumentRepository
-	s3Repo  document.S3Repository
+	docRepo  document.DocumentRepository
+	s3Repo   document.S3Repository
+	userRepo user.UserRepository
 }
 
-func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3Repository) *DocumentService {
-	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo}
+func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository) *DocumentService {
+	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo}
 }
 
 func (s *DocumentService) UploadDocument(ctx context.Context, doc *document.Document, fileBody interface{}) (string, error) {
@@ -29,12 +31,10 @@ func (s *DocumentService) UploadDocument(ctx context.Context, doc *document.Docu
 		return "", err
 	}
 	if existingDoc != nil {
-		// delete the file from s3
 		err = s.s3Repo.DeleteFile(ctx, existingDoc.FileName)
 		if err != nil {
 			return "", err
 		}
-		// delete the doc info from the pg db
 		err = s.docRepo.Delete(ctx, existingDoc)
 		if err != nil {
 			return "", err
@@ -56,4 +56,11 @@ func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID int) (*d
 		return nil, fmt.Errorf("nil repository")
 	}
 	return s.docRepo.GetDocumentDetails(ctx, docID)
+}
+
+func (s *DocumentService) GetUploaderDetails(ctx context.Context, userId int) (*user.User, error) {
+	if s.docRepo == nil {
+		return nil, fmt.Errorf("nil repository")
+	}
+	return s.userRepo.GetUserById(ctx, userId)
 }

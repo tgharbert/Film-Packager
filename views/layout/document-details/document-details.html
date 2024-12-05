@@ -1,11 +1,17 @@
 {{ define "document-detailsHTML" }}
 
 <div>
+	<div>
+		<button class="button-std"
+			hx-get="/get-project/{{.Document.OrganizationID}}"
+			hx-swap="innerHTML"
+			hx-target="#main"
+			>Back To Project</button>
 	<h3>Document Details:</h3>
-	<h2>{{ .FileType }}</h2>
-	<h2>{{ .Date }}</h2>
-	<p>{{.FileName}}</p>
-	<label>Uploaded By: </label><p>{{.UserID}}</p>
+	<h2>{{ .Document.FileType }}</h2>
+	<h2>{{ .Document.Date }}</h2>
+	<p>{{.Document.FileName}}</p>
+	<label>Uploaded By: </label><p>{{.Uploader.Name}}</p>
 </div>
 
-{{ end }}
+{{ end }} 

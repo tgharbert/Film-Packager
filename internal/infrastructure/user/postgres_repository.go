@@ -31,6 +31,19 @@ func (r *PostgresUserRepository) GetUserByEmail(ctx context.Context, email strin
 	return &existingUser, nil
 }
 
+func (r *PostgresUserRepository) GetUserById(ctx context.Context, userId int) (*user.User, error) {
+	query := `SELECT id, name, email, password FROM users WHERE id = $1`
+	var existingUser user.User
+	err := r.db.QueryRow(ctx, query, userId).Scan(&existingUser.Id, &existingUser.Name, &existingUser.Email, &existingUser.Password)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, user.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("error scanning user: %v", err)
+	}
+	return &existingUser, nil
+}
+
 func (r *PostgresUserRepository) CreateNewUser(ctx context.Context, user *user.User) error {
 	query := `INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id`
 	err := r.db.QueryRow(ctx, query, user.Name, user.Email, user.Password).Scan(&user.Id)

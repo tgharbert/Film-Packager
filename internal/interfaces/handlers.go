@@ -7,7 +7,6 @@ import (
 	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
-	"filmPackager/internal/store/db"
 	"fmt"
 	"slices"
 	"strconv"
@@ -17,11 +16,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
 )
-
-type HomeData struct {
-	User *user.User
-	Orgs db.SelectProject
-}
 
 func RegisterRoutes(app *fiber.App, userService *application.UserService, projectService *application.ProjectService, documentService *application.DocumentService) {
 	app.Get("/", GetHomePage(projectService))
@@ -326,10 +320,12 @@ func UploadDocumentHandler(svc *application.DocumentService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
+		// send the document to the client???
 		// NOT WORKING PROPERLY
 		// return the HTML fragment/template
 		return c.Render("staged-listHTML", fiber.Map{
-			"Document": date})
+			"Document": date,
+		})
 	}
 }
 
@@ -344,7 +340,15 @@ func GetDocDetails(svc *application.DocumentService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting document details")
 		}
-		return c.Render("document-detailsHTML", *doc)
+		// need to get the user info as well
+		uploadingUser, err := svc.GetUploaderDetails(c.Context(), doc.UserID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting uploader details")
+		}
+		return c.Render("document-detailsHTML", fiber.Map{
+			"Document": *doc,
+			"Uploader": *uploadingUser,
+		})
 	}
 }
 
@@ -376,7 +380,6 @@ func JoinOrg(svc *application.ProjectService) fiber.Handler {
 		}
 		user, err := svc.JoinProject(c.Context(), projIdInt, userInfo.Id)
 		if err != nil {
-			fmt.Println("error: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error joining project")
 		}
 		return c.Render("selectOrgHTML", fiber.Map{"Memberships": user})

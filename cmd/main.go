@@ -41,7 +41,7 @@ func main() {
 	docS3Repo := docInf.NewS3DocumentRepository(s3Client, bucket)
 	userService := application.NewUserService(userRepo, projectRepo)
 	projService := application.NewProjectService(projectRepo, docPGRepo)
-	docService := application.NewDocumentService(docPGRepo, docS3Repo)
+	docService := application.NewDocumentService(docPGRepo, docS3Repo, userRepo)
 
 	interfaces.RegisterRoutes(app, userService, projService, docService)
 

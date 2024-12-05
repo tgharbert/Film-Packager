@@ -86,6 +86,12 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (
 	}
 	// sort the projects by staged or not
 	for _, doc := range documents {
+		// update the time obj
+		// formattedTime := doc.Date.Format("2006-01-02 15:04")
+		// now, err := time.Parse("2006-01-02 15:04", formattedTime)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing time: %v", err)
+		}
 		if doc.Status == "staged" {
 			setField(&projectDetails.Staged, doc.FileType, doc)
 		} else {
