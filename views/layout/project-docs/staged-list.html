@@ -18,6 +18,8 @@
 	    hx-target="#doc-list"
 	    hx-swap="innerHTML"
 	    >{{.Staged.Script.Date}}</td>
+    {{else}}
+    <td>No document yet</td>
 	  {{ end }}
 	  {{ if .Staged.Logline }}
     <td
@@ -25,6 +27,8 @@
 	    hx-target="#doc-list"
 	    hx-swap="innerHTML"
 	    >{{.Staged.Logline.Date}}</td>
+    {{else}}
+    <td>No document yet</td>
 	  {{ end }}
 	  {{ if .Staged.Synopsis }}
     <td
@@ -32,7 +36,9 @@
 	    hx-target="#doc-list"
 	    hx-swap="innerHTML"
 	    >{{.Staged.Synopsis.Date}}</td>
-	  {{ end }}
+ {{else}}
+    <td>No document yet</td>
+    {{ end }}
 	  {{ if .Staged.PitchDeck }}
     <td
 	    hx-get="/get-doc-details/{{.Staged.PitchDeck.ID}}"
@@ -46,42 +52,54 @@
 	    hx-target="#doc-list"
 	    hx-swap="innerHTML"
 	    >{{.Staged.Schedule.Date}}</td>
-	  {{ end }}
+ {{else}}
+    <td>No document yet</td>
+    {{ end }}
 	  {{ if .Staged.Budget }}
     <td
 	    hx-get="/get-doc-details/{{.Staged.Budget.ID}}"
 	    hx-target="#doc-list"
 	    hx-swap="innerHTML"
 	    >{{.Staged.Budget.Date}}</td>
-	  {{ end }}
+ {{else}}
+    <td>No document yet</td>
+    {{ end }}
 	  {{ if .Staged.DirectorStatement }}
     <td
 	    hx-get="/get-doc-details/{{.Staged.DirectorStatement.ID}}"
 	    hx-target="#doc-list"
 	    hx-swap="innerHTML"
 	    >{{.Staged.DirectorStatement.Date}}</td>
-	  {{ end }}
+ {{else}}
+    <td>No document yet</td>
+    {{ end }}
 	  {{ if .Staged.Shotlist }}
     <td
 	    hx-get="/get-doc-details/{{.Staged.Shotlist.ID}}"
 	    hx-target="#doc-list"
 	    hx-swap="innerHTML"
 	    >{{.Staged.Shotlist.Date}}</td>
-	  {{ end }}
+ {{else}}
+    <td>No document yet</td>
+    {{ end }}
 	  {{ if .Staged.Lookbook }}
     <td
 	    hx-get="/get-doc-details/{{.Staged.Lookbook.ID}}"
 	    hx-target="#doc-list"
 	    hx-swap="innerHTML"
 	    >{{.Staged.Lookbook.Date}}</td>
-	  {{ end }}
+ {{else}}
+    <td>No document yet</td>
+    {{ end }}
 	  {{ if .Staged.Bios  }}
     <td
 	    hx-get="/get-doc-details/{{.Staged.Bios.ID}}"
 	    hx-target="#doc-list"
 	    hx-swap="innerHTML"
 	    >{{.Staged.Bios.Date}}</td>
-	  {{ end }}
+ {{else}}
+    <td>No document yet</td>
+    {{ end }}
   </tr>
 </table>
 {{end}}

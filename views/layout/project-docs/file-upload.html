@@ -3,6 +3,8 @@
   <form
     hx-post="/file-submit/{{.Id}}"
     name="file-form"
+    hx-target="#staged-list"
+    hx-swap="innerHTML"
     hx-encoding="multipart/form-data"
     enctype="multipart/form-data"
   >
