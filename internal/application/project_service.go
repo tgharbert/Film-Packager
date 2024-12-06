@@ -86,13 +86,7 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (
 	}
 	// sort the projects by staged or not
 	for _, doc := range documents {
-		// update the time obj
-		// formattedTime := doc.Date.Format("2006-01-02 15:04")
-		// now, err := time.Parse("2006-01-02 15:04", formattedTime)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing time: %v", err)
-		}
-		if doc.Status == "staged" {
+		if doc.IsStaged() {
 			setField(&projectDetails.Staged, doc.FileType, doc)
 		} else {
 			setField(&projectDetails.Locked, doc.FileType, doc)
@@ -182,7 +176,6 @@ func (s *ProjectService) InviteMember(ctx context.Context, projectId int, userId
 	return membersInfo, nil
 }
 
-// should this be in the user service??
 func (s *ProjectService) JoinProject(ctx context.Context, projectId int, userId int) ([]*project.ProjectOverview, error) {
 	err := s.projRepo.JoinProject(ctx, projectId, userId)
 	if err != nil {

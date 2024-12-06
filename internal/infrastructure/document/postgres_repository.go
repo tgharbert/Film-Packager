@@ -95,3 +95,25 @@ func (r *PostgresDocumentRepository) GetKeysForDeleteAll(ctx, orgID int) (*[]str
 	}
 	return &keys, nil
 }
+
+func (r *PostgresDocumentRepository) FindStagedByOrganization(ctx context.Context, orgID int) ([]*document.Document, error) {
+	query := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE organization_id = $1 AND status = 'staged'`
+	rows, err := r.db.Query(ctx, query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving documents from db: %v", err)
+	}
+	defer rows.Close()
+	var docs []*document.Document
+	for rows.Next() {
+		var doc document.Document
+		err = rows.Scan(&doc.ID, &doc.OrganizationID, &doc.UserID, &doc.FileName, &doc.FileType, &doc.Status, &doc.Date, &doc.Color)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning rows: %v", err)
+		}
+		docs = append(docs, &doc)
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return docs, nil
+}

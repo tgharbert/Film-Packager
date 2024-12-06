@@ -295,6 +295,7 @@ func GetProject(svc *application.ProjectService) fiber.Handler {
 
 func UploadDocumentHandler(svc *application.DocumentService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		fmt.Println("uploading document")
 		orgID := c.Params("project_id")
 		fileType := c.FormValue("file-type")
 		file, err := c.FormFile("file")
@@ -316,15 +317,21 @@ func UploadDocumentHandler(svc *application.DocumentService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 		doc := document.NewDocument(orgIDInt, userInfo.Id, file.Filename, fileType)
-		date, err := svc.UploadDocument(c.Context(), doc, f)
+		documents, err := svc.UploadDocument(c.Context(), doc, f)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
+		fmt.Println(documents)
+
 		// send the document to the client???
 		// NOT WORKING PROPERLY
 		// return the HTML fragment/template
+		// get all of the projects staged documents and then re-render the bottom??
+		// staged-listHTML
+
+		return c.Redirect("/get-project/" + orgID)
 		return c.Render("staged-listHTML", fiber.Map{
-			"Document": date,
+			"Document": documents,
 		})
 	}
 }

@@ -9,6 +9,7 @@ type DocumentRepository interface {
 	GetAllByOrgId(ctx context.Context, orgID int) ([]*Document, error)
 	// GetKeysForDeleteAll(ctx context.Context, orgID int) ([]string, error)
 	GetDocumentDetails(ctx context.Context, docID int) (*Document, error)
+	FindStagedByOrganization(ctx context.Context, orgID int) ([]*Document, error)
 }
 
 type S3Repository interface {
