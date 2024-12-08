@@ -23,6 +23,7 @@ func HashPassword(password string) (string, error) {
 }
 
 // Potential issue here in not reading the env first??
+// what the fuck am I doing with this env var?
 var jwtKey = []byte(os.Getenv("DEV_DATABASE_URL"))
 
 type Claims struct {
@@ -87,6 +88,7 @@ func GetUserNameFromToken(tokenString string) (*user.User, error) {
 	return userInfo, nil
 }
 
+// TODO: MODIFY THIS SO IT'S NOT BAD
 func CheckAccess(role string, orgID int, requiredTier string) (bool, error) {
 	if role == "owner" {
 		return true, nil
