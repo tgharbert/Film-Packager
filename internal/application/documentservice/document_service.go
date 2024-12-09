@@ -7,6 +7,8 @@ import (
 	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/user"
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
 type DocumentService struct {
@@ -62,14 +64,14 @@ func (s *DocumentService) UploadDocument(ctx context.Context, doc *document.Docu
 	return staged, nil
 }
 
-func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID int) (*document.Document, error) {
+func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID uuid.UUID) (*document.Document, error) {
 	if s.docRepo == nil {
 		return nil, fmt.Errorf("nil repository")
 	}
 	return s.docRepo.GetDocumentDetails(ctx, docID)
 }
 
-func (s *DocumentService) GetUploaderDetails(ctx context.Context, userId int) (*user.User, error) {
+func (s *DocumentService) GetUploaderDetails(ctx context.Context, userId uuid.UUID) (*user.User, error) {
 	if s.docRepo == nil {
 		return nil, fmt.Errorf("nil repository")
 	}

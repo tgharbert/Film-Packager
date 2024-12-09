@@ -7,12 +7,12 @@ import (
 )
 
 type ProjectRepository interface {
-	GetProjectsForUserSelection(ctx context.Context, userId uuid.UUID) ([]*ProjectOverview, error)
+	GetProjectsForUserSelection(ctx context.Context, userId uuid.UUID) ([]ProjectOverview, error)
 	CreateNewProject(ctx context.Context, projectName string, userId uuid.UUID) (*ProjectOverview, error)
 	DeleteProject(ctx context.Context, projectId uuid.UUID) error
 	GetProjectDetails(ctx context.Context, projectId uuid.UUID) (*Project, error)
-	GetProjectUsers(ctx context.Context, projectId uuid.UUID) ([]*ProjectMembership, error)
-	SearchForUsers(ctx context.Context, userName string) ([]*ProjectMembership, error)
+	GetProjectUsers(ctx context.Context, projectId uuid.UUID) ([]ProjectMembership, error)
+	SearchForUsers(ctx context.Context, userName string) ([]ProjectMembership, error)
 	InviteMember(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) error
 	JoinProject(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) error
 	GetProjectUser(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) (*ProjectMembership, error)

@@ -29,13 +29,31 @@ type ProjectMembership struct {
 	InviteStatus string
 }
 
-// this should be defined in the application layer
+// should this take in the User then get the projects and sort them for the user??
 type ProjectOverview struct {
 	Id     int
 	Name   string
 	Status string
 	Roles  []string
 }
+
+type GetUsersProjects struct {
+	// should be a separate call in the application layer
+	// User     *user.User
+	Pending  []ProjectOverview
+	Accepted []ProjectOverview
+}
+
+type GetProjectDetails struct {
+	Project *Project
+	// these should be separate calls in the application layer
+	//Staged  []document.Document
+	//Locked  []document.Document
+	Members []ProjectMembership
+	Invited []ProjectMembership
+}
+
+// this should be defined in the application layer
 
 //type ProjectDocs struct {
 //	Script            *document.Document

@@ -8,12 +8,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
 
-	"filmPackager/internal/application"
+	"filmPackager/internal/application/documentservice"
+	"filmPackager/internal/application/projectservice"
+	"filmPackager/internal/application/userservice"
 	docInf "filmPackager/internal/infrastructure/document"
 	projectInf "filmPackager/internal/infrastructure/project"
 	userInf "filmPackager/internal/infrastructure/user"
 
-	"filmPackager/internal/interfaces"
+	interfaces "filmPackager/internal/presentation"
 	s3Conn "filmPackager/internal/store"
 	db "filmPackager/internal/store/db"
 )
@@ -39,9 +41,9 @@ func main() {
 	projectRepo := projectInf.NewPostgresProjectRepository(conn)
 	docPGRepo := docInf.NewPostgresDocumentRepository(conn)
 	docS3Repo := docInf.NewS3DocumentRepository(s3Client, bucket)
-	userService := application.NewUserService(userRepo, projectRepo)
-	projService := application.NewProjectService(projectRepo, docPGRepo)
-	docService := application.NewDocumentService(docPGRepo, docS3Repo, userRepo)
+	userService := userservice.NewUserService(userRepo, projectRepo)
+	projService := projectservice.NewProjectService(projectRepo, docPGRepo)
+	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo)
 
 	interfaces.RegisterRoutes(app, userService, projService, docService)
 

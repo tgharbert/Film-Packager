@@ -6,7 +6,6 @@ import (
 
 	"fmt"
 
-	"filmPackager/internal/application/projectservice"
 	"filmPackager/internal/domain/project"
 
 	"github.com/google/uuid"
@@ -22,7 +21,7 @@ func NewPostgresProjectRepository(db *pgxpool.Pool) *PostgresProjectRepository {
 	return &PostgresProjectRepository{db: db}
 }
 
-func (r *PostgresProjectRepository) GetProjectsForUserSelection(ctx context.Context, userId uuid.UUID) ([]projectservice.ProjectOverview, error) {
+func (r *PostgresProjectRepository) GetProjectsForUserSelection(ctx context.Context, userId uuid.UUID) ([]project.ProjectOverview, error) {
 	query := `
         SELECT
     o.id,
@@ -36,7 +35,7 @@ JOIN
 WHERE
     m.user_id = $1;
     `
-	var projects []projectservice.ProjectOverview
+	var projects []project.ProjectOverview
 	rows, err := r.db.Query(ctx, query, userId)
 	if err != nil {
 		fmt.Println("error in query: ", err)
@@ -44,7 +43,7 @@ WHERE
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var project projectservice.ProjectOverview
+		var project project.ProjectOverview
 		var roles []string
 		err = rows.Scan(&project.Id, &project.Name, &roles, &project.Status)
 		if err != nil {
@@ -107,7 +106,7 @@ func (r *PostgresProjectRepository) GetProjectDetails(ctx context.Context, proje
 	return &project, nil
 }
 
-func (r *PostgresProjectRepository) GetProjectUsers(ctx context.Context, projectId uuid.UUID) ([]*project.ProjectMembership, error) {
+func (r *PostgresProjectRepository) GetProjectUsers(ctx context.Context, projectId uuid.UUID) ([]project.ProjectMembership, error) {
 	query := `SELECT
     u.id AS user_id,
     u.name AS user_name,
@@ -121,7 +120,7 @@ JOIN
 WHERE
     m.organization_id = $1
 `
-	var members []*project.ProjectMembership
+	var members []project.ProjectMembership
 	rows, err := r.db.Query(ctx, query, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project's users: %v", err)
@@ -132,15 +131,15 @@ WHERE
 		if err != nil {
 			return nil, err
 		}
-		members = append(members, member)
+		members = append(members, *member)
 	}
 	return members, nil
 }
 
-func (r *PostgresProjectRepository) SearchForUsers(ctx context.Context, name string) ([]*project.ProjectMembership, error) {
+func (r *PostgresProjectRepository) SearchForUsers(ctx context.Context, name string) ([]project.ProjectMembership, error) {
 	query := `SELECT id, name FROM users WHERE name ILIKE '%' || $1 || '%'`
 	rows, err := r.db.Query(context.Background(), query, name)
-	var users []*project.ProjectMembership
+	var users []project.ProjectMembership
 	if err != nil {
 		return users, err
 	}
@@ -151,7 +150,7 @@ func (r *PostgresProjectRepository) SearchForUsers(ctx context.Context, name str
 		if err != nil {
 			return nil, fmt.Errorf("error scanning user row %v", err)
 		}
-		users = append(users, user)
+		users = append(users, *user)
 	}
 	if rows.Err() != nil {
 		return nil, rows.Err()
@@ -159,7 +158,7 @@ func (r *PostgresProjectRepository) SearchForUsers(ctx context.Context, name str
 	return users, nil
 }
 
-func (r *PostgresProjectRepository) InviteMember(ctx context.Context, projectId int, userId int) error {
+func (r *PostgresProjectRepository) InviteMember(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) error {
 	query := `INSERT INTO memberships (user_id, organization_id) VALUES ($1, $2)`
 	_, err := r.db.Exec(ctx, query, userId, projectId)
 	if err != nil {
@@ -168,7 +167,7 @@ func (r *PostgresProjectRepository) InviteMember(ctx context.Context, projectId 
 	return nil
 }
 
-func (r *PostgresProjectRepository) JoinProject(ctx context.Context, projectId int, userId int) error {
+func (r *PostgresProjectRepository) JoinProject(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) error {
 	query := `UPDATE memberships SET invite_status = 'accepted' WHERE user_id = $1 AND organization_id = $2`
 	_, err := r.db.Exec(ctx, query, userId, projectId)
 	if err != nil {
@@ -177,7 +176,7 @@ func (r *PostgresProjectRepository) JoinProject(ctx context.Context, projectId i
 	return nil
 }
 
-func (r *PostgresProjectRepository) GetProjectUser(ctx context.Context, projectId int, userId int) (*project.ProjectMembership, error) {
+func (r *PostgresProjectRepository) GetProjectUser(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) (*project.ProjectMembership, error) {
 	query := `SELECT
     u.id AS user_id,
     u.name AS user_name,
@@ -203,7 +202,7 @@ WHERE
 	return &user, nil
 }
 
-func (r *PostgresProjectRepository) UpdateMemberRoles(ctx context.Context, projectId int, userId int, role string) error {
+func (r *PostgresProjectRepository) UpdateMemberRoles(ctx context.Context, projectId uuid.UUID, userId uuid.UUID, role string) error {
 	query := `UPDATE memberships SET access_tier = array_append(array_remove(access_tier, $1), $2) WHERE organization_id = $3 AND user_id = $4`
 	_, err := r.db.Query(ctx, query, "reader", role, projectId, userId)
 	if err != nil {

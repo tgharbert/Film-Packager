@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,14 +28,14 @@ func HashPassword(password string) (string, error) {
 var jwtKey = []byte(os.Getenv("DEV_DATABASE_URL"))
 
 type Claims struct {
-	UserID int
+	UserID uuid.UUID
 	Name   string
 	Email  string
 	Role   string
 	jwt.StandardClaims
 }
 
-func GenerateJWT(userID int, name string, email string) (string, error) {
+func GenerateJWT(userID uuid.UUID, name string, email string) (string, error) {
 	expirationTime := time.Now().Add(48 * time.Hour) // valid for 48 hours
 	claims := &Claims{
 		UserID: userID,
@@ -89,7 +90,7 @@ func GetUserNameFromToken(tokenString string) (*user.User, error) {
 }
 
 // TODO: MODIFY THIS SO IT'S NOT BAD
-func CheckAccess(role string, orgID int, requiredTier string) (bool, error) {
+func CheckAccess(role string, orgID uuid.UUID, requiredTier string) (bool, error) {
 	if role == "owner" {
 		return true, nil
 	}

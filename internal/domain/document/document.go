@@ -8,8 +8,8 @@ import (
 
 type Document struct {
 	ID             uuid.UUID
-	OrganizationID int
-	UserID         int
+	OrganizationID uuid.UUID
+	UserID         uuid.UUID
 	FileName       string
 	FileType       string
 	Status         string
@@ -22,7 +22,7 @@ func (d *Document) IsStaged() bool {
 }
 
 // create new document
-func NewDocument(organizationID, userID int, fileName, fileType string) *Document {
+func NewDocument(organizationID uuid.UUID, userID uuid.UUID, fileName, fileType string) *Document {
 	now := time.Now()
 	id := uuid.New()
 

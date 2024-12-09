@@ -6,6 +6,7 @@ import (
 	"filmPackager/internal/domain/user"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -31,7 +32,7 @@ func (r *PostgresUserRepository) GetUserByEmail(ctx context.Context, email strin
 	return &existingUser, nil
 }
 
-func (r *PostgresUserRepository) GetUserById(ctx context.Context, userId int) (*user.User, error) {
+func (r *PostgresUserRepository) GetUserById(ctx context.Context, userId uuid.UUID) (*user.User, error) {
 	query := `SELECT id, name, email, password FROM users WHERE id = $1`
 	var existingUser user.User
 	err := r.db.QueryRow(ctx, query, userId).Scan(&existingUser.Id, &existingUser.Name, &existingUser.Email, &existingUser.Password)

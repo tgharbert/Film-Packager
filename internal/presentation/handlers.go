@@ -2,22 +2,24 @@ package interfaces
 
 import (
 	"errors"
-	"filmPackager/internal/application"
+	"filmPackager/internal/application/documentservice"
+	"filmPackager/internal/application/projectservice"
+	"filmPackager/internal/application/userservice"
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func RegisterRoutes(app *fiber.App, userService *application.UserService, projectService *application.ProjectService, documentService *application.DocumentService) {
+func RegisterRoutes(app *fiber.App, userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService) {
 	app.Get("/", GetHomePage(projectService))
 	app.Get("/login/", GetLoginPage(userService))
 	app.Post("/post-login/", LoginUserHandler(userService))
@@ -37,7 +39,7 @@ func RegisterRoutes(app *fiber.App, userService *application.UserService, projec
 }
 
 // user handlers:
-func GetLoginPage(svc *application.UserService) fiber.Handler {
+func GetLoginPage(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// need to check if cookie is valid, if not render login
 		tokenString := c.Cookies("Authorization")
@@ -53,7 +55,7 @@ func GetLoginPage(svc *application.UserService) fiber.Handler {
 	}
 }
 
-func PostCreateAccount(svc *application.UserService) fiber.Handler {
+func PostCreateAccount(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		firstName := strings.Trim(c.FormValue("firstName"), " ")
 		lastName := strings.Trim(c.FormValue("lastName"), " ")
@@ -123,13 +125,13 @@ func PostCreateAccount(svc *application.UserService) fiber.Handler {
 	}
 }
 
-func GetCreateAccount(svc *application.UserService) fiber.Handler {
+func GetCreateAccount(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		return c.Render("create-account", nil)
 	}
 }
 
-func LoginUserHandler(svc *application.UserService) fiber.Handler {
+func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		email := strings.TrimSpace(c.FormValue("email"))
 		password := strings.TrimSpace(c.FormValue("password"))
@@ -163,20 +165,20 @@ func LoginUserHandler(svc *application.UserService) fiber.Handler {
 	}
 }
 
-func InviteMember(svc *application.ProjectService) fiber.Handler {
+func InviteMember(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userId := c.Params("id")
 		projectId := c.Params("project_id")
-		projIdInt, err := strconv.Atoi(projectId)
+		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing project Id from request")
 		}
-		userIdInt, err := strconv.Atoi(userId)
+		userUUID, err := uuid.Parse(userId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing user Id from request")
 		}
 		var errMess string
-		invited, err := svc.InviteMember(c.Context(), projIdInt, userIdInt)
+		invited, err := svc.InviteMember(c.Context(), projUUID, userUUID)
 		if err != nil {
 			if err == project.ErrMemberAlreadyInvited {
 				// return the proper html fragment
@@ -195,7 +197,7 @@ func InviteMember(svc *application.ProjectService) fiber.Handler {
 	}
 }
 
-func LogoutUser(svc *application.UserService) fiber.Handler {
+func LogoutUser(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		c.Cookie(&fiber.Cookie{
 			Name:  "Authorization",
@@ -213,7 +215,7 @@ func LogoutUser(svc *application.UserService) fiber.Handler {
 	}
 }
 
-func GetHomePage(svc *application.ProjectService) fiber.Handler {
+func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		tokenString := c.Cookies("Authorization")
 		if c.Get("HX-Request") == "true" {
@@ -236,7 +238,7 @@ func GetHomePage(svc *application.ProjectService) fiber.Handler {
 	}
 }
 
-func CreateProject(svc *application.ProjectService) fiber.Handler {
+func CreateProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		projectName := c.FormValue("project-name")
 		tokenString := c.Cookies("Authorization")
@@ -256,36 +258,39 @@ func CreateProject(svc *application.ProjectService) fiber.Handler {
 	}
 }
 
-func DeleteProject(svc *application.ProjectService) fiber.Handler {
+func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userInfo, err := access.GetUserDataFromCookie(c)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
 		}
 		projectId := c.Params("project_id")
-		projIdInt, err := strconv.Atoi(projectId)
+		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		user, err := svc.DeleteProject(c.Context(), projIdInt, userInfo)
+
+		user, err := svc.DeleteProject(c.Context(), projUUID, userInfo)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting project")
 		}
+		fmt.Println("user: ", user)
+		return nil
 		// need to delete s3 items from bucket as well!
 		return c.Render("project-list", fiber.Map{
-			"Memberships": user.Memberships,
+			//"Memberships": user.Memberships,
 		})
 	}
 }
 
-func GetProject(svc *application.ProjectService) fiber.Handler {
+func GetProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		projectId := c.Params("project_id")
-		projIdInt, err := strconv.Atoi(projectId)
+		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		project, err := svc.GetProjectDetails(c.Context(), projIdInt)
+		project, err := svc.GetProjectDetails(c.Context(), projUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error retrieving project data")
 		}
@@ -293,7 +298,7 @@ func GetProject(svc *application.ProjectService) fiber.Handler {
 	}
 }
 
-func UploadDocumentHandler(svc *application.DocumentService) fiber.Handler {
+func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		orgID := c.Params("project_id")
 		fileType := c.FormValue("file-type")
@@ -311,11 +316,11 @@ func UploadDocumentHandler(svc *application.DocumentService) fiber.Handler {
 		}
 		defer f.Close()
 
-		orgIDInt, err := strconv.Atoi(orgID)
+		orgUUID, err := uuid.Parse(orgID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		doc := document.NewDocument(orgIDInt, userInfo.Id, file.Filename, fileType)
+		doc := document.NewDocument(orgUUID, userInfo.Id, file.Filename, fileType)
 		documents, err := svc.UploadDocument(c.Context(), doc, f)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
@@ -328,14 +333,14 @@ func UploadDocumentHandler(svc *application.DocumentService) fiber.Handler {
 	}
 }
 
-func GetDocDetails(svc *application.DocumentService) fiber.Handler {
+func GetDocDetails(svc *documentservice.DocumentService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		docId := c.Params("doc_id")
-		docIdInt, err := strconv.Atoi(docId)
+		docUUID, err := uuid.Parse(docId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		doc, err := svc.GetDocumentDetails(c.Context(), docIdInt)
+		doc, err := svc.GetDocumentDetails(c.Context(), docUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting document details")
 		}
@@ -351,7 +356,7 @@ func GetDocDetails(svc *application.DocumentService) fiber.Handler {
 	}
 }
 
-func SearchUsers(svc *application.ProjectService) fiber.Handler {
+func SearchUsers(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		username := c.FormValue("username")
 		id := c.Params("id")
@@ -366,10 +371,10 @@ func SearchUsers(svc *application.ProjectService) fiber.Handler {
 	}
 }
 
-func JoinOrg(svc *application.ProjectService) fiber.Handler {
+func JoinOrg(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		projectId := c.Params("project_id")
-		projIdInt, err := strconv.Atoi(projectId)
+		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
@@ -377,7 +382,7 @@ func JoinOrg(svc *application.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
 		}
-		user, err := svc.JoinProject(c.Context(), projIdInt, userInfo.Id)
+		user, err := svc.JoinProject(c.Context(), projUUID, userInfo.Id)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error joining project")
 		}
@@ -385,19 +390,19 @@ func JoinOrg(svc *application.ProjectService) fiber.Handler {
 	}
 }
 
-func GetMemberPage(svc *application.ProjectService) fiber.Handler {
+func GetMemberPage(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		memberId := c.Params("member_id")
-		memberIdInt, err := strconv.Atoi(memberId)
+		memberUUID, err := uuid.Parse(memberId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 		projectId := c.Params("project_id")
-		projectIdInt, err := strconv.Atoi(projectId)
+		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		member, err := svc.GetProjectUser(c.Context(), projectIdInt, memberIdInt)
+		member, err := svc.GetProjectUser(c.Context(), projUUID, memberUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting project user")
 		}
@@ -414,10 +419,10 @@ func GetMemberPage(svc *application.ProjectService) fiber.Handler {
 	}
 }
 
-func UpdateMemberRoles(svc *application.ProjectService) fiber.Handler {
+func UpdateMemberRoles(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		memberId := c.Params("member_id")
-		memberIdInt, err := strconv.Atoi(memberId)
+		memberUUID, err := uuid.Parse(memberId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
@@ -426,12 +431,12 @@ func UpdateMemberRoles(svc *application.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
 		}
 		projectId := c.Params("project_id")
-		projectIdInt, err := strconv.Atoi(projectId)
+		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 		role := c.FormValue("role-select")
-		member, err := svc.UpdateMemberRoles(c.Context(), projectIdInt, memberIdInt, userInfo.Id, role)
+		member, err := svc.UpdateMemberRoles(c.Context(), projUUID, memberUUID, userInfo.Id, role)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error updating member roles")
 		}
