@@ -51,6 +51,7 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 			rv.Accepted = append(rv.Accepted, project)
 		}
 	}
+	fmt.Println("rv in the service layer: ", *rv)
 	return rv, nil
 }
 

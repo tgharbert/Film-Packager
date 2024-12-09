@@ -55,7 +55,6 @@ func (s *UserService) CreateUser(ctx context.Context, username, email, password 
 		return nil, user.ErrUserAlreadyExists
 	}
 	newUser := user.CreateNewUser(username, email, hashedStr)
-	fmt.Println("new user", newUser.Id, newUser.Name, newUser.Email, newUser.Password)
 	err = s.userRepo.CreateNewUser(ctx, newUser)
 	if err != nil {
 		return nil, fmt.Errorf("error creating user: %v", err)

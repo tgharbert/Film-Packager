@@ -229,11 +229,14 @@ func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 		}
-		user, err := svc.GetUsersProjects(c.Context(), userInfo)
+		rv, err := svc.GetUsersProjects(c.Context(), userInfo)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 		}
-		return c.Render("index", *user)
+		fmt.Println("rv: ", rv)
+		// TODO: figure out how to send proper fragment
+		return nil
+		// return c.Render("index", *user)
 	}
 }
 

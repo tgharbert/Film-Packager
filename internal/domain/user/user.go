@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"net/mail"
 	"time"
 
@@ -20,8 +19,6 @@ type User struct {
 
 func CreateNewUser(name, email, password string) *User {
 	id := uuid.New()
-	fmt.Println("in the domain instantiator file: ", id)
-
 	return &User{
 		Id:        id,
 		Name:      name,
