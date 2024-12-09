@@ -1,9 +1,13 @@
 package document
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Document struct {
-	ID             int
+	ID             uuid.UUID
 	OrganizationID int
 	UserID         int
 	FileName       string
@@ -20,7 +24,10 @@ func (d *Document) IsStaged() bool {
 // create new document
 func NewDocument(organizationID, userID int, fileName, fileType string) *Document {
 	now := time.Now()
+	id := uuid.New()
+
 	return &Document{
+		ID:             id,
 		OrganizationID: organizationID,
 		UserID:         userID,
 		FileName:       fileName,

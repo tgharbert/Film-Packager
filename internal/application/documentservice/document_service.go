@@ -1,4 +1,6 @@
-package application
+package documentservice
+
+// package application
 
 import (
 	"context"

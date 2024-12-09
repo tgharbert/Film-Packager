@@ -6,6 +6,7 @@ import (
 	"filmPackager/internal/domain/document"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -18,7 +19,7 @@ func NewPostgresDocumentRepository(db *pgxpool.Pool) *PostgresDocumentRepository
 }
 
 // GetAllByOrgId returns all documents for a given organization
-func (r *PostgresDocumentRepository) GetAllByOrgId(ctx context.Context, orgID int) ([]*document.Document, error) {
+func (r *PostgresDocumentRepository) GetAllByOrgId(ctx context.Context, orgID uuid.UUID) ([]*document.Document, error) {
 	query := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE organization_id = $1`
 	rows, err := r.db.Query(ctx, query, orgID)
 	if err != nil {
@@ -47,7 +48,7 @@ func (r *PostgresDocumentRepository) Save(ctx context.Context, doc *document.Doc
 	return err
 }
 
-func (r *PostgresDocumentRepository) GetDocumentDetails(ctx context.Context, docID int) (*document.Document, error) {
+func (r *PostgresDocumentRepository) GetDocumentDetails(ctx context.Context, docID uuid.UUID) (*document.Document, error) {
 	query := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE id = $1`
 	row := r.db.QueryRow(ctx, query, docID)
 	var doc document.Document
@@ -58,7 +59,7 @@ func (r *PostgresDocumentRepository) GetDocumentDetails(ctx context.Context, doc
 	return &doc, nil
 }
 
-func (r *PostgresDocumentRepository) FindStagedByType(ctx context.Context, orgID int, fileType string) (*document.Document, error) {
+func (r *PostgresDocumentRepository) FindStagedByType(ctx context.Context, orgID uuid.UUID, fileType string) (*document.Document, error) {
 	checkStagedQuery := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE organization_id = $1 AND status = 'staged' AND file_type = $2`
 	row := r.db.QueryRow(ctx, checkStagedQuery, orgID, fileType)
 	var doc document.Document
@@ -75,7 +76,7 @@ func (r *PostgresDocumentRepository) Delete(ctx context.Context, doc *document.D
 	return err
 }
 
-func (r *PostgresDocumentRepository) GetKeysForDeleteAll(ctx, orgID int) (*[]string, error) {
+func (r *PostgresDocumentRepository) GetKeysForDeleteAll(ctx, orgID uuid.UUID) (*[]string, error) {
 	getKeysQuery := `SELECT file_name FROM documents where organization_id = $1`
 	var keys []string
 	rows, err := r.db.Query(context.Background(), getKeysQuery, orgID)
@@ -96,7 +97,7 @@ func (r *PostgresDocumentRepository) GetKeysForDeleteAll(ctx, orgID int) (*[]str
 	return &keys, nil
 }
 
-func (r *PostgresDocumentRepository) FindStagedByOrganization(ctx context.Context, orgID int) ([]*document.Document, error) {
+func (r *PostgresDocumentRepository) FindStagedByOrganization(ctx context.Context, orgID uuid.UUID) ([]*document.Document, error) {
 	query := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE organization_id = $1 AND status = 'staged'`
 	rows, err := r.db.Query(ctx, query, orgID)
 	if err != nil {

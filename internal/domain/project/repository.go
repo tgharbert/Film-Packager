@@ -1,16 +1,20 @@
 package project
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type ProjectRepository interface {
-	GetProjectsForUserSelection(ctx context.Context, userId int) ([]*ProjectOverview, error)
-	CreateNewProject(ctx context.Context, projectName string, userId int) (*ProjectOverview, error)
-	DeleteProject(ctx context.Context, projectId int) error
-	GetProjectDetails(ctx context.Context, projectId int) (*Project, error)
-	GetProjectUsers(ctx context.Context, projectId int) ([]*ProjectMembership, error)
+	GetProjectsForUserSelection(ctx context.Context, userId uuid.UUID) ([]*ProjectOverview, error)
+	CreateNewProject(ctx context.Context, projectName string, userId uuid.UUID) (*ProjectOverview, error)
+	DeleteProject(ctx context.Context, projectId uuid.UUID) error
+	GetProjectDetails(ctx context.Context, projectId uuid.UUID) (*Project, error)
+	GetProjectUsers(ctx context.Context, projectId uuid.UUID) ([]*ProjectMembership, error)
 	SearchForUsers(ctx context.Context, userName string) ([]*ProjectMembership, error)
-	InviteMember(ctx context.Context, projectId int, userId int) error
-	JoinProject(ctx context.Context, projectId int, userId int) error
-	GetProjectUser(ctx context.Context, projectId int, userId int) (*ProjectMembership, error)
-	UpdateMemberRoles(ctx context.Context, projectId int, userId int, role string) error
+	InviteMember(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) error
+	JoinProject(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) error
+	GetProjectUser(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) (*ProjectMembership, error)
+	UpdateMemberRoles(ctx context.Context, projectId uuid.UUID, userId uuid.UUID, role string) error
 }

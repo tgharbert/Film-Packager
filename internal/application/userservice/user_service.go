@@ -1,4 +1,5 @@
-package application
+// package application
+package userservice
 
 import (
 	"context"
@@ -10,12 +11,6 @@ import (
 	"filmPackager/internal/domain/user"
 	"fmt"
 )
-
-// type UserRepository interface {
-// 	CreateNewUser(ctx context.Context, user *user.User) error
-// 	// InviteUserToOrg(ctx context.Context, user *user.User)
-// 	GetUserByEmail(ctx context.Context, email string, password string) (*user.User, error)
-// }
 
 type UserService struct {
 	userRepo user.UserRepository
@@ -43,6 +38,7 @@ func (s *UserService) UserLogin(ctx context.Context, email string, password stri
 	return existingUser, nil
 }
 
+// change to accept user params then build the user object in the service
 func (s *UserService) CreateUserAccount(ctx context.Context, newUser *user.User) (*user.User, error) {
 	hashedStr, err := access.HashPassword(newUser.Password)
 	if err != nil {

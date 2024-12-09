@@ -6,8 +6,10 @@ import (
 
 	"fmt"
 
+	"filmPackager/internal/application/projectservice"
 	"filmPackager/internal/domain/project"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -20,7 +22,7 @@ func NewPostgresProjectRepository(db *pgxpool.Pool) *PostgresProjectRepository {
 	return &PostgresProjectRepository{db: db}
 }
 
-func (r *PostgresProjectRepository) GetProjectsForUserSelection(ctx context.Context, userId int) ([]*project.ProjectOverview, error) {
+func (r *PostgresProjectRepository) GetProjectsForUserSelection(ctx context.Context, userId uuid.UUID) ([]projectservice.ProjectOverview, error) {
 	query := `
         SELECT
     o.id,
@@ -34,7 +36,7 @@ JOIN
 WHERE
     m.user_id = $1;
     `
-	var projects []*project.ProjectOverview
+	var projects []projectservice.ProjectOverview
 	rows, err := r.db.Query(ctx, query, userId)
 	if err != nil {
 		fmt.Println("error in query: ", err)
@@ -42,19 +44,19 @@ WHERE
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var project project.ProjectOverview
+		var project projectservice.ProjectOverview
 		var roles []string
 		err = rows.Scan(&project.Id, &project.Name, &roles, &project.Status)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning rows: %v", err)
 		}
 		project.Roles = roles
-		projects = append(projects, &project)
+		projects = append(projects, project)
 	}
 	return projects, nil
 }
 
-func (r *PostgresProjectRepository) CreateNewProject(ctx context.Context, projectName string, ownerId int) (*project.ProjectOverview, error) {
+func (r *PostgresProjectRepository) CreateNewProject(ctx context.Context, projectName string, ownerId uuid.UUID) (*project.ProjectOverview, error) {
 	// ensure that both transactions fail or succeed together
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -86,7 +88,7 @@ func (r *PostgresProjectRepository) CreateNewProject(ctx context.Context, projec
 	return &project, nil
 }
 
-func (r *PostgresProjectRepository) DeleteProject(ctx context.Context, projectId int) error {
+func (r *PostgresProjectRepository) DeleteProject(ctx context.Context, projectId uuid.UUID) error {
 	deleteProjectQuery := `DELETE FROM organizations WHERE id = $1;`
 	_, err := r.db.Exec(ctx, deleteProjectQuery, projectId)
 	if err != nil {
@@ -95,7 +97,7 @@ func (r *PostgresProjectRepository) DeleteProject(ctx context.Context, projectId
 	return nil
 }
 
-func (r *PostgresProjectRepository) GetProjectDetails(ctx context.Context, projectId int) (*project.Project, error) {
+func (r *PostgresProjectRepository) GetProjectDetails(ctx context.Context, projectId uuid.UUID) (*project.Project, error) {
 	var project project.Project
 	query := `SELECT id, name FROM organizations WHERE id = $1`
 	err := r.db.QueryRow(ctx, query, projectId).Scan(&project.Id, &project.Name)
@@ -105,7 +107,7 @@ func (r *PostgresProjectRepository) GetProjectDetails(ctx context.Context, proje
 	return &project, nil
 }
 
-func (r *PostgresProjectRepository) GetProjectUsers(ctx context.Context, projectId int) ([]*project.ProjectMembership, error) {
+func (r *PostgresProjectRepository) GetProjectUsers(ctx context.Context, projectId uuid.UUID) ([]*project.ProjectMembership, error) {
 	query := `SELECT
     u.id AS user_id,
     u.name AS user_name,

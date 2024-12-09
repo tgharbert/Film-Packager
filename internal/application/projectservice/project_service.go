@@ -1,4 +1,7 @@
-package application
+// change to projectservice
+package projectservice
+
+// package application
 
 import (
 	"context"
@@ -8,6 +11,8 @@ import (
 	"reflect"
 
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
 type ProjectService struct {
@@ -23,7 +28,29 @@ func NewProjectService(projRepo project.ProjectRepository, docRepo document.Docu
 }
 
 // should this take in the User then get the projects and sort them for the user??
-func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) (*user.User, error) {
+type ProjectOverview struct {
+	Id     int
+	Name   string
+	Status string
+	Roles  []string
+}
+
+type GetUsersProjects struct {
+	User     *user.User
+	Pending  []project.ProjectOverview
+	Accepted []project.ProjectOverview
+}
+
+type GetProjectDetails struct {
+	Project *project.Project
+	Staged  []document.Document
+	Locked  []document.Document
+	Members []project.ProjectMembership
+	Invited []project.ProjectMembership
+}
+
+func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) (*GetUsersProjects, error) {
+	var rv *GetUsersProjects
 	// do auth work here?
 	projects, err := s.projRepo.GetProjectsForUserSelection(ctx, user.Id)
 	if err != nil {
@@ -32,16 +59,17 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 	for _, project := range projects {
 		// sort the roles in each project here as well
 		if project.Status == "pending" {
-			user.Invited = append(user.Invited, *project)
+			rv.Pending = append(rv.Pending, *project)
 		}
 		if project.Status == "accepted" {
-			user.Memberships = append(user.Memberships, *project)
+			rv.Accepted = append(rv.Accepted, *project)
 		}
 	}
-	return user, nil
+	return rv, nil
 }
 
-func (s *ProjectService) CreateNewProject(ctx context.Context, projectName string, userId int) (*project.ProjectOverview, error) {
+func (s *ProjectService) CreateNewProject(ctx context.Context, projectName string, userId uuid.UUID) (*project.ProjectOverview, error) {
+	// create the new project with the given info of projectName and userId
 	project, err := s.projRepo.CreateNewProject(ctx, projectName, userId)
 	if err != nil {
 		return nil, fmt.Errorf("error with project creation: %v", err)
@@ -50,7 +78,8 @@ func (s *ProjectService) CreateNewProject(ctx context.Context, projectName strin
 }
 
 // should this be in the user service??
-func (s *ProjectService) DeleteProject(ctx context.Context, projectId int, user *user.User) (*user.User, error) {
+func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID, user *user.User) (*GetUsersProjects, error) {
+	var rv *GetUsersProjects
 	err := s.projRepo.DeleteProject(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error deleting projects from db: %v", err)
@@ -59,26 +88,26 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId int, user 
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving user projects: %v", err)
 	}
-	// var user *domain.User
 	for _, project := range projects {
 		// sort the roles in each project here as well
-		if project.Status == "invited" {
-			user.Invited = append(user.Invited, *project)
+		if project.Status == "pending" {
+			rv.Pending = append(rv.Pending, *project)
 		}
 		if project.Status == "accepted" {
-			user.Memberships = append(user.Memberships, *project)
+			rv.Accepted = append(rv.Accepted, *project)
 		}
 	}
-	return user, nil
+	return rv, nil
 }
 
-func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId int) (*project.Project, error) {
+func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.UUID) (*GetProjectDetails, error) {
+	var projectDetails *GetProjectDetails
 	// get the project from the db
-	projectDetails, err := s.projRepo.GetProjectDetails(ctx, projectId)
+	p, err := s.projRepo.GetProjectDetails(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project from db: %v", err)
 	}
-
+	projectDetails.Project = p
 	// get the project documents from the db
 	documents, err := s.docRepo.GetAllByOrgId(ctx, projectId)
 	if err != nil {

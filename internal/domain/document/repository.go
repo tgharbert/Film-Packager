@@ -1,15 +1,19 @@
 package document
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type DocumentRepository interface {
 	Save(ctx context.Context, doc *Document) error
-	FindStagedByType(ctx context.Context, orgID int, fileType string) (*Document, error)
+	FindStagedByType(ctx context.Context, orgID uuid.UUID, fileType string) (*Document, error)
 	Delete(ctx context.Context, doc *Document) error
-	GetAllByOrgId(ctx context.Context, orgID int) ([]*Document, error)
+	GetAllByOrgId(ctx context.Context, orgID uuid.UUID) ([]*Document, error)
 	// GetKeysForDeleteAll(ctx context.Context, orgID int) ([]string, error)
-	GetDocumentDetails(ctx context.Context, docID int) (*Document, error)
-	FindStagedByOrganization(ctx context.Context, orgID int) ([]*Document, error)
+	GetDocumentDetails(ctx context.Context, docID uuid.UUID) (*Document, error)
+	FindStagedByOrganization(ctx context.Context, orgID uuid.UUID) ([]*Document, error)
 }
 
 type S3Repository interface {

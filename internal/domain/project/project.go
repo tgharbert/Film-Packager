@@ -1,20 +1,26 @@
 package project
 
 import (
-	"filmPackager/internal/domain/document"
 	"slices"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type Project struct {
-	Id              int
-	Name            string
-	Locked          ProjectDocs
-	Staged          ProjectDocs
-	Members         []ProjectMembership
-	Invited         []ProjectMembership
-	SearchedMembers []ProjectMembership
+	Id           uuid.UUID
+	Name         string
+	CreatedAt    string
+	OwnedBy      int
+	LastUpdateAt time.Time
+	//	Locked ProjectDocs
+	//	Staged ProjectDocs
+	// Members         []ProjectMembership
+	// Invited         []ProjectMembership
+	// SearchedMembers []ProjectMembership
 }
 
+// this should be defined in the application layer
 type ProjectMembership struct {
 	UserId       int
 	UserName     string
@@ -23,6 +29,7 @@ type ProjectMembership struct {
 	InviteStatus string
 }
 
+// this should be defined in the application layer
 type ProjectOverview struct {
 	Id     int
 	Name   string
@@ -30,18 +37,18 @@ type ProjectOverview struct {
 	Roles  []string
 }
 
-type ProjectDocs struct {
-	Script            *document.Document
-	Logline           *document.Document
-	Synopsis          *document.Document
-	PitchDeck         *document.Document
-	Schedule          *document.Document
-	Budget            *document.Document
-	DirectorStatement *document.Document
-	Shotlist          *document.Document
-	Lookbook          *document.Document
-	Bios              *document.Document
-}
+//type ProjectDocs struct {
+//	Script            *document.Document
+//	Logline           *document.Document
+//	Synopsis          *document.Document
+//	PitchDeck         *document.Document
+//	Schedule          *document.Document
+//	Budget            *document.Document
+//	DirectorStatement *document.Document
+//	Shotlist          *document.Document
+//	Lookbook          *document.Document
+//	Bios              *document.Document
+//}
 
 func SortRoles(rolesSlc []string) []string {
 	var orderedRoles []string
