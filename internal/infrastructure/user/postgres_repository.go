@@ -46,8 +46,8 @@ func (r *PostgresUserRepository) GetUserById(ctx context.Context, userId uuid.UU
 }
 
 func (r *PostgresUserRepository) CreateNewUser(ctx context.Context, user *user.User) error {
-	query := `INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id`
-	err := r.db.QueryRow(ctx, query, user.Name, user.Email, user.Password).Scan(&user.Id)
+	query := `INSERT INTO users (id, name, email, password) VALUES ($1, $2, $3, $4) RETURNING id`
+	err := r.db.QueryRow(ctx, query, user.Id, user.Name, user.Email, user.Password).Scan(&user.Id)
 	if err != nil {
 		return fmt.Errorf("error creating user: %v", err)
 	}

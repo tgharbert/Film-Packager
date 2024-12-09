@@ -16,7 +16,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func RegisterRoutes(app *fiber.App, userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService) {
@@ -64,6 +63,7 @@ func PostCreateAccount(svc *userservice.UserService) fiber.Handler {
 		secondPassword := strings.Trim(c.FormValue("secondPassword"), " ")
 		username := fmt.Sprintf("%s %s", firstName, lastName)
 		var mess string
+		// I want to move all of this into the application layer
 		if firstName == "" || lastName == "" {
 			mess = "Error: please enter first and last name!"
 			return c.Render("create-accountHTML", fiber.Map{
@@ -94,14 +94,11 @@ func PostCreateAccount(svc *userservice.UserService) fiber.Handler {
 				"Error": mess,
 			})
 		}
-		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		createdUser, err := svc.CreateUser(c.Context(), username, email, password)
+		// newUser := user.CreateNewUser(username, email, hashedStr)
+		//createdUser, err := svc.CreateUserAccount(c.Context(), newUser)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error hashing password")
-		}
-		hashedStr := string(hash)
-		newUser := user.CreateNewUser(username, email, hashedStr)
-		createdUser, err := svc.CreateUserAccount(c.Context(), newUser)
-		if err != nil {
+			fmt.Println("error creating user: ", err)
 			if errors.Is(err, user.ErrUserAlreadyExists) {
 				mess = "Error: user already exists!"
 				return c.Render("create-accountHTML", fiber.Map{
@@ -133,6 +130,7 @@ func GetCreateAccount(svc *userservice.UserService) fiber.Handler {
 
 func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		fmt.Println("login user handler")
 		email := strings.TrimSpace(c.FormValue("email"))
 		password := strings.TrimSpace(c.FormValue("password"))
 		if email == "" || password == "" {
@@ -161,6 +159,7 @@ func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 			Path:     "/",
 			Expires:  time.Now().Add(48 * time.Hour),
 		})
+		fmt.Println("current user: ", currentUser)
 		return c.Redirect("/")
 	}
 }

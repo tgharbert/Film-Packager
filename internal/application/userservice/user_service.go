@@ -10,6 +10,8 @@ import (
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
@@ -39,18 +41,21 @@ func (s *UserService) UserLogin(ctx context.Context, email string, password stri
 }
 
 // change to accept user params then build the user object in the service
-func (s *UserService) CreateUserAccount(ctx context.Context, newUser *user.User) (*user.User, error) {
-	hashedStr, err := access.HashPassword(newUser.Password)
+func (s *UserService) CreateUser(ctx context.Context, username, email, password string) (*user.User, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("error hashing password: %v", err)
 	}
-	existingUser, err := s.userRepo.GetUserByEmail(ctx, newUser.Email, hashedStr)
+	hashedStr := string(hash)
+	existingUser, err := s.userRepo.GetUserByEmail(ctx, email, hashedStr)
 	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
 		return nil, user.ErrUserAlreadyExists
 	}
 	if existingUser != nil {
 		return nil, user.ErrUserAlreadyExists
 	}
+	newUser := user.CreateNewUser(username, email, hashedStr)
+	fmt.Println("new user", newUser.Id, newUser.Name, newUser.Email, newUser.Password)
 	err = s.userRepo.CreateNewUser(ctx, newUser)
 	if err != nil {
 		return nil, fmt.Errorf("error creating user: %v", err)
