@@ -60,6 +60,7 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 	// get project IDs - new function in repo
 	userMemberships, err := s.memberRepo.GetProjectMemberships(ctx, user.Id)
 	if err != nil {
+		fmt.Println("error getting projects from db: ", err)
 		return nil, fmt.Errorf("error getting user memberships: %v", err)
 	}
 	projIDs := []uuid.UUID{}
@@ -96,7 +97,6 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 	// get the user info
 	user, err = s.userRepo.GetUserById(ctx, user.Id)
 	if err != nil {
-		fmt.Println("error getting user from db: ", err)
 		return nil, fmt.Errorf("error getting user from db: %v", err)
 	}
 	rv.User = *user

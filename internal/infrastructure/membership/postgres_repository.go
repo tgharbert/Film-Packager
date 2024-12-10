@@ -22,14 +22,12 @@ func (r *PostgresMembershipRepository) GetProjectMemberships(ctx context.Context
 	query := `
 		SELECT
 	user_id,
-	project_id,
-	user_name,
-	user_email,
-	roles,
+	organization_id,
+	access_tier,
 	invite_status 
 	FROM
 	memberships
-	WHERE project_id = $1`
+	WHERE organization_id = $1`
 	var memberships []membership.Membership
 	rows, err := r.db.Query(ctx, query, projectId)
 	if err != nil {
