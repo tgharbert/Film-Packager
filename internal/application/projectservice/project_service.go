@@ -6,6 +6,7 @@ package projectservice
 import (
 	"context"
 	"filmPackager/internal/domain/document"
+	"filmPackager/internal/domain/membership"
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"reflect"
@@ -17,16 +18,18 @@ import (
 )
 
 type ProjectService struct {
-	projRepo project.ProjectRepository
-	docRepo  document.DocumentRepository
-	userRepo user.UserRepository
+	projRepo   project.ProjectRepository
+	docRepo    document.DocumentRepository
+	userRepo   user.UserRepository
+	memberRepo membership.MembershipRepository
 }
 
-func NewProjectService(projRepo project.ProjectRepository, docRepo document.DocumentRepository, userRepo user.UserRepository) *ProjectService {
+func NewProjectService(projRepo project.ProjectRepository, docRepo document.DocumentRepository, userRepo user.UserRepository, memberRepo membership.MembershipRepository) *ProjectService {
 	return &ProjectService{
-		projRepo: projRepo,
-		docRepo:  docRepo,
-		userRepo: userRepo,
+		projRepo:   projRepo,
+		docRepo:    docRepo,
+		userRepo:   userRepo,
+		memberRepo: memberRepo,
 	}
 }
 
@@ -34,31 +37,63 @@ type GetProjectDetailsResponse struct {
 	Project *project.Project
 	Staged  map[string]document.Document
 	Locked  map[string]document.Document
-	Members []project.ProjectMembership
-	Invited []project.ProjectMembership
+	Members []membership.Membership
+	Invited []membership.Membership
+}
+
+type ProjectOverview struct {
+	ID     uuid.UUID
+	Name   string
+	Status string
+	Roles  []string
 }
 
 type GetUsersProjectsResponse struct {
-	Projects project.GetUsersProjects
+	Invited  []ProjectOverview
+	Accepted []ProjectOverview
 	User     user.User
 }
 
 func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) (*GetUsersProjectsResponse, error) {
 	rv := &GetUsersProjectsResponse{}
 	// do auth work here?
-	projects, err := s.projRepo.GetProjectsForUserSelection(ctx, user.Id)
+	// get project IDs - new function in repo
+	userMemberships, err := s.memberRepo.GetProjectMemberships(ctx, user.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error getting user memberships: %v", err)
+	}
+	projIDs := []uuid.UUID{}
+	for _, membership := range userMemberships {
+		projIDs = append(projIDs, membership.ProjectID)
+	}
+
+	// get the projects for the user
+	projects, err := s.projRepo.GetProjectsByMembershipIDs(ctx, projIDs)
 	if err != nil {
 		return nil, fmt.Errorf("error getting projects from db: %v", err)
 	}
-	for _, project := range projects {
-		// sort the roles in each project here as well
-		if project.Status == "pending" {
-			rv.Projects.Pending = append(rv.Projects.Pending, project)
-		}
-		if project.Status == "accepted" {
-			rv.Projects.Accepted = append(rv.Projects.Accepted, project)
+	// colate the projects and memberships on ID
+	for _, p := range projects {
+		for _, m := range userMemberships {
+			if p.ID == m.ProjectID {
+				// sort the roles in each project overview here
+				m.Roles = membership.SortRoles(m.Roles)
+				po := ProjectOverview{
+					ID:     p.ID,
+					Name:   p.Name,
+					Status: m.InviteStatus,
+					Roles:  m.Roles,
+				}
+				// sort them based on invite status
+				if m.InviteStatus == "pending" {
+					rv.Invited = append(rv.Invited, po)
+				} else if m.InviteStatus == "accepted" {
+					rv.Accepted = append(rv.Accepted, po)
+				}
+			}
 		}
 	}
+	// get the user info
 	user, err = s.userRepo.GetUserById(ctx, user.Id)
 	if err != nil {
 		fmt.Println("error getting user from db: ", err)
@@ -86,25 +121,54 @@ func (s *ProjectService) CreateNewProject(ctx context.Context, projectName strin
 }
 
 // should this be in the user service??
-func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID, user *user.User) (*project.GetUsersProjects, error) {
-	rv := &project.GetUsersProjects{}
+func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID, user *user.User) (*GetUsersProjectsResponse, error) {
+	rv := &GetUsersProjectsResponse{}
 	err := s.projRepo.DeleteProject(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error deleting projects from db: %v", err)
 	}
-	projects, err := s.projRepo.GetProjectsForUserSelection(ctx, user.Id)
+	userMemberships, err := s.memberRepo.GetProjectMemberships(ctx, user.Id)
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving user projects: %v", err)
+		return nil, fmt.Errorf("error getting user memberships: %v", err)
 	}
-	for _, project := range projects {
-		// sort the roles in each project here as well
-		if project.Status == "pending" {
-			rv.Pending = append(rv.Pending, project)
-		}
-		if project.Status == "accepted" {
-			rv.Accepted = append(rv.Accepted, project)
+	projIDs := []uuid.UUID{}
+	for _, membership := range userMemberships {
+		projIDs = append(projIDs, membership.ProjectID)
+	}
+
+	// get the projects for the user
+	projects, err := s.projRepo.GetProjectsByMembershipIDs(ctx, projIDs)
+	if err != nil {
+		return nil, fmt.Errorf("error getting projects from db: %v", err)
+	}
+	// colate the projects and memberships on ID
+	for _, p := range projects {
+		for _, m := range userMemberships {
+			if p.ID == m.ProjectID {
+				// sort the roles in each project overview here
+				m.Roles = membership.SortRoles(m.Roles)
+				po := ProjectOverview{
+					ID:     p.ID,
+					Name:   p.Name,
+					Status: m.InviteStatus,
+					Roles:  m.Roles,
+				}
+				// sort them based on invite status
+				if m.InviteStatus == "pending" {
+					rv.Invited = append(rv.Invited, po)
+				} else if m.InviteStatus == "accepted" {
+					rv.Accepted = append(rv.Accepted, po)
+				}
+			}
 		}
 	}
+	// get the user info
+	user, err = s.userRepo.GetUserById(ctx, user.Id)
+	if err != nil {
+		fmt.Println("error getting user from db: ", err)
+		return nil, fmt.Errorf("error getting user from db: %v", err)
+	}
+	rv.User = *user
 	return rv, nil
 }
 
@@ -131,12 +195,12 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 	}
 
 	// get project members
-	members, err := s.projRepo.GetProjectUsers(ctx, projectId)
+	members, err := s.memberRepo.GetProjectMemberships(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project users from db: %v", err)
 	}
 	for _, member := range members {
-		member.Roles = project.SortRoles(member.Roles)
+		member.Roles = membership.SortRoles(member.Roles)
 		if member.InviteStatus == "pending" {
 			rv.Invited = append(rv.Invited, member)
 		} else if member.InviteStatus == "accepted" {
@@ -163,31 +227,24 @@ func setField(obj interface{}, fieldName string, value interface{}) {
 	}
 }
 
-func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([]project.ProjectMembership, error) {
-	users, err := s.projRepo.SearchForUsers(ctx, userName)
+// MOVE TO MEMBERSHIP SERVICE??
+func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([]user.User, error) {
+	users, err := s.userRepo.GetAllUsersByName(ctx, userName)
 	if err != nil {
 		return nil, fmt.Errorf("error searching for users: %v", err)
 	}
-	foundMembers := []project.ProjectMembership{}
+	foundMembers := []user.User{}
 	for _, user := range users {
 		foundMembers = append(foundMembers, user)
 	}
 	return foundMembers, nil
 }
 
-func (s *ProjectService) GetProjectUser(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) (*project.ProjectMembership, error) {
-	user, err := s.projRepo.GetProjectUser(ctx, projectId, userId)
-	// sort the roles here
-	user.Roles = project.SortRoles(user.Roles)
-	if err != nil {
-		return nil, fmt.Errorf("error getting user from project: %v", err)
-	}
-	return user, nil
-}
+// MOVE TO MEMBERSHIP SERVICE func (s *ProjectService) GetProjectUser(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) (*project.ProjectMembership, error) { user, err := s.projRepo.GetProjectUser(ctx, projectId, userId) sort the roles here user.Roles = project.SortRoles(user.Roles) if err != nil { return nil, fmt.Errorf("error getting user from project: %v", err)}return user, nil}
 
-func (s *ProjectService) InviteMember(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) ([]project.ProjectMembership, error) {
+func (s *ProjectService) InviteMember(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) ([]membership.Membership, error) {
 	// check if member is already invited
-	user, err := s.projRepo.GetProjectUser(ctx, projectId, userId)
+	user, err := s.memberRepo.GetMembership(ctx, projectId, userId)
 	if err != nil && err != project.ErrMemberNotFound {
 		return nil, fmt.Errorf("error getting user from project: %v", err)
 	}
@@ -197,14 +254,14 @@ func (s *ProjectService) InviteMember(ctx context.Context, projectId uuid.UUID, 
 			return nil, fmt.Errorf("error inviting user to project: %v", err)
 		}
 	}
-	if user != nil && user.InviteStatus == "pending" {
+	if user.UserName != "" && user.InviteStatus == "pending" {
 		return nil, project.ErrMemberAlreadyInvited
 	}
-	members, err := s.projRepo.GetProjectUsers(ctx, projectId)
+	members, err := s.memberRepo.GetProjectMemberships(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project members: %v", err)
 	}
-	membersInfo := []project.ProjectMembership{}
+	membersInfo := []membership.Membership{}
 	for _, member := range members {
 		if member.InviteStatus == "pending" {
 			membersInfo = append(membersInfo, member)
@@ -213,18 +270,19 @@ func (s *ProjectService) InviteMember(ctx context.Context, projectId uuid.UUID, 
 	return membersInfo, nil
 }
 
-func (s *ProjectService) JoinProject(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) ([]project.ProjectOverview, error) {
+func (s *ProjectService) JoinProject(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) ([]project.Project, error) {
 	err := s.projRepo.JoinProject(ctx, projectId, userId)
 	if err != nil {
 		return nil, fmt.Errorf("error joining project: %v", err)
 	}
-	projects, err := s.projRepo.GetProjectsForUserSelection(ctx, userId)
+	projects := []project.Project{}
+	//	projects, err := s.projRepo.GetProjectsByUserID(ctx, userId)
 	return projects, nil
 }
 
-func (s *ProjectService) UpdateMemberRoles(ctx context.Context, projectId uuid.UUID, memberId uuid.UUID, userId uuid.UUID, role string) (*project.ProjectMembership, error) {
+func (s *ProjectService) UpdateMemberRoles(ctx context.Context, projectId uuid.UUID, memberId uuid.UUID, userId uuid.UUID, role string) (*membership.Membership, error) {
 	// check user permissions...
-	user, err := s.projRepo.GetProjectUser(ctx, projectId, userId)
+	user, err := s.memberRepo.GetMembership(ctx, projectId, userId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user from project: %v", err)
 	}
@@ -236,6 +294,6 @@ func (s *ProjectService) UpdateMemberRoles(ctx context.Context, projectId uuid.U
 	if err != nil {
 		return nil, fmt.Errorf("error updating member roles: %v", err)
 	}
-	member, err := s.projRepo.GetProjectUser(ctx, projectId, memberId)
+	member, err := s.memberRepo.GetMembership(ctx, projectId, memberId)
 	return member, nil
 }

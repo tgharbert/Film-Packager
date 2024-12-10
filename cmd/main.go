@@ -12,6 +12,7 @@ import (
 	"filmPackager/internal/application/projectservice"
 	"filmPackager/internal/application/userservice"
 	docInf "filmPackager/internal/infrastructure/document"
+	memInf "filmPackager/internal/infrastructure/membership"
 	projectInf "filmPackager/internal/infrastructure/project"
 	userInf "filmPackager/internal/infrastructure/user"
 
@@ -40,9 +41,10 @@ func main() {
 	userRepo := userInf.NewPostgresUserRepository(conn)
 	projectRepo := projectInf.NewPostgresProjectRepository(conn)
 	docPGRepo := docInf.NewPostgresDocumentRepository(conn)
+	memberRepo := memInf.NewPostgresMembershipRepository(conn)
 	docS3Repo := docInf.NewS3DocumentRepository(s3Client, bucket)
 	userService := userservice.NewUserService(userRepo, projectRepo)
-	projService := projectservice.NewProjectService(projectRepo, docPGRepo, userRepo)
+	projService := projectservice.NewProjectService(projectRepo, docPGRepo, userRepo, memberRepo)
 	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo)
 
 	interfaces.RegisterRoutes(app, userService, projService, docService)

@@ -53,3 +53,35 @@ func (r *PostgresUserRepository) CreateNewUser(ctx context.Context, user *user.U
 	}
 	return nil
 }
+
+func (r *PostgresUserRepository) GetAllUsersByName(ctx context.Context, userName string) ([]user.User, error) {
+	query := `SELECT id, name, email, password FROM users WHERE name = $1`
+	var users []user.User
+	rows, err := r.db.Query(ctx, query, userName)
+	if err != nil {
+		return nil, fmt.Errorf("error querying db: %v", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var u user.User
+		err = rows.Scan(&u.Id, &u.Name, &u.Email, &u.Password)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning rows: %v", err)
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
+func (r *PostgresUserRepository) GetUserByName(ctx context.Context, userName string) (*user.User, error) {
+	query := `SELECT id, name, email, password FROM users WHERE name = $1`
+	var existingUser user.User
+	err := r.db.QueryRow(ctx, query, userName).Scan(&existingUser.Id, &existingUser.Name, &existingUser.Email, &existingUser.Password)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, user.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("error scanning user: %v", err)
+	}
+	return &existingUser, nil
+}

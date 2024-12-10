@@ -7,6 +7,7 @@ import (
 	"filmPackager/internal/application/userservice"
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/domain/document"
+	"filmPackager/internal/domain/membership"
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
@@ -403,7 +404,10 @@ func GetMemberPage(svc *projectservice.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		member, err := svc.GetProjectUser(c.Context(), projUUID, memberUUID)
+		//member, err := svc.GetProjectUser(c.Context(), projUUID, memberUUID)
+		member := &membership.Membership{}
+		fmt.Println("member: ", memberUUID)
+		fmt.Println("project: ", projUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting project user")
 		}

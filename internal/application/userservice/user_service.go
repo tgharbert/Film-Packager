@@ -1,4 +1,3 @@
-// package application
 package userservice
 
 import (
@@ -6,7 +5,6 @@ import (
 	"errors"
 	access "filmPackager/internal/auth"
 
-	// "filmPackager/internal/domain"
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
