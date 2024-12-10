@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// TODO: DELETE ALL COMMENTS AND MOVE STRUCTS TO RESPONSES IN APPLICATION LAYER
 type Project struct {
 	ID           uuid.UUID
 	Name         string
