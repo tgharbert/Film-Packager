@@ -58,18 +58,19 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 	rv := &GetUsersProjectsResponse{}
 	// do auth work here?
 	// get project IDs - new function in repo
-	userMemberships, err := s.memberRepo.GetProjectMemberships(ctx, user.Id)
+	userMemberships, err := s.memberRepo.GetAllUserMemberships(ctx, user.Id)
 	if err != nil {
 		fmt.Println("error getting projects from db: ", err)
 		return nil, fmt.Errorf("error getting user memberships: %v", err)
 	}
+	fmt.Println("projIDs: ", userMemberships)
 	projIDs := []uuid.UUID{}
 	for _, membership := range userMemberships {
 		projIDs = append(projIDs, membership.ProjectID)
 	}
-
 	// get the projects for the user
 	projects, err := s.projRepo.GetProjectsByMembershipIDs(ctx, projIDs)
+	fmt.Println("projects: ", projects)
 	if err != nil {
 		return nil, fmt.Errorf("error getting projects from db: %v", err)
 	}
@@ -127,7 +128,7 @@ func (s *ProjectService) CreateNewProject(ctx context.Context, projectName strin
 		UserID:       userId,
 		UserName:     u.Name,
 		UserEmail:    u.Email,
-		InviteStatus: "pending",
+		InviteStatus: "accepted",
 		Roles:        []string{"owner"},
 	}
 	if err != nil {

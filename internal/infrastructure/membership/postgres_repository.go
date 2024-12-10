@@ -129,3 +129,30 @@ func (r *PostgresMembershipRepository) GetProjectIDsForUser(ctx context.Context,
 	}
 	return projectIds, nil
 }
+
+func (r *PostgresMembershipRepository) GetAllUserMemberships(ctx context.Context, userId uuid.UUID) ([]membership.Membership, error) {
+	query := `
+		SELECT
+	id,
+	user_id,
+	organization_id,
+	access_tier,
+	invite_status 
+	FROM
+	memberships
+	WHERE user_id = $1`
+	var memberships []membership.Membership
+	rows, err := r.db.Query(ctx, query, userId)
+	if err != nil {
+		return nil, fmt.Errorf("error getting all user memberships: %v", err)
+	}
+	for rows.Next() {
+		m := membership.Membership{}
+		err := rows.Scan(&m.ID, &m.UserID, &m.ProjectID, &m.Roles, &m.InviteStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning user membership row: %v", err)
+		}
+		memberships = append(memberships, m)
+	}
+	return memberships, nil
+}
