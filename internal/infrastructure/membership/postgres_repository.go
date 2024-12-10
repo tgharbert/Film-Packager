@@ -45,7 +45,6 @@ func (r *PostgresMembershipRepository) GetProjectMemberships(ctx context.Context
 }
 
 func (r *PostgresMembershipRepository) CreateMembership(ctx context.Context, m *membership.Membership) error {
-	fmt.Println("Creating membership", m)
 	query := `
 		INSERT INTO memberships (id, user_id, organization_id, access_tier, invite_status) 
 		VALUES ($1, $2, $3, $4, $5)`

@@ -252,10 +252,8 @@ func CreateProject(svc *projectservice.ProjectService) fiber.Handler {
 		}
 		project, err := svc.CreateNewProject(c.Context(), projectName, userInfo.Id)
 		if err != nil {
-			fmt.Println("error creating project: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error creating org")
 		}
-		fmt.Println("project: ", project)
 		return c.Render("project-list-item", *project)
 	}
 }
@@ -272,16 +270,13 @@ func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		user, err := svc.DeleteProject(c.Context(), projUUID, userInfo)
+		rv, err := svc.DeleteProject(c.Context(), projUUID, userInfo)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting project")
 		}
-		fmt.Println("user: ", user)
-		return nil
+		return c.Render("index", *rv)
+
 		// need to delete s3 items from bucket as well!
-		return c.Render("project-list", fiber.Map{
-			//"Memberships": user.Memberships,
-		})
 	}
 }
 
