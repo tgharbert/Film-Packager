@@ -9,7 +9,7 @@ import (
 type ProjectRepository interface {
 	//	GetProjectsByUserID(ctx context.Context, userId uuid.UUID) ([]Project, error)
 	GetProjectsByMembershipIDs(ctx context.Context, memIDs []uuid.UUID) ([]Project, error)
-	CreateNewProject(ctx context.Context, project *Project, userId uuid.UUID) (*ProjectOverview, error)
+	CreateNewProject(ctx context.Context, project *Project, userId uuid.UUID) error
 	DeleteProject(ctx context.Context, projectId uuid.UUID) error
 	GetProjectDetails(ctx context.Context, projectId uuid.UUID) (*Project, error)
 	//	GetProjectUsers(ctx context.Context, projectId uuid.UUID) ([]ProjectMembership, error)

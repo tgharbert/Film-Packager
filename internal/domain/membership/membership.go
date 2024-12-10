@@ -8,6 +8,7 @@ import (
 
 // this should be defined in the application layer
 type Membership struct {
+	ID        uuid.UUID
 	UserID    uuid.UUID
 	ProjectID uuid.UUID
 	UserName  string

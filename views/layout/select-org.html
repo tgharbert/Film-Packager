@@ -20,7 +20,7 @@
     {{block "project-list" .}}
 
     <ul id="project-list-items">
-      {{ range .Projects.Accepted }} {{block "project-list-item" .}}
+      {{ range .Accepted }} {{block "project-list-item" .}}
       <li id="{{.Id}}" class="project-list-item">
         <p
           class="project-title"
@@ -49,7 +49,7 @@
     </ul>
     <h2 class="sub-title">Projects Invites:</h2>
     <ul id="pending-list">
-      {{ range .Projects.Pending }} {{ $org := . }}
+      {{ range .Invited }} {{ $org := . }}
       <li id="{{.Id}}" class="project-list-item">
         <p class="project-title">
           <b>{{.Name}}: </b>

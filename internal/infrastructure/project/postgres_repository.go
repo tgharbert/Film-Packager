@@ -38,36 +38,13 @@ func (r *PostgresProjectRepository) GetProjectsByMembershipIDs(ctx context.Conte
 	return projects, nil
 }
 
-func (r *PostgresProjectRepository) CreateNewProject(ctx context.Context, p *project.Project, ownerId uuid.UUID) (*project.ProjectOverview, error) {
-	// ensure that both transactions fail or succeed together
-	tx, err := r.db.Begin(ctx)
+func (r *PostgresProjectRepository) CreateNewProject(ctx context.Context, p *project.Project, ownerId uuid.UUID) error {
+	createProjectQuery := `INSERT INTO organizations (id, name, owner_id) VALUES ($1, $2, $3) RETURNING id`
+	err := r.db.QueryRow(ctx, createProjectQuery, p.ID, p.Name, p.OwnerID).Scan(&p.ID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to start transaction: %v", err)
+		return fmt.Errorf("error creating project: %v", err)
 	}
-	defer func() {
-		if p := recover(); p != nil {
-			tx.Rollback(ctx)
-			panic(p)
-		} else if err != nil {
-			tx.Rollback(ctx)
-		} else {
-			err = tx.Commit(ctx)
-		}
-	}()
-	orgQuery := `INSERT INTO organizations (id, owner_id, created_at, updated_at, name) VALUES ($1, $2, $3, $4, $5) RETURNING id, name`
-	var project project.ProjectOverview
-	err = r.db.QueryRow(ctx, orgQuery, p.ID, p.OwnerID, p.CreatedAt, p.LastUpdateAt, p.Name).Scan(&project.ID, &project.Name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to insert into organizations: %v", err)
-	}
-	accessTiers := []string{"owner"}
-	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier, invite_status) VALUES ($1, $2, $3, $4) RETURNING access_tier, invite_status`
-	_, err = r.db.Exec(ctx, memberQuery, ownerId, project.ID, accessTiers, "accepted")
-	if err != nil {
-		return nil, fmt.Errorf("failed to insert into memberships: %v", err)
-	}
-	project.Roles = accessTiers
-	return &project, nil
+	return nil
 }
 
 func (r *PostgresProjectRepository) DeleteProject(ctx context.Context, projectId uuid.UUID) error {

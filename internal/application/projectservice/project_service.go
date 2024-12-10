@@ -104,6 +104,13 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 }
 
 func (s *ProjectService) CreateNewProject(ctx context.Context, projectName string, userId uuid.UUID) (*project.ProjectOverview, error) {
+	rv := &project.ProjectOverview{}
+
+	u, err := s.userRepo.GetUserById(ctx, userId)
+	if err != nil {
+		return nil, fmt.Errorf("error getting user from db: %v", err)
+	}
+
 	// create the new project with the given info of projectName and userId
 	createdProject := &project.Project{
 		ID:           uuid.New(),
@@ -112,12 +119,31 @@ func (s *ProjectService) CreateNewProject(ctx context.Context, projectName strin
 		OwnerID:      userId,
 		LastUpdateAt: time.Now(),
 	}
+	err = s.projRepo.CreateNewProject(ctx, createdProject, userId)
 
-	project, err := s.projRepo.CreateNewProject(ctx, createdProject, userId)
+	newMember := &membership.Membership{
+		ID:           uuid.New(),
+		ProjectID:    createdProject.ID,
+		UserID:       userId,
+		UserName:     u.Name,
+		UserEmail:    u.Email,
+		InviteStatus: "pending",
+		Roles:        []string{"owner"},
+	}
 	if err != nil {
 		return nil, fmt.Errorf("error with project creation: %v", err)
 	}
-	return project, nil
+
+	// create a new membership for the owner
+	err = s.memberRepo.CreateMembership(ctx, newMember)
+	if err != nil {
+		return nil, fmt.Errorf("error creating membership: %v", err)
+	}
+	rv.ID = createdProject.ID
+	rv.Name = createdProject.Name
+	rv.Status = "invited"
+	rv.Roles = newMember.Roles
+	return rv, nil
 }
 
 // should this be in the user service??

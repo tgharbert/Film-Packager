@@ -45,10 +45,11 @@ func (r *PostgresMembershipRepository) GetProjectMemberships(ctx context.Context
 }
 
 func (r *PostgresMembershipRepository) CreateMembership(ctx context.Context, m *membership.Membership) error {
+	fmt.Println("Creating membership", m)
 	query := `
-		INSERT INTO memberships (user_id, project_id, user_name, user_email, roles, invite_status) 
-		VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := r.db.Exec(ctx, query, m.UserID, m.ProjectID, m.UserName, m.UserEmail, m.Roles, m.InviteStatus)
+		INSERT INTO memberships (id, user_id, organization_id, access_tier, invite_status) 
+		VALUES ($1, $2, $3, $4, $5)`
+	_, err := r.db.Exec(ctx, query, m.ID, m.UserID, m.ProjectID, m.Roles, m.InviteStatus)
 	if err != nil {
 		return fmt.Errorf("error creating membership: %v", err)
 	}
