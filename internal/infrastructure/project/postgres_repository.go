@@ -45,7 +45,7 @@ WHERE
 	for rows.Next() {
 		var project project.ProjectOverview
 		var roles []string
-		err = rows.Scan(&project.Id, &project.Name, &roles, &project.Status)
+		err = rows.Scan(&project.ID, &project.Name, &roles, &project.Status)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning rows: %v", err)
 		}
@@ -55,7 +55,7 @@ WHERE
 	return projects, nil
 }
 
-func (r *PostgresProjectRepository) CreateNewProject(ctx context.Context, projectName string, ownerId uuid.UUID) (*project.ProjectOverview, error) {
+func (r *PostgresProjectRepository) CreateNewProject(ctx context.Context, p *project.Project, ownerId uuid.UUID) (*project.ProjectOverview, error) {
 	// ensure that both transactions fail or succeed together
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -71,15 +71,15 @@ func (r *PostgresProjectRepository) CreateNewProject(ctx context.Context, projec
 			err = tx.Commit(ctx)
 		}
 	}()
-	orgQuery := `INSERT INTO organizations (name) VALUES ($1) RETURNING id, name`
+	orgQuery := `INSERT INTO organizations (id, owner_id, created_at, updated_at, name) VALUES ($1, $2, $3, $4, $5) RETURNING id, name`
 	var project project.ProjectOverview
-	err = r.db.QueryRow(ctx, orgQuery, projectName).Scan(&project.Id, &project.Name)
+	err = r.db.QueryRow(ctx, orgQuery, p.ID, p.OwnerID, p.CreatedAt, p.LastUpdateAt, p.Name).Scan(&project.ID, &project.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert into organizations: %v", err)
 	}
 	accessTiers := []string{"owner"}
 	memberQuery := `INSERT INTO memberships (user_id, organization_id, access_tier, invite_status) VALUES ($1, $2, $3, $4) RETURNING access_tier, invite_status`
-	_, err = r.db.Exec(ctx, memberQuery, ownerId, project.Id, accessTiers, "accepted")
+	_, err = r.db.Exec(ctx, memberQuery, ownerId, project.ID, accessTiers, "accepted")
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert into memberships: %v", err)
 	}
@@ -99,7 +99,7 @@ func (r *PostgresProjectRepository) DeleteProject(ctx context.Context, projectId
 func (r *PostgresProjectRepository) GetProjectDetails(ctx context.Context, projectId uuid.UUID) (*project.Project, error) {
 	var project project.Project
 	query := `SELECT id, name FROM organizations WHERE id = $1`
-	err := r.db.QueryRow(ctx, query, projectId).Scan(&project.Id, &project.Name)
+	err := r.db.QueryRow(ctx, query, projectId).Scan(&project.ID, &project.Name)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project from db: %v", err)
 	}
@@ -127,7 +127,7 @@ WHERE
 	}
 	for rows.Next() {
 		member := &project.ProjectMembership{}
-		err := rows.Scan(&member.UserId, &member.UserName, &member.UserEmail, &member.InviteStatus, &member.Roles)
+		err := rows.Scan(&member.UserID, &member.UserName, &member.UserEmail, &member.InviteStatus, &member.Roles)
 		if err != nil {
 			return nil, err
 		}
@@ -146,7 +146,7 @@ func (r *PostgresProjectRepository) SearchForUsers(ctx context.Context, name str
 	defer rows.Close()
 	for rows.Next() {
 		user := &project.ProjectMembership{}
-		err := rows.Scan(&user.UserId, &user.UserName)
+		err := rows.Scan(&user.UserID, &user.UserName)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning user row %v", err)
 		}
@@ -191,7 +191,7 @@ WHERE
     m.organization_id = $1 AND m.user_id = $2;
 `
 	user := project.ProjectMembership{}
-	err := r.db.QueryRow(ctx, query, projectId, userId).Scan(&user.UserId, &user.UserName, &user.UserEmail, &user.InviteStatus, &user.Roles)
+	err := r.db.QueryRow(ctx, query, projectId, userId).Scan(&user.UserID, &user.UserName, &user.UserEmail, &user.InviteStatus, &user.Roles)
 	// check if there are no rows for this user/project
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

@@ -9,6 +9,7 @@ import (
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"reflect"
+	"time"
 
 	"fmt"
 
@@ -18,12 +19,14 @@ import (
 type ProjectService struct {
 	projRepo project.ProjectRepository
 	docRepo  document.DocumentRepository
+	userRepo user.UserRepository
 }
 
-func NewProjectService(projRepo project.ProjectRepository, docRepo document.DocumentRepository) *ProjectService {
+func NewProjectService(projRepo project.ProjectRepository, docRepo document.DocumentRepository, userRepo user.UserRepository) *ProjectService {
 	return &ProjectService{
 		projRepo: projRepo,
 		docRepo:  docRepo,
+		userRepo: userRepo,
 	}
 }
 
@@ -35,8 +38,13 @@ type GetProjectDetailsResponse struct {
 	Invited []project.ProjectMembership
 }
 
-func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) (*project.GetUsersProjects, error) {
-	rv := &project.GetUsersProjects{}
+type GetUsersProjectsResponse struct {
+	Projects project.GetUsersProjects
+	User     user.User
+}
+
+func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) (*GetUsersProjectsResponse, error) {
+	rv := &GetUsersProjectsResponse{}
 	// do auth work here?
 	projects, err := s.projRepo.GetProjectsForUserSelection(ctx, user.Id)
 	if err != nil {
@@ -45,19 +53,32 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 	for _, project := range projects {
 		// sort the roles in each project here as well
 		if project.Status == "pending" {
-			rv.Pending = append(rv.Pending, project)
+			rv.Projects.Pending = append(rv.Projects.Pending, project)
 		}
 		if project.Status == "accepted" {
-			rv.Accepted = append(rv.Accepted, project)
+			rv.Projects.Accepted = append(rv.Projects.Accepted, project)
 		}
 	}
-	fmt.Println("rv in the service layer: ", *rv)
+	user, err = s.userRepo.GetUserById(ctx, user.Id)
+	if err != nil {
+		fmt.Println("error getting user from db: ", err)
+		return nil, fmt.Errorf("error getting user from db: %v", err)
+	}
+	rv.User = *user
 	return rv, nil
 }
 
 func (s *ProjectService) CreateNewProject(ctx context.Context, projectName string, userId uuid.UUID) (*project.ProjectOverview, error) {
 	// create the new project with the given info of projectName and userId
-	project, err := s.projRepo.CreateNewProject(ctx, projectName, userId)
+	createdProject := &project.Project{
+		ID:           uuid.New(),
+		Name:         projectName,
+		CreatedAt:    time.Now(),
+		OwnerID:      userId,
+		LastUpdateAt: time.Now(),
+	}
+
+	project, err := s.projRepo.CreateNewProject(ctx, createdProject, userId)
 	if err != nil {
 		return nil, fmt.Errorf("error with project creation: %v", err)
 	}

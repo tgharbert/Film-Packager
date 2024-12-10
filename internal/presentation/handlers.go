@@ -233,10 +233,7 @@ func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 		}
-		fmt.Println("rv: ", rv)
-		// TODO: figure out how to send proper fragment
-		return nil
-		// return c.Render("index", *user)
+		return c.Render("index", *rv)
 	}
 }
 
@@ -254,8 +251,10 @@ func CreateProject(svc *projectservice.ProjectService) fiber.Handler {
 		}
 		project, err := svc.CreateNewProject(c.Context(), projectName, userInfo.Id)
 		if err != nil {
+			fmt.Println("error creating project: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error creating org")
 		}
+		fmt.Println("project: ", project)
 		return c.Render("project-list-item", *project)
 	}
 }

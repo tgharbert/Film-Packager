@@ -8,10 +8,10 @@ import (
 )
 
 type Project struct {
-	Id           uuid.UUID
+	ID           uuid.UUID
 	Name         string
-	CreatedAt    string
-	OwnedBy      int
+	CreatedAt    time.Time
+	OwnerID      uuid.UUID
 	LastUpdateAt time.Time
 	//	Locked ProjectDocs
 	//	Staged ProjectDocs
@@ -22,7 +22,7 @@ type Project struct {
 
 // this should be defined in the application layer
 type ProjectMembership struct {
-	UserId       int
+	UserID       int
 	UserName     string
 	UserEmail    string
 	Roles        []string
@@ -31,7 +31,7 @@ type ProjectMembership struct {
 
 // should this take in the User then get the projects and sort them for the user??
 type ProjectOverview struct {
-	Id     int
+	ID     uuid.UUID
 	Name   string
 	Status string
 	Roles  []string

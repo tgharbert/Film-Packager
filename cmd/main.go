@@ -42,7 +42,7 @@ func main() {
 	docPGRepo := docInf.NewPostgresDocumentRepository(conn)
 	docS3Repo := docInf.NewS3DocumentRepository(s3Client, bucket)
 	userService := userservice.NewUserService(userRepo, projectRepo)
-	projService := projectservice.NewProjectService(projectRepo, docPGRepo)
+	projService := projectservice.NewProjectService(projectRepo, docPGRepo, userRepo)
 	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo)
 
 	interfaces.RegisterRoutes(app, userService, projService, docService)

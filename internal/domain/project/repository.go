@@ -8,7 +8,7 @@ import (
 
 type ProjectRepository interface {
 	GetProjectsForUserSelection(ctx context.Context, userId uuid.UUID) ([]ProjectOverview, error)
-	CreateNewProject(ctx context.Context, projectName string, userId uuid.UUID) (*ProjectOverview, error)
+	CreateNewProject(ctx context.Context, project *Project, userId uuid.UUID) (*ProjectOverview, error)
 	DeleteProject(ctx context.Context, projectId uuid.UUID) error
 	GetProjectDetails(ctx context.Context, projectId uuid.UUID) (*Project, error)
 	GetProjectUsers(ctx context.Context, projectId uuid.UUID) ([]ProjectMembership, error)

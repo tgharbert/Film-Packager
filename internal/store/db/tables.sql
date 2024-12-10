@@ -11,6 +11,9 @@ CREATE TABLE "users" (
 
 CREATE TABLE "organizations" (
     "id" UUID PRIMARY KEY,
+    "owner_id" UUID REFERENCES users(id) ON DELETE CASCADE,
+    "created_at" TIMESTAMP,
+    "updated_at" TIMESTAMP,
     "name" VARCHAR(50)
 );
 
@@ -18,7 +21,7 @@ CREATE TYPE invite_status AS ENUM ('pending', 'accepted', 'rejected', 'revoked')
 
 CREATE TABLE "memberships" (
     "id" UUID PRIMARY KEY,
-    "user_id" UUID,
+    "user_id" UUID REFERENCES users(id) ON DELETE CASCADE,
     "organization_id" UUID REFERENCES organizations(id) ON DELETE CASCADE,
     "access_tier" TEXT[] DEFAULT ARRAY['reader'],
     "invite_status" invite_status DEFAULT 'pending'
@@ -27,7 +30,7 @@ CREATE TABLE "memberships" (
 CREATE TABLE "documents" (
     "id" UUID PRIMARY KEY,
     "organization_id" UUID REFERENCES organizations(id) ON DELETE CASCADE,
-    "user_id" UUID,
+    "user_id" UUID REFERENCES users(id),
     "file_name" VARCHAR(100),
     "file_type" VARCHAR(50),
     "date" TIMESTAMP,
@@ -36,7 +39,7 @@ CREATE TABLE "documents" (
 );
 
 CREATE TABLE "doc_comments" (
-    "id" serial PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
     "document_id" UUID,
     "user_id" UUID,
     "comment" VARCHAR(250)
