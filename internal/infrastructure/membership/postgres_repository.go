@@ -21,6 +21,7 @@ func NewPostgresMembershipRepository(db *pgxpool.Pool) *PostgresMembershipReposi
 func (r *PostgresMembershipRepository) GetProjectMemberships(ctx context.Context, projectId uuid.UUID) ([]membership.Membership, error) {
 	query := `
 		SELECT
+	id,
 	user_id,
 	organization_id,
 	access_tier,
@@ -35,7 +36,7 @@ func (r *PostgresMembershipRepository) GetProjectMemberships(ctx context.Context
 	}
 	for rows.Next() {
 		m := membership.Membership{}
-		err := rows.Scan(&m.UserID, &m.ProjectID, &m.UserName, &m.UserEmail, &m.Roles, &m.InviteStatus)
+		err := rows.Scan(&m.ID, &m.UserID, &m.ProjectID, &m.Roles, &m.InviteStatus)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning project membership row: %v", err)
 		}

@@ -39,8 +39,8 @@ func (r *PostgresProjectRepository) GetProjectsByMembershipIDs(ctx context.Conte
 }
 
 func (r *PostgresProjectRepository) CreateNewProject(ctx context.Context, p *project.Project, ownerId uuid.UUID) error {
-	createProjectQuery := `INSERT INTO organizations (id, name, owner_id) VALUES ($1, $2, $3) RETURNING id`
-	err := r.db.QueryRow(ctx, createProjectQuery, p.ID, p.Name, p.OwnerID).Scan(&p.ID)
+	createProjectQuery := `INSERT INTO organizations (id, name, owner_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	err := r.db.QueryRow(ctx, createProjectQuery, p.ID, p.Name, p.OwnerID, p.CreatedAt, p.LastUpdateAt).Scan(&p.ID)
 	if err != nil {
 		return fmt.Errorf("error creating project: %v", err)
 	}
@@ -58,8 +58,8 @@ func (r *PostgresProjectRepository) DeleteProject(ctx context.Context, projectId
 
 func (r *PostgresProjectRepository) GetProjectDetails(ctx context.Context, projectId uuid.UUID) (*project.Project, error) {
 	var project project.Project
-	query := `SELECT id, name FROM organizations WHERE id = $1`
-	err := r.db.QueryRow(ctx, query, projectId).Scan(&project.ID, &project.Name)
+	query := `SELECT id, name, owner_id FROM organizations WHERE id = $1`
+	err := r.db.QueryRow(ctx, query, projectId).Scan(&project.ID, &project.Name, &project.OwnerID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project from db: %v", err)
 	}

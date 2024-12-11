@@ -274,7 +274,7 @@ func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting project")
 		}
-		return c.Render("index", *rv)
+		return c.Render("project-list", *rv)
 
 		// need to delete s3 items from bucket as well!
 	}
@@ -287,11 +287,13 @@ func GetProject(svc *projectservice.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		project, err := svc.GetProjectDetails(c.Context(), projUUID)
+		p, err := svc.GetProjectDetails(c.Context(), projUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error retrieving project data")
 		}
-		return c.Render("project-page", *project)
+		fmt.Println("project: ", p)
+		// ERROR RENDERING THE PROJECT PAGE
+		return c.Render("project-page", *p)
 	}
 }
 

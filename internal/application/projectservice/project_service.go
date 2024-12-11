@@ -222,12 +222,12 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 	if err != nil {
 		return nil, fmt.Errorf("error getting project users from db: %v", err)
 	}
-	for _, member := range members {
-		member.Roles = membership.SortRoles(member.Roles)
-		if member.InviteStatus == "pending" {
-			rv.Invited = append(rv.Invited, member)
-		} else if member.InviteStatus == "accepted" {
-			rv.Members = append(rv.Members, member)
+	for _, m := range members {
+		m.Roles = membership.SortRoles(m.Roles)
+		if m.InviteStatus == "pending" {
+			rv.Invited = append(rv.Invited, m)
+		} else if m.InviteStatus == "accepted" {
+			rv.Members = append(rv.Members, m)
 		}
 	}
 	return rv, nil
