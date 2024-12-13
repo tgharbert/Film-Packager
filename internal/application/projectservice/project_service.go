@@ -1,7 +1,4 @@
-// change to projectservice
 package projectservice
-
-// package application
 
 import (
 	"context"
@@ -198,16 +195,20 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID,
 func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.UUID) (*GetProjectDetailsResponse, error) {
 	// get the project from the db
 	rv := &GetProjectDetailsResponse{}
+
+	// get project details
 	p, err := s.projRepo.GetProjectDetails(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project from db: %v", err)
 	}
 	rv.Project = p
+
 	// get the project documents from the db
 	documents, err := s.docRepo.GetAllByOrgId(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project documents from db: %v", err)
 	}
+
 	// sort the projects by staged or not
 	for _, doc := range documents {
 		if doc.IsStaged() {
@@ -222,8 +223,31 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 	if err != nil {
 		return nil, fmt.Errorf("error getting project users from db: %v", err)
 	}
+
+	// build an array of member userIDs
+	mIDs := []uuid.UUID{}
 	for _, m := range members {
+		mIDs = append(mIDs, m.UserID)
+	}
+
+	// make a map of userIDs to user data for quicker access
+	uMap := make(map[uuid.UUID]user.User)
+
+	// get the user data
+	users, err := s.userRepo.GetUsersByIDs(ctx, mIDs)
+	for _, u := range users {
+		uMap[u.Id] = u
+	}
+
+	// loop through the members and add the user data
+	for _, m := range members {
+		m.UserName = uMap[m.UserID].Name
+		m.UserEmail = uMap[m.UserID].Email
+
+		// sort the roles
 		m.Roles = membership.SortRoles(m.Roles)
+
+		// sort the members based on invite status
 		if m.InviteStatus == "pending" {
 			rv.Invited = append(rv.Invited, m)
 		} else if m.InviteStatus == "accepted" {

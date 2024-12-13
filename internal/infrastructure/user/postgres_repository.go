@@ -85,3 +85,22 @@ func (r *PostgresUserRepository) GetUserByName(ctx context.Context, userName str
 	}
 	return &existingUser, nil
 }
+
+func (r *PostgresUserRepository) GetUsersByIDs(ctx context.Context, userIds []uuid.UUID) ([]user.User, error) {
+	query := `SELECT id, name, email, password FROM users WHERE id = ANY($1)`
+	var users []user.User
+	rows, err := r.db.Query(ctx, query, userIds)
+	if err != nil {
+		return nil, fmt.Errorf("error querying db: %v", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var u user.User
+		err = rows.Scan(&u.Id, &u.Name, &u.Email, &u.Password)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning rows: %v", err)
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}

@@ -291,7 +291,7 @@ func GetProject(svc *projectservice.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error retrieving project data")
 		}
-		fmt.Println("project: ", p)
+		fmt.Println("project: ", p.Members[0].UserName)
 		// ERROR RENDERING THE PROJECT PAGE
 		return c.Render("project-page", *p)
 	}
