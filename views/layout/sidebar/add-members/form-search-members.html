@@ -1,7 +1,7 @@
-{{define "search-membersHTML"}}
+{{define "form-search-membersHTML"}}
 <div id="members">
   <form
-    hx-post="/search-users/{{.Id}}"
+    hx-post="/search-users/{{.Project.ID}}/"
     name="search-users"
     hx-target="#search-results"
     hx-swap="innerHTML"
@@ -15,6 +15,6 @@
     />
     <button class="button-std" type="submit">Search</button>
   </form>
-  <div id="search-results">{{template "search-resultsHTML" .}}</div>
+  <div id="search-results"></div>
 </div>
 {{end}}

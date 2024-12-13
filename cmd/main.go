@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/template/html/v2"
 
 	"filmPackager/internal/application/documentservice"
+	"filmPackager/internal/application/membershipservice"
 	"filmPackager/internal/application/projectservice"
 	"filmPackager/internal/application/userservice"
 	docInf "filmPackager/internal/infrastructure/document"
@@ -46,8 +47,9 @@ func main() {
 	userService := userservice.NewUserService(userRepo, projectRepo)
 	projService := projectservice.NewProjectService(projectRepo, docPGRepo, userRepo, memberRepo)
 	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo)
+	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
 
-	interfaces.RegisterRoutes(app, userService, projService, docService)
+	interfaces.RegisterRoutes(app, userService, projService, docService, memberService)
 
 	log.Print("Listening on port 3000...")
 	log.Fatal(app.Listen(":3000"))

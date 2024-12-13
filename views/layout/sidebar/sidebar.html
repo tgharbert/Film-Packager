@@ -4,9 +4,9 @@
   <div id="list-of-accepted-members">
     <ul>
       {{range .Members}}
-      <li id="{{.UserId}}">
+      <li id="{{.UserID}}">
         <b
-          hx-get="/get-member/{{$.ID}}/{{.ID}}/"
+          hx-get="/get-member/{{$.Project.ID}}/{{.UserID}}/"
           hx-target="#sidebar"
           hx-swap="innerHTML"
           >{{.UserName}}</b
@@ -18,6 +18,6 @@
       {{end}}
     </ul>
   </div>
-
+    {{ template "form-search-membersHTML" . }}
 </div>
 {{end}}

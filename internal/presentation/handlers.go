@@ -3,6 +3,7 @@ package interfaces
 import (
 	"errors"
 	"filmPackager/internal/application/documentservice"
+	"filmPackager/internal/application/membershipservice"
 	"filmPackager/internal/application/projectservice"
 	"filmPackager/internal/application/userservice"
 	access "filmPackager/internal/auth"
@@ -19,7 +20,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func RegisterRoutes(app *fiber.App, userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService) {
+func RegisterRoutes(app *fiber.App, userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService) {
 	app.Get("/", GetHomePage(projectService))
 	app.Get("/login/", GetLoginPage(userService))
 	app.Post("/post-login/", LoginUserHandler(userService))
@@ -29,7 +30,7 @@ func RegisterRoutes(app *fiber.App, userService *userservice.UserService, projec
 	app.Get("/get-project/:project_id", GetProject(projectService))
 	app.Get("/logout/", LogoutUser(userService))
 	app.Post("/file-submit/:project_id", UploadDocumentHandler(documentService))
-	app.Post("/search-users/:id", SearchUsers(projectService))
+	app.Post("/search-users/:id", SearchUsers(membershipService))
 	app.Post("/invite-member/:id/:project_id/", InviteMember(projectService))
 	app.Post("/join-org/:project_id/:role", JoinOrg(projectService))
 	app.Get("/delete-project/:project_id/", DeleteProject(projectService))
@@ -355,17 +356,24 @@ func GetDocDetails(svc *documentservice.DocumentService) fiber.Handler {
 	}
 }
 
-func SearchUsers(svc *projectservice.ProjectService) fiber.Handler {
+// what service should this be? membership service?
+func SearchUsers(svc *membershipservice.MembershipService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		username := c.FormValue("username")
-		id := c.Params("id")
-		users, err := svc.SearchForUsers(c.Context(), username)
+		searchTerm := c.FormValue("username")
+		projectID := c.Params("id")
+		// parse the project id
+		projUUID, err := uuid.Parse(projectID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+		users, err := svc.SearchForNewMembers(c.Context(), searchTerm, projUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
 		}
+		fmt.Println("users: ", users)
 		return c.Render("search-resultsHTML", fiber.Map{
 			"SearchedMembers": users,
-			"ProjectId":       id,
+			"ProjectId":       projectID,
 		})
 	}
 }
