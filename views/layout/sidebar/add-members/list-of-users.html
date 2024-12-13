@@ -1,8 +1,8 @@
 {{define "invite-memberHTML"}} {{range .SearchedMembers}}
 <li>
-  {{.UserName}}
+  {{.Name}}
   <form
-    hx-post="/invite-member/{{.UserId}}/{{$.ProjectId}}/"
+    hx-post="/invite-member/{{.Id}}/{{$.ProjectID}}/"
     hx-swap="innerHTML"
     hx-target="#invited-members"
   >

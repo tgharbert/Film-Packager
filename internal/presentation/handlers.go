@@ -284,16 +284,17 @@ func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 func GetProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		projectId := c.Params("project_id")
+
 		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
+
 		p, err := svc.GetProjectDetails(c.Context(), projUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error retrieving project data")
 		}
-		fmt.Println("project: ", p.Members[0].UserName)
-		// ERROR RENDERING THE PROJECT PAGE
+
 		return c.Render("project-page", *p)
 	}
 }
@@ -361,19 +362,22 @@ func SearchUsers(svc *membershipservice.MembershipService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		searchTerm := c.FormValue("username")
 		projectID := c.Params("id")
+
 		// parse the project id
 		projUUID, err := uuid.Parse(projectID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
+
+		// search for new members
 		users, err := svc.SearchForNewMembers(c.Context(), searchTerm, projUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
 		}
-		fmt.Println("users: ", users)
+
 		return c.Render("search-resultsHTML", fiber.Map{
 			"SearchedMembers": users,
-			"ProjectId":       projectID,
+			"ProjectID":       projectID,
 		})
 	}
 }
