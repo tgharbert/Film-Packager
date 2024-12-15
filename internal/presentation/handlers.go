@@ -8,7 +8,6 @@ import (
 	"filmPackager/internal/application/userservice"
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/domain/document"
-	"filmPackager/internal/domain/membership"
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
@@ -34,7 +33,7 @@ func RegisterRoutes(app *fiber.App, userService *userservice.UserService, projec
 	app.Post("/invite-member/:id/:project_id/", InviteMember(membershipService))
 	app.Post("/join-org/:project_id/:role", JoinOrg(projectService))
 	app.Get("/delete-project/:project_id/", DeleteProject(projectService))
-	app.Get("/get-member/:project_id/:member_id/", GetMemberPage(projectService))
+	app.Get("/get-member/:project_id/:member_id/", GetMemberPage(membershipService))
 	app.Post("/update-member-roles/:project_id/:member_id/", UpdateMemberRoles(projectService))
 	app.Get("/get-doc-details/:doc_id", GetDocDetails(documentService))
 }
@@ -418,35 +417,27 @@ func JoinOrg(svc *projectservice.ProjectService) fiber.Handler {
 	}
 }
 
-func GetMemberPage(svc *projectservice.ProjectService) fiber.Handler {
+func GetMemberPage(svc *membershipservice.MembershipService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		memberId := c.Params("member_id")
 		memberUUID, err := uuid.Parse(memberId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
+
 		projectId := c.Params("project_id")
 		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		//member, err := svc.GetProjectUser(c.Context(), projUUID, memberUUID)
-		member := &membership.Membership{}
-		fmt.Println("member: ", memberUUID)
-		fmt.Println("project: ", projUUID)
+
+		rv, err := svc.GetMembership(c.Context(), projUUID, memberUUID)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting project user")
+			fmt.Println("error getting membership: ", err)
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting project member")
 		}
-		var availRoles []string
-		allRoles := []string{"director", "producer", "writer", "cinematographer", "production_designer"}
-		for _, role := range allRoles {
-			if slices.Contains(member.Roles, role) {
-				continue
-			} else {
-				availRoles = append(availRoles, role)
-			}
-		}
-		return c.Render("member-detailsHTML", fiber.Map{"Member": *member, "ProjectId": projectId, "Roles": availRoles})
+
+		return c.Render("member-detailsHTML", fiber.Map{"Member": *rv.Membership, "ProjectId": projectId, "Roles": rv.AvailableRoles})
 	}
 }
 

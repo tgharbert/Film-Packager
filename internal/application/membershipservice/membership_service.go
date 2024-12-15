@@ -5,6 +5,7 @@ import (
 	"filmPackager/internal/domain/membership"
 	"filmPackager/internal/domain/user"
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
 )
@@ -12,6 +13,11 @@ import (
 type MembershipService struct {
 	memberRepo membership.MembershipRepository
 	userRepo   user.UserRepository
+}
+
+type GetMembershipResponse struct {
+	Membership     *membership.Membership
+	AvailableRoles []string
 }
 
 func NewMembershipService(memberRepo membership.MembershipRepository, userRepo user.UserRepository) *MembershipService {
@@ -104,4 +110,39 @@ func (s *MembershipService) InviteUserToProject(ctx context.Context, userID, pro
 	}
 
 	return invited, nil
+}
+
+// get a user's memberships for a project
+func (s *MembershipService) GetMembership(ctx context.Context, projectID, userID uuid.UUID) (*GetMembershipResponse, error) {
+	m, err := s.memberRepo.GetMembership(ctx, projectID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting membership: %v", err)
+	}
+
+	u, err := s.userRepo.GetUserById(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting user by id: %v", err)
+	}
+
+	// fill in the user's name and email
+	m.UserName = u.Name
+	m.UserEmail = u.Email
+
+	// return the roles still available to this member
+	var availRoles []string
+	allRoles := []string{"director", "producer", "writer", "cinematographer", "production_designer"}
+	for _, role := range allRoles {
+		if slices.Contains(m.Roles, role) {
+			continue
+		} else {
+			availRoles = append(availRoles, role)
+		}
+	}
+
+	rv := &GetMembershipResponse{
+		Membership:     m,
+		AvailableRoles: availRoles,
+	}
+
+	return rv, nil
 }

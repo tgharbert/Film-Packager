@@ -70,20 +70,22 @@ func (r *PostgresMembershipRepository) DeleteMembership(ctx context.Context, pro
 func (r *PostgresMembershipRepository) GetMembership(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) (*membership.Membership, error) {
 	query := `
 		SELECT
+	id,
 	user_id,
-	project_id,
-	user_name,
-	user_email,
-	roles,
+	organization_id,
+	access_tier,
 	invite_status 
 	FROM
 	memberships
-	WHERE project_id = $1 AND user_id = $2`
+	WHERE organization_id = $1 AND user_id = $2`
+
 	var m membership.Membership
-	err := r.db.QueryRow(ctx, query, projectId, userId).Scan(&m.UserID, &m.ProjectID, &m.UserName, &m.UserEmail, &m.Roles, &m.InviteStatus)
+
+	err := r.db.QueryRow(ctx, query, projectId, userId).Scan(&m.ID, &m.UserID, &m.ProjectID, &m.Roles, &m.InviteStatus)
 	if err != nil {
 		return nil, fmt.Errorf("error getting membership: %v", err)
 	}
+
 	return &m, nil
 }
 
@@ -91,16 +93,14 @@ func (r *PostgresMembershipRepository) GetUserMembershipsForProject(ctx context.
 	query := `
 		SELECT
 	user_id,
-	project_id,
-	user_name,
-	user_email,
-	roles,
+	organization_id,
+	access_tier,
 	invite_status 
 	FROM
 	memberships
-	WHERE project_id = $1 AND user_id = $2`
+	WHERE organization_id = $1 AND user_id = $2`
 	var m membership.Membership
-	err := r.db.QueryRow(ctx, query, projectId, userId).Scan(&m.UserID, &m.ProjectID, &m.UserName, &m.UserEmail, &m.Roles, &m.InviteStatus)
+	err := r.db.QueryRow(ctx, query, projectId, userId).Scan(&m.UserID, &m.ProjectID, &m.Roles, &m.InviteStatus)
 	if err != nil {
 		return nil, fmt.Errorf("error getting membership: %v", err)
 	}
