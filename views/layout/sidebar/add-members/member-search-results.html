@@ -1,0 +1,12 @@
+{{define "member-search-resultsHTML"}} {{range .SearchedMembers}}
+<li>
+  {{.Name}}
+  <form
+    hx-post="/invite-member/{{.Id}}/{{$.ProjectID}}/"
+    hx-swap="beforeend"
+    hx-target="#invited-members"
+  >
+  <button class="button-std" type="submit">Invite</button>
+  </form>
+</li>
+{{end}} {{end}}

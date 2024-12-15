@@ -1,7 +1,7 @@
 {{define "invited-membersHTML"}}
-<ul>
+<ul id="invited-members">
   {{range .Invited}}
-  <li id="{{.UserId}}">{{.UserName}}</li>
+    {{template "invited-memberHTML" .}}
   {{end}}
 </ul>
 {{end}}

@@ -27,11 +27,11 @@ func RegisterRoutes(app *fiber.App, userService *userservice.UserService, projec
 	app.Post("/post-create-account", PostCreateAccount(userService))
 	app.Get("/get-create-account/", GetCreateAccount(userService))
 	app.Get("/create-project/", CreateProject(projectService))
-	app.Get("/get-project/:project_id", GetProject(projectService))
+	app.Get("/get-project/:project_id/", GetProject(projectService))
 	app.Get("/logout/", LogoutUser(userService))
 	app.Post("/file-submit/:project_id", UploadDocumentHandler(documentService))
 	app.Post("/search-users/:id", SearchUsers(membershipService))
-	app.Post("/invite-member/:id/:project_id/", InviteMember(projectService))
+	app.Post("/invite-member/:id/:project_id/", InviteMember(membershipService))
 	app.Post("/join-org/:project_id/:role", JoinOrg(projectService))
 	app.Get("/delete-project/:project_id/", DeleteProject(projectService))
 	app.Get("/get-member/:project_id/:member_id/", GetMemberPage(projectService))
@@ -65,7 +65,7 @@ func PostCreateAccount(svc *userservice.UserService) fiber.Handler {
 		secondPassword := strings.Trim(c.FormValue("secondPassword"), " ")
 		username := fmt.Sprintf("%s %s", firstName, lastName)
 		var mess string
-		// I want to move all of this into the application layer
+		// TODO: I want to move all of this into the application layer and wrap in a util function
 		if firstName == "" || lastName == "" {
 			mess = "Error: please enter first and last name!"
 			return c.Render("create-accountHTML", fiber.Map{
@@ -132,7 +132,7 @@ func GetCreateAccount(svc *userservice.UserService) fiber.Handler {
 
 func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		fmt.Println("login user handler")
+		// TODO: push these checks to the application layer
 		email := strings.TrimSpace(c.FormValue("email"))
 		password := strings.TrimSpace(c.FormValue("password"))
 		if email == "" || password == "" {
@@ -161,25 +161,28 @@ func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 			Path:     "/",
 			Expires:  time.Now().Add(48 * time.Hour),
 		})
-		fmt.Println("current user: ", currentUser)
 		return c.Redirect("/")
 	}
 }
 
-func InviteMember(svc *projectservice.ProjectService) fiber.Handler {
+func InviteMember(svc *membershipservice.MembershipService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userId := c.Params("id")
 		projectId := c.Params("project_id")
+
 		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing project Id from request")
 		}
+
 		userUUID, err := uuid.Parse(userId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing user Id from request")
 		}
+
 		var errMess string
-		invited, err := svc.InviteMember(c.Context(), projUUID, userUUID)
+
+		invited, err := svc.InviteUserToProject(c.Context(), userUUID, projUUID)
 		if err != nil {
 			if err == project.ErrMemberAlreadyInvited {
 				// return the proper html fragment
@@ -190,11 +193,12 @@ func InviteMember(svc *projectservice.ProjectService) fiber.Handler {
 			}
 			return c.Status(fiber.StatusInternalServerError).SendString("error inviting user to project")
 		}
-		// return the proper html fragment - just the invited user...
+
 		// should I clear the search results?
-		return c.Render("invited-membersHTML", fiber.Map{
-			"Invited": invited,
-		})
+		// send the "form-search-membersHTML" fragment with all of the invited members
+		// this means modifying the service layer to get all invited members rather than just the new one
+		// this also means that the user can't invite the same person twice
+		return c.Render("invited-memberHTML", *invited)
 	}
 }
 
@@ -247,14 +251,17 @@ func CreateProject(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Redirect("/login/")
 		}
 		tokenString = tokenString[len("Bearer "):]
+
 		userInfo, err := access.GetUserNameFromToken(tokenString)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 		}
+
 		project, err := svc.CreateNewProject(c.Context(), projectName, userInfo.Id)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error creating org")
 		}
+
 		return c.Render("project-list-item", *project)
 	}
 }
@@ -357,7 +364,6 @@ func GetDocDetails(svc *documentservice.DocumentService) fiber.Handler {
 	}
 }
 
-// what service should this be? membership service?
 func SearchUsers(svc *membershipservice.MembershipService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		searchTerm := c.FormValue("username")

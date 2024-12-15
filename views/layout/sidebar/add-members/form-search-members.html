@@ -5,8 +5,8 @@
     name="search-users"
     hx-target="#search-results"
     hx-swap="innerHTML"
-    hx-on:after-request="this.reset()"
-  >
+    hx-on::after-request="this.reset()"
+    >
     <input
       id="text-input-std"
       type="text"
@@ -16,5 +16,6 @@
     <button class="button-std" type="submit">Search</button>
   </form>
   <div id="search-results"></div>
+    {{template "invited-membersHTML" .}}
 </div>
 {{end}}
