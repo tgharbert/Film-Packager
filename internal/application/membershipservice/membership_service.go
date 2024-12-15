@@ -43,11 +43,10 @@ func (s *MembershipService) SearchForNewMembers(ctx context.Context, term string
 }
 
 // invite a user to a project
-func (s *MembershipService) InviteUserToProject(ctx context.Context, userID, projectID uuid.UUID) (*membership.Membership, error) {
+func (s *MembershipService) InviteUserToProject(ctx context.Context, userID, projectID uuid.UUID) ([]membership.Membership, error) {
 	// get the user by id
 	u, err := s.userRepo.GetUserById(ctx, userID)
 	if err != nil {
-		fmt.Println("error getting user by id", err)
 		return nil, fmt.Errorf("error getting user by id: %v", err)
 	}
 
@@ -73,5 +72,36 @@ func (s *MembershipService) InviteUserToProject(ctx context.Context, userID, pro
 		return nil, fmt.Errorf("error creating new membership: %v", err)
 	}
 
-	return newMember, nil
+	// get all memberships for the project
+	memberships, err := s.memberRepo.GetProjectMemberships(ctx, projectID)
+
+	// sort them by pending or member
+	invited := []membership.Membership{}
+	invitedIDs := []uuid.UUID{}
+
+	for _, m := range memberships {
+		if m.InviteStatus == "pending" {
+			invited = append(invited, m)
+			invitedIDs = append(invitedIDs, m.UserID)
+		}
+	}
+
+	// get the users by the ids
+	users, err := s.userRepo.GetUsersByIDs(ctx, invitedIDs)
+	if err != nil {
+		return nil, fmt.Errorf("error getting users by ids: %v", err)
+	}
+
+	// add the names and emails to the memberships
+	for _, u := range users {
+		for idx, i := range invited {
+			if u.Id == i.UserID {
+				invited[idx].UserName = u.Name
+				invited[idx].UserEmail = u.Email
+
+			}
+		}
+	}
+
+	return invited, nil
 }

@@ -182,7 +182,7 @@ func InviteMember(svc *membershipservice.MembershipService) fiber.Handler {
 
 		var errMess string
 
-		invited, err := svc.InviteUserToProject(c.Context(), userUUID, projUUID)
+		invitedMembers, err := svc.InviteUserToProject(c.Context(), userUUID, projUUID)
 		if err != nil {
 			if err == project.ErrMemberAlreadyInvited {
 				// return the proper html fragment
@@ -194,11 +194,9 @@ func InviteMember(svc *membershipservice.MembershipService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error inviting user to project")
 		}
 
-		// should I clear the search results?
-		// send the "form-search-membersHTML" fragment with all of the invited members
-		// this means modifying the service layer to get all invited members rather than just the new one
-		// this also means that the user can't invite the same person twice
-		return c.Render("invited-memberHTML", *invited)
+		return c.Render("form-search-membersHTML", fiber.Map{
+			"Invited": invitedMembers,
+		})
 	}
 }
 
@@ -272,6 +270,7 @@ func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
 		}
+
 		projectId := c.Params("project_id")
 		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
@@ -282,9 +281,10 @@ func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting project")
 		}
-		return c.Render("project-list", *rv)
 
 		// need to delete s3 items from bucket as well!
+		return c.Render("project-list", *rv)
+
 	}
 }
 
@@ -395,15 +395,25 @@ func JoinOrg(svc *projectservice.ProjectService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
+
 		userInfo, err := access.GetUserDataFromCookie(c)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
 		}
-		user, err := svc.JoinProject(c.Context(), projUUID, userInfo.Id)
+
+		err = svc.JoinProject(c.Context(), projUUID, userInfo.Id)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error joining project")
 		}
-		return c.Render("selectOrgHTML", fiber.Map{"Memberships": user})
+
+		rv, err := svc.GetUsersProjects(c.Context(), userInfo)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
+		}
+
+		// only render the project select page, not index
+		return c.Render("selectOrgHTML", *rv)
+
 	}
 }
 

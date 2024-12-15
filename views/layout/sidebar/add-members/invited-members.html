@@ -1,6 +1,7 @@
 {{define "invited-membersHTML"}}
 <ul id="invited-members">
-  {{range .Invited}}
+    <h3 id="sub-header">Invited Members:</h3>
+    {{range .Invited}}
     {{template "invited-memberHTML" .}}
   {{end}}
 </ul>

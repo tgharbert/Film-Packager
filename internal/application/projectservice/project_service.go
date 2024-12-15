@@ -317,14 +317,13 @@ func (s *ProjectService) InviteMember(ctx context.Context, projectId uuid.UUID, 
 	return membersInfo, nil
 }
 
-func (s *ProjectService) JoinProject(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) ([]project.Project, error) {
+func (s *ProjectService) JoinProject(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) error {
 	err := s.projRepo.JoinProject(ctx, projectId, userId)
 	if err != nil {
-		return nil, fmt.Errorf("error joining project: %v", err)
+		return fmt.Errorf("error joining project: %v", err)
 	}
-	projects := []project.Project{}
 	//	projects, err := s.projRepo.GetProjectsByUserID(ctx, userId)
-	return projects, nil
+	return nil
 }
 
 func (s *ProjectService) UpdateMemberRoles(ctx context.Context, projectId uuid.UUID, memberId uuid.UUID, userId uuid.UUID, role string) (*membership.Membership, error) {

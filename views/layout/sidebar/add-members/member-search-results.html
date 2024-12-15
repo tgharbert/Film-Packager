@@ -3,8 +3,8 @@
   {{.Name}}
   <form
     hx-post="/invite-member/{{.Id}}/{{$.ProjectID}}/"
-    hx-swap="beforeend"
-    hx-target="#invited-members"
+    hx-swap="innerHTML"
+    hx-target="#search-members-form"
   >
   <button class="button-std" type="submit">Invite</button>
   </form>
