@@ -282,9 +282,12 @@ func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting project")
 		}
 
-		// need to delete s3 items from bucket as well!
-		return c.Render("project-list", *rv)
+		rv, err = svc.GetUsersProjects(c.Context(), userInfo)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
+		}
 
+		return c.Render("selectOrgHTML", *rv)
 	}
 }
 
@@ -411,9 +414,7 @@ func JoinOrg(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 		}
 
-		// only render the project select page, not index
 		return c.Render("selectOrgHTML", *rv)
-
 	}
 }
 
