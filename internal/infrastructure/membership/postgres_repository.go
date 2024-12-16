@@ -156,3 +156,18 @@ func (r *PostgresMembershipRepository) GetAllUserMemberships(ctx context.Context
 	}
 	return memberships, nil
 }
+
+func (r *PostgresMembershipRepository) UpdateMembership(ctx context.Context, m *membership.Membership) error {
+	query := `
+		UPDATE memberships 
+		SET access_tier = $1, invite_status = $2 
+		WHERE user_id = $3 AND organization_id = $4`
+
+	_, err := r.db.Exec(ctx, query, m.Roles, m.InviteStatus, m.UserID, m.ProjectID)
+
+	if err != nil {
+		return fmt.Errorf("error updating membership: %v", err)
+	}
+
+	return nil
+}

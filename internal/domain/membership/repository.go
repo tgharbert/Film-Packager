@@ -14,4 +14,5 @@ type MembershipRepository interface {
 	GetMembership(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) (*Membership, error)
 	GetProjectIDsForUser(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
 	GetAllUserMemberships(ctx context.Context, userId uuid.UUID) ([]Membership, error)
+	UpdateMembership(ctx context.Context, membership *Membership) error
 }

@@ -26,6 +26,7 @@ func (s *UserService) UserLogin(ctx context.Context, email string, password stri
 	if err != nil {
 		return nil, fmt.Errorf("error hashing password: %v", err)
 	}
+
 	existingUser, err := s.userRepo.GetUserByEmail(ctx, email, hashedStr)
 	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
 		return nil, fmt.Errorf("error checking for existing user: %v", err)
@@ -35,6 +36,7 @@ func (s *UserService) UserLogin(ctx context.Context, email string, password stri
 	} else if errors.Is(err, user.ErrUserAlreadyExists) {
 		return nil, user.ErrUserAlreadyExists
 	}
+
 	return existingUser, nil
 }
 
@@ -44,7 +46,9 @@ func (s *UserService) CreateUser(ctx context.Context, username, email, password 
 	if err != nil {
 		return nil, fmt.Errorf("error hashing password: %v", err)
 	}
+
 	hashedStr := string(hash)
+
 	existingUser, err := s.userRepo.GetUserByEmail(ctx, email, hashedStr)
 	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
 		return nil, user.ErrUserAlreadyExists
@@ -52,11 +56,12 @@ func (s *UserService) CreateUser(ctx context.Context, username, email, password 
 	if existingUser != nil {
 		return nil, user.ErrUserAlreadyExists
 	}
+
 	newUser := user.CreateNewUser(username, email, hashedStr)
 	err = s.userRepo.CreateNewUser(ctx, newUser)
 	if err != nil {
 		return nil, fmt.Errorf("error creating user: %v", err)
 	}
-	// I don't need to get the projects here bc the new user won't have any
+
 	return newUser, nil
 }

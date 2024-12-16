@@ -24,6 +24,11 @@ func NewMembershipService(memberRepo membership.MembershipRepository, userRepo u
 	return &MembershipService{memberRepo: memberRepo, userRepo: userRepo}
 }
 
+type GetProjectMembershipsResponse struct {
+	Invited []membership.Membership
+	Members []membership.Membership
+}
+
 // search for memberhips based on a term string and a project id
 func (s *MembershipService) SearchForNewMembers(ctx context.Context, term string, projectID uuid.UUID) ([]user.User, error) {
 	// get all memberships for the project - could write func to get only the user ids
@@ -142,6 +147,66 @@ func (s *MembershipService) GetMembership(ctx context.Context, projectID, userID
 	rv := &GetMembershipResponse{
 		Membership:     m,
 		AvailableRoles: availRoles,
+	}
+
+	return rv, nil
+}
+
+// update membership roles
+func (s *MembershipService) UpdateMemberRoles(ctx context.Context, projectID, userID uuid.UUID, role string) (*membership.Membership, error) {
+	// get the membership
+	m, err := s.memberRepo.GetMembership(ctx, projectID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting membership: %v", err)
+	}
+
+	// add the role
+	m.Roles = append(m.Roles, role)
+	m.Roles = membership.SortRoles(m.Roles)
+
+	// update the membership
+	err = s.memberRepo.UpdateMembership(ctx, m)
+	if err != nil {
+		return nil, fmt.Errorf("error updating membership: %v", err)
+	}
+
+	return m, nil
+}
+
+func (s *MembershipService) GetProjectMemberships(ctx context.Context, projectID uuid.UUID) (*GetProjectMembershipsResponse, error) {
+	rv := &GetProjectMembershipsResponse{}
+
+	memberships, err := s.memberRepo.GetProjectMemberships(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting project memberships: %v", err)
+	}
+
+	userIDs := []uuid.UUID{}
+
+	// get userIds from memberships
+	for _, m := range memberships {
+		userIDs = append(userIDs, m.UserID)
+	}
+
+	users, err := s.userRepo.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, fmt.Errorf("error getting users by ids: %v", err)
+	}
+
+	for _, m := range memberships {
+		for _, u := range users {
+			// assign the user's name and email to the membership
+			if m.UserID == u.Id {
+				m.UserName = u.Name
+				m.UserEmail = u.Email
+			}
+		}
+		// sort memberships by pending or member
+		if m.InviteStatus == "pending" {
+			rv.Invited = append(rv.Invited, m)
+		} else {
+			rv.Members = append(rv.Members, m)
+		}
 	}
 
 	return rv, nil

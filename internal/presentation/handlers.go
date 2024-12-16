@@ -34,8 +34,9 @@ func RegisterRoutes(app *fiber.App, userService *userservice.UserService, projec
 	app.Post("/join-org/:project_id/:role", JoinOrg(projectService))
 	app.Get("/delete-project/:project_id/", DeleteProject(projectService))
 	app.Get("/get-member/:project_id/:member_id/", GetMemberPage(membershipService))
-	app.Post("/update-member-roles/:project_id/:member_id/", UpdateMemberRoles(projectService))
+	app.Post("/update-member-roles/:project_id/:member_id/", UpdateMemberRoles(membershipService))
 	app.Get("/get-doc-details/:doc_id", GetDocDetails(documentService))
+	app.Get("/get-sidebar/:project_id/", GetSidebar(membershipService))
 }
 
 // user handlers:
@@ -433,7 +434,6 @@ func GetMemberPage(svc *membershipservice.MembershipService) fiber.Handler {
 
 		rv, err := svc.GetMembership(c.Context(), projUUID, memberUUID)
 		if err != nil {
-			fmt.Println("error getting membership: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting project member")
 		}
 
@@ -441,28 +441,29 @@ func GetMemberPage(svc *membershipservice.MembershipService) fiber.Handler {
 	}
 }
 
-func UpdateMemberRoles(svc *projectservice.ProjectService) fiber.Handler {
+func UpdateMemberRoles(svc *membershipservice.MembershipService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		memberId := c.Params("member_id")
-		memberUUID, err := uuid.Parse(memberId)
+		mUserID := c.Params("member_id")
+		mUserUUID, err := uuid.Parse(mUserID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		userInfo, err := access.GetUserDataFromCookie(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-		}
+
 		projectId := c.Params("project_id")
 		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
+
 		role := c.FormValue("role-select")
-		member, err := svc.UpdateMemberRoles(c.Context(), projUUID, memberUUID, userInfo.Id, role)
+
+		member, err := svc.UpdateMemberRoles(c.Context(), projUUID, mUserUUID, role)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error updating member roles")
 		}
+
 		var availRoles []string
+
 		allRoles := []string{"director", "producer", "writer", "cinematographer", "production_designer"}
 		for _, role := range allRoles {
 			if slices.Contains(member.Roles, role) {
@@ -471,6 +472,29 @@ func UpdateMemberRoles(svc *projectservice.ProjectService) fiber.Handler {
 				availRoles = append(availRoles, role)
 			}
 		}
+
 		return c.Render("member-detailsHTML", fiber.Map{"Member": *member, "ProjectId": projectId, "Roles": availRoles})
+	}
+}
+
+func GetSidebar(svc *membershipservice.MembershipService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		fmt.Println("in get sidebar")
+		pIDString := c.Params("project_id")
+		pID, err := uuid.Parse(pIDString)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		rv, err := svc.GetProjectMemberships(c.Context(), pID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting project memberships")
+		}
+
+		// confirm render and target, something seems off right now, likely with HTMX
+		return c.Render("sidebarHTML", fiber.Map{
+			"Invited": rv.Invited,
+			"Members": rv.Members,
+		})
 	}
 }
