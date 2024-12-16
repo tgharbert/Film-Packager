@@ -51,9 +51,9 @@ func (r *PostgresDocumentRepository) GetAllByOrgId(ctx context.Context, orgID uu
 
 // should this return the document too?
 func (r *PostgresDocumentRepository) Save(ctx context.Context, doc *document.Document) error {
-	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	query := `INSERT INTO documents (id, organization_id, user_id, file_name, file_type, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
-	_, err := r.db.Exec(ctx, query, doc.OrganizationID, doc.UserID, doc.FileName, doc.FileType, doc.Date, doc.Color, doc.Status)
+	_, err := r.db.Exec(ctx, query, doc.ID, doc.OrganizationID, doc.UserID, doc.FileName, doc.FileType, doc.Date, doc.Color, doc.Status)
 
 	return err
 }
@@ -79,12 +79,17 @@ func (r *PostgresDocumentRepository) GetDocumentDetails(ctx context.Context, doc
 
 func (r *PostgresDocumentRepository) FindStagedByType(ctx context.Context, orgID uuid.UUID, fileType string) (*document.Document, error) {
 	checkStagedQuery := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE organization_id = $1 AND status = 'staged' AND file_type = $2`
+
 	row := r.db.QueryRow(ctx, checkStagedQuery, orgID, fileType)
+
 	var doc document.Document
+
 	err := row.Scan(&doc.ID, &doc.OrganizationID, &doc.UserID, &doc.FileName, &doc.FileType, &doc.Status, &doc.Date, &doc.Color)
+
 	if err != sql.ErrNoRows {
-		return nil, nil
+		return nil, document.ErrDocumentNotFound
 	}
+	fmt.Println("doc: ", doc)
 	return &doc, nil
 }
 

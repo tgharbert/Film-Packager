@@ -28,8 +28,8 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 		return nil, fmt.Errorf("nil repository")
 	}
 
-	now := time.Now()
 	// create a new document object
+	now := time.Now()
 	d := &document.Document{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
@@ -72,6 +72,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 	// save the document
 	err = s.docRepo.Save(ctx, d)
 	if err != nil {
+		fmt.Println("error saving document: ", err)
 		return nil, fmt.Errorf("error saving document: %v", err)
 	}
 
