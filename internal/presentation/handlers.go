@@ -7,7 +7,6 @@ import (
 	"filmPackager/internal/application/projectservice"
 	"filmPackager/internal/application/userservice"
 	access "filmPackager/internal/auth"
-	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
@@ -331,8 +330,7 @@ func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-		doc := document.NewDocument(orgUUID, userInfo.Id, file.Filename, fileType)
-		documents, err := svc.UploadDocument(c.Context(), doc, f)
+		documents, err := svc.UploadDocument(c.Context(), orgUUID, userInfo.Id, file.Filename, fileType, f)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}

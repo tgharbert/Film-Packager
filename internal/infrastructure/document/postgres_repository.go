@@ -21,30 +21,48 @@ func NewPostgresDocumentRepository(db *pgxpool.Pool) *PostgresDocumentRepository
 // GetAllByOrgId returns all documents for a given organization
 func (r *PostgresDocumentRepository) GetAllByOrgId(ctx context.Context, orgID uuid.UUID) ([]*document.Document, error) {
 	query := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE organization_id = $1`
+
 	rows, err := r.db.Query(ctx, query, orgID)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving documents from db: %v", err)
 	}
+
 	defer rows.Close()
+
 	var docs []*document.Document
+
 	for rows.Next() {
 		var doc document.Document
+
 		err = rows.Scan(&doc.ID, &doc.OrganizationID, &doc.UserID, &doc.FileName, &doc.FileType, &doc.Status, &doc.Date, &doc.Color)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning rows: %v", err)
 		}
+
 		docs = append(docs, &doc)
 	}
+
 	if rows.Err() != nil {
 		return nil, rows.Err()
 	}
+
 	return docs, nil
 }
 
 // should this return the document too?
 func (r *PostgresDocumentRepository) Save(ctx context.Context, doc *document.Document) error {
 	query := `INSERT INTO documents (organization_id, user_id, file_name, file_type, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+
 	_, err := r.db.Exec(ctx, query, doc.OrganizationID, doc.UserID, doc.FileName, doc.FileType, doc.Date, doc.Color, doc.Status)
+
+	return err
+}
+
+func (r *PostgresDocumentRepository) UpdateDocument(ctx context.Context, doc *document.Document) error {
+	query := `UPDATE documents SET organization_id = $1, user_id = $2, file_name = $3, file_type = $4, status = $5, date = $6, color = $7 WHERE id = $8`
+
+	_, err := r.db.Exec(ctx, query, doc.OrganizationID, doc.UserID, doc.FileName, doc.FileType, doc.Status, doc.Date, doc.Color, doc.ID)
+
 	return err
 }
 

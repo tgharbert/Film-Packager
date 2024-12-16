@@ -7,6 +7,7 @@ import (
 	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/user"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -21,47 +22,61 @@ func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3R
 	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo}
 }
 
-func (s *DocumentService) UploadDocument(ctx context.Context, doc *document.Document, fileBody interface{}) ([]document.Document, error) {
+func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid.UUID, fileName, fileType string, fileBody interface{}) ([]document.Document, error) {
 	// check if repos are nil
 	if s.docRepo == nil || s.s3Repo == nil {
 		return nil, fmt.Errorf("nil repository")
 	}
-	if doc == nil {
-		return nil, fmt.Errorf("nil document")
+
+	now := time.Now()
+	// create a new document object
+	d := &document.Document{
+		ID:             uuid.New(),
+		OrganizationID: orgID,
+		UserID:         userID,
+		FileName:       fileName,
+		FileType:       fileType,
+		Date:           &now,
+		Status:         "staged",
+		Color:          "black",
 	}
-	existingDoc, err := s.docRepo.FindStagedByType(ctx, doc.OrganizationID, doc.FileType)
-	if err != nil {
-		fmt.Println("error finding existing doc", err)
-		return nil, err
-	}
-	if existingDoc != nil {
-		err = s.s3Repo.DeleteFile(ctx, existingDoc.FileName)
+
+	// check if there is a document with the same type for the org
+	_, err := s.docRepo.FindStagedByType(ctx, orgID, fileType)
+
+	switch err {
+	// if there is an existing document, update the values
+	case nil:
+		err := s.docRepo.UpdateDocument(ctx, d)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error updating document: %v", err)
 		}
-		err = s.docRepo.Delete(ctx, existingDoc)
+
+		// get all the documents for the project
+		docs, err := s.docRepo.GetAllByOrgId(ctx, orgID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error getting all documents: %v", err)
 		}
+		fmt.Println("docs: ", docs)
+		return []document.Document{*d}, nil
+
+	// if there is no existing document, save the new document
+	case document.ErrDocumentNotFound:
+		break
+
+	// otherwise return the error
+	default:
+		return nil, fmt.Errorf("error finding staged document: %v", err)
 	}
-	fileName, err := s.s3Repo.UploadFile(ctx, doc, fileBody)
+
+	// save the document
+	err = s.docRepo.Save(ctx, d)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error saving document: %v", err)
 	}
-	doc.FileName = fileName
-	err = s.docRepo.Save(ctx, doc)
-	if err != nil {
-		return nil, err
-	}
-	documents, err := s.docRepo.FindStagedByOrganization(ctx, doc.OrganizationID)
-	if err != nil {
-		return nil, err
-	}
-	var staged []document.Document
-	for _, doc := range documents {
-		staged = append(staged, *doc)
-	}
-	return staged, nil
+
+	// should this return all the documents??
+	return []document.Document{*d}, nil
 }
 
 func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID uuid.UUID) (*document.Document, error) {

@@ -14,6 +14,7 @@ type DocumentRepository interface {
 	// GetKeysForDeleteAll(ctx context.Context, orgID int) ([]string, error)
 	GetDocumentDetails(ctx context.Context, docID uuid.UUID) (*Document, error)
 	FindStagedByOrganization(ctx context.Context, orgID uuid.UUID) ([]*Document, error)
+	UpdateDocument(ctx context.Context, doc *Document) error
 }
 
 type S3Repository interface {
