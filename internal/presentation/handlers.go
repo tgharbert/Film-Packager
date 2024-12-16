@@ -420,6 +420,7 @@ func JoinOrg(svc *projectservice.ProjectService) fiber.Handler {
 
 func GetMemberPage(svc *membershipservice.MembershipService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		fmt.Println("in get member page")
 		memberId := c.Params("member_id")
 		memberUUID, err := uuid.Parse(memberId)
 		if err != nil {
@@ -479,13 +480,13 @@ func UpdateMemberRoles(svc *membershipservice.MembershipService) fiber.Handler {
 
 func GetSidebar(svc *membershipservice.MembershipService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		fmt.Println("in get sidebar")
 		pIDString := c.Params("project_id")
 		pID, err := uuid.Parse(pIDString)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
+		// get all project membership info for the sidebar
 		rv, err := svc.GetProjectMemberships(c.Context(), pID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting project memberships")
@@ -493,8 +494,9 @@ func GetSidebar(svc *membershipservice.MembershipService) fiber.Handler {
 
 		// confirm render and target, something seems off right now, likely with HTMX
 		return c.Render("sidebarHTML", fiber.Map{
-			"Invited": rv.Invited,
-			"Members": rv.Members,
+			"ProjectID": pID,
+			"Invited":   rv.Invited,
+			"Members":   rv.Members,
 		})
 	}
 }
