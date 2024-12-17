@@ -1,55 +1,15 @@
 package main
 
 import (
-	"context"
 	"log"
-	"os"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/template/html/v2"
-
-	"filmPackager/internal/application/documentservice"
-	"filmPackager/internal/application/membershipservice"
-	"filmPackager/internal/application/projectservice"
-	"filmPackager/internal/application/userservice"
-	docInf "filmPackager/internal/infrastructure/document"
-	memInf "filmPackager/internal/infrastructure/membership"
-	projectInf "filmPackager/internal/infrastructure/project"
-	userInf "filmPackager/internal/infrastructure/user"
 
 	interfaces "filmPackager/internal/presentation"
-	s3Conn "filmPackager/internal/store"
-	db "filmPackager/internal/store/db"
 )
 
 func main() {
-	db.PoolConnect()
-	conn := db.GetPool()
-	s3Client := s3Conn.GetS3Client(context.Background())
-	bucket := os.Getenv("S3_BUCKET_NAME")
-	if bucket == "" {
-		log.Fatal("BUCKET env var not set")
-	}
-	engine := html.New("./views", ".html")
-	if err := engine.Load(); err != nil {
-		log.Fatalf("Failed to load templates: %v", err)
-	}
-	app := fiber.New(fiber.Config{
-		Views: engine,
-	})
-	app.Static("/static", "./static")
-	// wrap this up in a different file/struct??
-	userRepo := userInf.NewPostgresUserRepository(conn)
-	projectRepo := projectInf.NewPostgresProjectRepository(conn)
-	docPGRepo := docInf.NewPostgresDocumentRepository(conn)
-	memberRepo := memInf.NewPostgresMembershipRepository(conn)
-	docS3Repo := docInf.NewS3DocumentRepository(s3Client, bucket)
-	userService := userservice.NewUserService(userRepo, projectRepo)
-	projService := projectservice.NewProjectService(projectRepo, docPGRepo, userRepo, memberRepo)
-	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo)
-	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
-
-	interfaces.RegisterRoutes(app, userService, projService, docService, memberService)
+	server := interfaces.NewServer(fiber.New())
 	log.Print("Listening on port 3000...")
-	log.Fatal(app.Listen(":3000"))
+	server.Start()
 }

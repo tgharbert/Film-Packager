@@ -1,0 +1,31 @@
+{{define "member-detailsHTML"}}
+<div id="member-details">
+    <div class="back-to-sidebar">
+        <button class="button-std" hx-get="/get-sidebar/{{.Member.ProjectID}}/" hx-target="#sidebar" hx-swap="outerHTML">Back</button>
+    </div>
+  <h2 id="sub-header">{{.Member.UserName}}</h2>
+  <div id="member-details">
+    <div id="member-roles">
+      <h3>Roles:</h3>
+      <ul>
+        {{range .Member.Roles}}
+        <li>{{.}}</li>
+        {{end}}
+      </ul>
+    </div>
+    <form
+      name="update-roles-form"
+      hx-post="/update-member-roles/{{.Member.ProjectID}}/{{.Member.UserID}}/"
+      hx-target="#sidebar"
+      hx-swap="innerHTML"
+    >
+      <select name="role-select">
+        {{range .Roles}}
+        <option value="{{.}}">{{.}}</option>
+        {{end}}
+      </select>
+      <button class="button-std" type="submit">Add Role</button>
+    </form>
+  </div>
+  {{end}}
+</div>
