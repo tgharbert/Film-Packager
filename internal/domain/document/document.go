@@ -20,20 +20,3 @@ type Document struct {
 func (d *Document) IsStaged() bool {
 	return d.Status == "staged"
 }
-
-// create new document
-func NewDocument(organizationID uuid.UUID, userID uuid.UUID, fileName, fileType string) *Document {
-	now := time.Now()
-	id := uuid.New()
-
-	return &Document{
-		ID:             id,
-		OrganizationID: organizationID,
-		UserID:         userID,
-		FileName:       fileName,
-		FileType:       fileType,
-		Status:         "staged",
-		Date:           &now,
-		Color:          "black",
-	}
-}

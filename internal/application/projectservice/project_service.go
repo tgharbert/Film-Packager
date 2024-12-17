@@ -205,6 +205,8 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 	if err != nil {
 		return nil, fmt.Errorf("error getting project from db: %v", err)
 	}
+
+	// assign the project to the response
 	rv.Project = p
 
 	// get the project documents from the db
@@ -213,22 +215,24 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 		return nil, fmt.Errorf("error getting project documents from db: %v", err)
 	}
 
+	// make the maps for staged and locked documents
 	stagedMap := make(map[string]document.Document)
 	lockedMap := make(map[string]document.Document)
 
 	// sort the projects by staged or not
 	for _, d := range documents {
 		if d.Status == "staged" {
+			// assign the document to the map based on the fileType
 			stagedMap[d.FileType] = *d
 		} else {
+			// assign the document to the map based on the fileType
 			lockedMap[d.FileType] = *d
 		}
 	}
 
+	// assign the maps to the response
 	rv.Staged = stagedMap
 	rv.Locked = lockedMap
-
-	fmt.Println("rv in p service: ", rv.Staged["Script"])
 
 	// get project members
 	members, err := s.memberRepo.GetProjectMemberships(ctx, projectId)
