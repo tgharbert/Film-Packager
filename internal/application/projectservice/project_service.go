@@ -30,6 +30,10 @@ func NewProjectService(projRepo project.ProjectRepository, docRepo document.Docu
 	}
 }
 
+// need to attach documents
+// what I should do is get all the project documents in an array.
+// loop through that array and make a map of staged and locked documents
+// then return that map
 type GetProjectDetailsResponse struct {
 	Project *project.Project
 	Staged  map[string]document.Document
@@ -209,14 +213,22 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 		return nil, fmt.Errorf("error getting project documents from db: %v", err)
 	}
 
+	stagedMap := make(map[string]document.Document)
+	lockedMap := make(map[string]document.Document)
+
 	// sort the projects by staged or not
-	for _, doc := range documents {
-		if doc.IsStaged() {
-			setField(&rv.Staged, doc.FileType, doc)
+	for _, d := range documents {
+		if d.Status == "staged" {
+			stagedMap[d.FileType] = *d
 		} else {
-			setField(&rv.Locked, doc.FileType, doc)
+			lockedMap[d.FileType] = *d
 		}
 	}
+
+	rv.Staged = stagedMap
+	rv.Locked = lockedMap
+
+	fmt.Println("rv in p service: ", rv.Staged["Script"])
 
 	// get project members
 	members, err := s.memberRepo.GetProjectMemberships(ctx, projectId)
@@ -254,6 +266,7 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 			rv.Members = append(rv.Members, m)
 		}
 	}
+
 	return rv, nil
 }
 

@@ -18,26 +18,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func RegisterRoutes(app *fiber.App, userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService) {
-	app.Get("/", GetHomePage(projectService))
-	app.Get("/login/", GetLoginPage(userService))
-	app.Post("/post-login/", LoginUserHandler(userService))
-	app.Post("/post-create-account", PostCreateAccount(userService))
-	app.Get("/get-create-account/", GetCreateAccount(userService))
-	app.Get("/create-project/", CreateProject(projectService))
-	app.Get("/get-project/:project_id/", GetProject(projectService))
-	app.Get("/logout/", LogoutUser(userService))
-	app.Post("/file-submit/:project_id", UploadDocumentHandler(documentService))
-	app.Post("/search-users/:id", SearchUsers(membershipService))
-	app.Post("/invite-member/:id/:project_id/", InviteMember(membershipService))
-	app.Post("/join-org/:project_id/:role", JoinOrg(projectService))
-	app.Get("/delete-project/:project_id/", DeleteProject(projectService))
-	app.Get("/get-member/:project_id/:member_id/", GetMemberPage(membershipService))
-	app.Post("/update-member-roles/:project_id/:member_id/", UpdateMemberRoles(membershipService))
-	app.Get("/get-doc-details/:doc_id", GetDocDetails(documentService))
-	app.Get("/get-sidebar/:project_id/", GetSidebar(membershipService))
-}
-
 // user handlers:
 func GetLoginPage(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -99,7 +79,6 @@ func PostCreateAccount(svc *userservice.UserService) fiber.Handler {
 		// newUser := user.CreateNewUser(username, email, hashedStr)
 		//createdUser, err := svc.CreateUserAccount(c.Context(), newUser)
 		if err != nil {
-			fmt.Println("error creating user: ", err)
 			if errors.Is(err, user.ErrUserAlreadyExists) {
 				mess = "Error: user already exists!"
 				return c.Render("create-accountHTML", fiber.Map{
@@ -418,7 +397,6 @@ func JoinOrg(svc *projectservice.ProjectService) fiber.Handler {
 
 func GetMemberPage(svc *membershipservice.MembershipService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		fmt.Println("in get member page")
 		memberId := c.Params("member_id")
 		memberUUID, err := uuid.Parse(memberId)
 		if err != nil {
