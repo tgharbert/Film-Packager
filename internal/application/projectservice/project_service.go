@@ -6,7 +6,6 @@ import (
 	"filmPackager/internal/domain/membership"
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
-	"reflect"
 	"time"
 
 	"fmt"
@@ -274,38 +273,6 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 	return rv, nil
 }
 
-// MOVE TO DOMAIN?
-func setField(obj interface{}, fieldName string, value interface{}) {
-	structValue := reflect.ValueOf(obj).Elem()
-	structFieldValue := structValue.FieldByName(fieldName)
-	if !structFieldValue.IsValid() {
-		return
-	}
-	if !structFieldValue.CanSet() {
-		return
-	}
-	structFieldType := structFieldValue.Type()
-	val := reflect.ValueOf(value)
-	if structFieldType == val.Type() {
-		structFieldValue.Set(val)
-	}
-}
-
-// MOVE TO MEMBERSHIP SERVICE??
-func (s *ProjectService) SearchForUsers(ctx context.Context, userName string) ([]user.User, error) {
-	users, err := s.userRepo.GetAllUsersByName(ctx, userName)
-	if err != nil {
-		return nil, fmt.Errorf("error searching for users: %v", err)
-	}
-	foundMembers := []user.User{}
-	for _, user := range users {
-		foundMembers = append(foundMembers, user)
-	}
-	return foundMembers, nil
-}
-
-// MOVE TO MEMBERSHIP SERVICE func (s *ProjectService) GetProjectUser(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) (*project.ProjectMembership, error) { user, err := s.projRepo.GetProjectUser(ctx, projectId, userId) sort the roles here user.Roles = project.SortRoles(user.Roles) if err != nil { return nil, fmt.Errorf("error getting user from project: %v", err)}return user, nil}
-
 func (s *ProjectService) InviteMember(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) ([]membership.Membership, error) {
 	// check if member is already invited
 	user, err := s.memberRepo.GetMembership(ctx, projectId, userId)
@@ -341,22 +308,4 @@ func (s *ProjectService) JoinProject(ctx context.Context, projectId uuid.UUID, u
 	}
 	//	projects, err := s.projRepo.GetProjectsByUserID(ctx, userId)
 	return nil
-}
-
-func (s *ProjectService) UpdateMemberRoles(ctx context.Context, projectId uuid.UUID, memberId uuid.UUID, userId uuid.UUID, role string) (*membership.Membership, error) {
-	// check user permissions...
-	user, err := s.memberRepo.GetMembership(ctx, projectId, userId)
-	if err != nil {
-		return nil, fmt.Errorf("error getting user from project: %v", err)
-	}
-	// TO ADD: establish slice of roles that allow for role updates
-	if user.Roles[0] != "owner" {
-		return nil, fmt.Errorf("user does not have permission to update roles")
-	}
-	err = s.projRepo.UpdateMemberRoles(ctx, projectId, memberId, role)
-	if err != nil {
-		return nil, fmt.Errorf("error updating member roles: %v", err)
-	}
-	member, err := s.memberRepo.GetMembership(ctx, projectId, memberId)
-	return member, nil
 }
