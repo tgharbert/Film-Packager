@@ -220,6 +220,7 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 
 	// sort the projects by staged or not
 	for _, d := range documents {
+		// format the document date
 		if d.Status == "staged" {
 			// assign the document to the map based on the fileType
 			stagedMap[d.FileType] = *d

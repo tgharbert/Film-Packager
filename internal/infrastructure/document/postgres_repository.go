@@ -49,7 +49,6 @@ func (r *PostgresDocumentRepository) GetAllByOrgId(ctx context.Context, orgID uu
 	return docs, nil
 }
 
-// should this return the document too?
 func (r *PostgresDocumentRepository) Save(ctx context.Context, doc *document.Document) error {
 	query := `INSERT INTO documents (id, organization_id, user_id, file_name, file_type, date, color, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
@@ -59,21 +58,29 @@ func (r *PostgresDocumentRepository) Save(ctx context.Context, doc *document.Doc
 }
 
 func (r *PostgresDocumentRepository) UpdateDocument(ctx context.Context, doc *document.Document) error {
-	query := `UPDATE documents SET organization_id = $1, user_id = $2, file_name = $3, file_type = $4, status = $5, date = $6, color = $7 WHERE id = $8`
+	// update the document with the same org_id and file_type and status = 'staged'
+	query := `UPDATE documents SET id = $1, user_id = $2, file_name = $3, file_type = $4, status = $5, date = $6, color = $7 WHERE organization_id = $8 AND file_type = $4 AND status = 'staged'`
 
-	_, err := r.db.Exec(ctx, query, doc.OrganizationID, doc.UserID, doc.FileName, doc.FileType, doc.Status, doc.Date, doc.Color, doc.ID)
+	_, err := r.db.Exec(ctx, query, doc.ID, doc.UserID, doc.FileName, doc.FileType, doc.Status, doc.Date, doc.Color, doc.OrganizationID)
+	if err != nil {
+		return fmt.Errorf("error updating document: %v", err)
+	}
 
 	return err
 }
 
 func (r *PostgresDocumentRepository) GetDocumentDetails(ctx context.Context, docID uuid.UUID) (*document.Document, error) {
 	query := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE id = $1`
+
 	row := r.db.QueryRow(ctx, query, docID)
+
 	var doc document.Document
+
 	err := row.Scan(&doc.ID, &doc.OrganizationID, &doc.UserID, &doc.FileName, &doc.FileType, &doc.Status, &doc.Date, &doc.Color)
 	if err != nil {
 		return nil, fmt.Errorf("error scanning row: %v", err)
 	}
+
 	return &doc, nil
 }
 
@@ -86,10 +93,15 @@ func (r *PostgresDocumentRepository) FindStagedByType(ctx context.Context, orgID
 
 	err := row.Scan(&doc.ID, &doc.OrganizationID, &doc.UserID, &doc.FileName, &doc.FileType, &doc.Status, &doc.Date, &doc.Color)
 
-	if err != sql.ErrNoRows {
+	switch {
+	// if the document isn't found, return that it wasn't found
+	case err == sql.ErrNoRows:
 		return nil, document.ErrDocumentNotFound
+	// if there is an unexpected error, return the error
+	case err != nil:
+		return nil, fmt.Errorf("error scanning row: %v", err)
 	}
-	fmt.Println("doc: ", doc)
+
 	return &doc, nil
 }
 

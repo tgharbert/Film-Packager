@@ -313,7 +313,7 @@ func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
-		fmt.Println("documents: ", documents)
+
 		// return c.Redirect("/get-project/" + orgID)
 		return c.Render("staged-listHTML", fiber.Map{
 			"Staged": documents,
@@ -328,15 +328,19 @@ func GetDocDetails(svc *documentservice.DocumentService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
+
+		// combine these into one call -- Rett
 		doc, err := svc.GetDocumentDetails(c.Context(), docUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting document details")
 		}
+
 		// need to get the user info as well
 		uploadingUser, err := svc.GetUploaderDetails(c.Context(), doc.UserID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting uploader details")
 		}
+
 		return c.Render("document-detailsHTML", fiber.Map{
 			"Document": *doc,
 			"Uploader": *uploadingUser,
