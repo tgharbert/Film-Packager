@@ -22,7 +22,13 @@ func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3R
 	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo}
 }
 
-func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid.UUID, fileName, fileType string, fileBody interface{}) (map[string]document.Document, error) {
+type UploadDocumentResponse struct {
+	ID   uuid.UUID
+	Date string
+}
+
+// TODO: upload/update the s3 bucket
+func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid.UUID, fileName, fileType string, fileBody interface{}) (map[string]UploadDocumentResponse, error) {
 	// check if repos are nil
 	if s.docRepo == nil || s.s3Repo == nil {
 		return nil, fmt.Errorf("nil repository")
@@ -45,7 +51,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 	_, err := s.docRepo.FindStagedByType(ctx, orgID, fileType)
 
 	// create a return value
-	rv := map[string]document.Document{}
+	rv := make(map[string]UploadDocumentResponse)
 
 	switch err {
 	// if there is an existing document, update the values
@@ -71,13 +77,21 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 		return nil, fmt.Errorf("error getting all documents: %v", err)
 	}
 
+	// should this return an array of date strings with docIDs attached??
+
+	// TODO: format the date
 	for _, doc := range docs {
 		// we only need to return the staged documents
 		if doc.IsStaged() {
-			rv[doc.FileType] = *doc
+			docResp := &UploadDocumentResponse{
+				ID:   doc.ID,
+				Date: doc.Date.Format("01-02-2006"),
+			}
+			rv[doc.FileType] = *docResp
 		}
 	}
 
+	fmt.Println("rv: ", rv)
 	// we return the map of staged documents
 	return rv, nil
 }
