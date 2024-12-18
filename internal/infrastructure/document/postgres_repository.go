@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"filmPackager/internal/domain/document"
 	"fmt"
 
@@ -93,15 +94,12 @@ func (r *PostgresDocumentRepository) FindStagedByType(ctx context.Context, orgID
 
 	err := row.Scan(&doc.ID, &doc.OrganizationID, &doc.UserID, &doc.FileName, &doc.FileType, &doc.Status, &doc.Date, &doc.Color)
 
-	switch {
-	// if the document isn't found, return that it wasn't found
-	case err == sql.ErrNoRows:
-		return nil, document.ErrDocumentNotFound
-	// if there is an unexpected error, return the error
-	case err != nil:
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, document.ErrDocumentNotFound
+		}
 		return nil, fmt.Errorf("error scanning row: %v", err)
 	}
-
 	return &doc, nil
 }
 

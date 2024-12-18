@@ -22,8 +22,7 @@ func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3R
 	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo}
 }
 
-// TODO: get all documents for a project and return them in the resp
-func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid.UUID, fileName, fileType string, fileBody interface{}) ([]document.Document, error) {
+func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid.UUID, fileName, fileType string, fileBody interface{}) (map[string]document.Document, error) {
 	// check if repos are nil
 	if s.docRepo == nil || s.s3Repo == nil {
 		return nil, fmt.Errorf("nil repository")
@@ -46,18 +45,15 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 	_, err := s.docRepo.FindStagedByType(ctx, orgID, fileType)
 
 	// create a return value
-	rv := []document.Document{}
-	fmt.Println("error: ", err)
+	rv := map[string]document.Document{}
 
 	switch err {
 	// if there is an existing document, update the values
 	case nil:
-		fmt.Println("updating document")
 		err := s.docRepo.UpdateDocument(ctx, d)
 		if err != nil {
 			return nil, fmt.Errorf("error updating document: %v", err)
 		}
-		return nil, nil
 	// if there is no existing document, save the new document
 	case document.ErrDocumentNotFound:
 		err = s.docRepo.Save(ctx, d)
@@ -78,12 +74,11 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 	for _, doc := range docs {
 		// we only need to return the staged documents
 		if doc.IsStaged() {
-			rv = append(rv, *doc)
+			rv[doc.FileType] = *doc
 		}
 	}
 
-	fmt.Println("rv: ", rv)
-	// we return an array of staged documents
+	// we return the map of staged documents
 	return rv, nil
 }
 
