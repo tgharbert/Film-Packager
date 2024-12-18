@@ -24,26 +24,32 @@ func NewS3DocumentRepository(client *s3.Client, bucket string) *S3DocumentReposi
 
 func (r *S3DocumentRepository) UploadFile(ctx context.Context, doc *document.Document, file interface{}) (string, error) {
 	key := doc.FileName
+
 	_, err := r.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(r.bucket),
 		Key:    aws.String(key),
 		Body:   file.(multipart.File),
 	})
+
 	if err != nil {
 		return "", err
 	}
+
 	return doc.FileName, nil
 }
 
-func (r *S3DocumentRepository) DeleteFile(ctx context.Context, fileName string) error {
-	key := fileName
+func (r *S3DocumentRepository) DeleteFile(ctx context.Context, doc *document.Document) error {
+	key := doc.FileName
+
 	_, err := r.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(r.bucket),
 		Key:    aws.String(key),
 	})
+
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 

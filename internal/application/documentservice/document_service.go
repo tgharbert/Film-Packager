@@ -27,12 +27,14 @@ type UploadDocumentResponse struct {
 	Date string
 }
 
-// TODO: upload/update the s3 bucket
 func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid.UUID, fileName, fileType string, fileBody interface{}) (map[string]UploadDocumentResponse, error) {
 	// check if repos are nil
 	if s.docRepo == nil || s.s3Repo == nil {
 		return nil, fmt.Errorf("nil repository")
 	}
+
+	// create a return value
+	rv := make(map[string]UploadDocumentResponse)
 
 	// create a new document object
 	now := time.Now()
@@ -48,20 +50,36 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 	}
 
 	// check if there is a document with the same type for the org
-	_, err := s.docRepo.FindStagedByType(ctx, orgID, fileType)
-
-	// create a return value
-	rv := make(map[string]UploadDocumentResponse)
-
+	oldDoc, err := s.docRepo.FindStagedByType(ctx, orgID, fileType)
 	switch err {
 	// if there is an existing document, update the values
 	case nil:
-		err := s.docRepo.UpdateDocument(ctx, d)
+		// delete the file from the s3 bucket
+		err := s.s3Repo.DeleteFile(ctx, oldDoc)
+		if err != nil {
+			return nil, fmt.Errorf("error deleting file: %v", err)
+		}
+
+		// upload the file to s3
+		_, err = s.s3Repo.UploadFile(ctx, d, fileBody)
+		if err != nil {
+			return nil, fmt.Errorf("error uploading file: %v", err)
+		}
+
+		// update the document in the PG database
+		err = s.docRepo.UpdateDocument(ctx, d)
 		if err != nil {
 			return nil, fmt.Errorf("error updating document: %v", err)
 		}
 	// if there is no existing document, save the new document
 	case document.ErrDocumentNotFound:
+		// upload the file to s3
+		_, err := s.s3Repo.UploadFile(ctx, d, fileBody)
+		if err != nil {
+			return nil, fmt.Errorf("error uploading file: %v", err)
+		}
+
+		// save to the PG database
 		err = s.docRepo.Save(ctx, d)
 		if err != nil {
 			return nil, fmt.Errorf("error saving document: %v", err)
@@ -77,9 +95,6 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 		return nil, fmt.Errorf("error getting all documents: %v", err)
 	}
 
-	// should this return an array of date strings with docIDs attached??
-
-	// TODO: format the date
 	for _, doc := range docs {
 		// we only need to return the staged documents
 		if doc.IsStaged() {
@@ -91,7 +106,6 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 		}
 	}
 
-	fmt.Println("rv: ", rv)
 	// we return the map of staged documents
 	return rv, nil
 }

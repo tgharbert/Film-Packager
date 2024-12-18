@@ -19,7 +19,7 @@ type DocumentRepository interface {
 
 type S3Repository interface {
 	UploadFile(ctx context.Context, doc *Document, fileBody interface{}) (string, error)
-	DeleteFile(ctx context.Context, fileName string) error
+	DeleteFile(ctx context.Context, doc *Document) error
 	DeleteAllOrgFiles(ctx context.Context, keys []string) error
 	// yet to write
 	//	DownloadFile(ctx context.Context, key string) error

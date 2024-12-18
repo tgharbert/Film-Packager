@@ -144,7 +144,7 @@ func (s *ProjectService) CreateNewProject(ctx context.Context, projectName strin
 	return rv, nil
 }
 
-// should this be in the user service??
+// TODO: need to delete from the s3 bucket
 func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID, user *user.User) (*GetUsersProjectsResponse, error) {
 	rv := &GetUsersProjectsResponse{}
 	err := s.projRepo.DeleteProject(ctx, projectId)
