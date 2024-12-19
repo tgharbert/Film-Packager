@@ -6,6 +6,13 @@
   <table id="table">
     <tr>
       <td id="table-header">Script</td>
+      <td
+      hx-get="/get-doc-details/{{.Locked.Script.ID}}"
+      hx-target="#doc-list"
+      hx-swap="innerHTML"
+    >
+    {{.Locked.Script.Date}}
+      </td>
     </tr>
     <tr>
       <td id="table-header">Lookbook</td>
@@ -29,9 +36,9 @@
       <td id="table-header">Story</td>
     </tr>
   </table>
+    <button hx-post="/lock-staged-docs/{{.Project.ID}}/" hx-target="#main" >Lock All Staged Documents</button>
   <div id="staged-list">
     {{template "staged-listHTML" .}}
-  </div>
   </div>
 </div>
 {{end}}

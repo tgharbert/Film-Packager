@@ -89,4 +89,5 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Post("/update-member-roles/:project_id/:member_id/", UpdateMemberRoles(membershipService))
 	s.fiberApp.Get("/get-doc-details/:doc_id", GetDocDetails(documentService))
 	s.fiberApp.Get("/get-sidebar/:project_id/", GetSidebar(membershipService))
+	s.fiberApp.Post("/lock-staged-docs/:project_id/", LockStagedDocs(documentService))
 }

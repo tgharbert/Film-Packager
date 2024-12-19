@@ -69,6 +69,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 		// update the document in the PG database
 		err = s.docRepo.UpdateDocument(ctx, d)
 		if err != nil {
+			fmt.Printf("error updating document", err)
 			return nil, fmt.Errorf("error updating document: %v", err)
 		}
 	// if there is no existing document, save the new document

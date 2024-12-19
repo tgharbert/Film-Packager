@@ -483,3 +483,20 @@ func GetSidebar(svc *membershipservice.MembershipService) fiber.Handler {
 		})
 	}
 }
+
+func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		pIDString := c.Params("project_id")
+		pID, err := uuid.Parse(pIDString)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		err = svc.LockDocuments(c.Context(), pID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
+		}
+
+		return c.Redirect("/get-project/" + pIDString + "/")
+	}
+}

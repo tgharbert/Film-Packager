@@ -152,7 +152,7 @@ func (r *PostgresDocumentRepository) FindStagedByOrganization(ctx context.Contex
 	return docs, nil
 }
 
-func (r *PostgresDocumentRepository) GetAllLockedDocuments(ctx context.Context, orgID uuid.UUID) ([]*document.Document, error) {
+func (r *PostgresDocumentRepository) GetAllLockedDocumentsByProjectID(ctx context.Context, orgID uuid.UUID) ([]*document.Document, error) {
 	query := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE organization_id = $1 AND status = 'locked'`
 
 	rows, err := r.db.Query(ctx, query, orgID)
