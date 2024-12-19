@@ -69,7 +69,6 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 		// update the document in the PG database
 		err = s.docRepo.UpdateDocument(ctx, d)
 		if err != nil {
-			fmt.Printf("error updating document", err)
 			return nil, fmt.Errorf("error updating document: %v", err)
 		}
 	// if there is no existing document, save the new document
@@ -126,6 +125,8 @@ func (s *DocumentService) GetUploaderDetails(ctx context.Context, userId uuid.UU
 }
 
 func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) error {
+	// TODO: consider what sort of business logic will be need to confirm that a lock is possible?
+
 	// delete the previous locked documents
 	lockedDocs, err := s.docRepo.GetAllLockedDocumentsByProjectID(ctx, pID)
 	if err != nil {
@@ -138,13 +139,13 @@ func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) erro
 		lockedNames = append(lockedNames, doc.FileName)
 	}
 
-	// delete the files from the s3 bucket
+	// delete the previous locked files from the s3 bucket
 	err = s.s3Repo.DeleteAllOrgFiles(ctx, lockedNames)
 	if err != nil {
 		return fmt.Errorf("error deleting files: %v", err)
 	}
 
-	// delete the documents from the PG database
+	// delete the previous locked documents from the PG database
 	err = s.docRepo.DeleteAllLockedByProjectID(ctx, pID)
 	if err != nil {
 		return fmt.Errorf("error deleting documents: %v", err)
