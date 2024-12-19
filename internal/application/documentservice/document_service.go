@@ -125,10 +125,8 @@ func (s *DocumentService) GetUploaderDetails(ctx context.Context, userId uuid.UU
 	return s.userRepo.GetUserById(ctx, userId)
 }
 
+// TODO: consider what sort of business logic will be need to confirm that a lock is possible?
 func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) error {
-	// TODO: consider what sort of business logic will be need to confirm that a lock is possible?
-	// the lock should keep what is already locked if there is no new staged document
-
 	// get all the locked documents
 	lockedDocs, err := s.docRepo.GetAllLockedDocumentsByProjectID(ctx, pID)
 	if err != nil {
@@ -142,17 +140,19 @@ func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) erro
 	}
 
 	// I only want to delete the files that are both locked and staged
-	// so I will create a map of the staged documents
+	// so I will create a map of the staged documents for simpler access
 	stagedMap := make(map[string]*document.Document)
 	for _, doc := range stagedDocs {
 		stagedMap[doc.FileName] = doc
 	}
 
 	// create a list of the locked documents that are also staged
+	// keys for the s3 bucket and IDs for the PG database
 	keysToDelete := []string{}
 	IDsToDelete := []uuid.UUID{}
 	for _, doc := range lockedDocs {
 		if _, ok := stagedMap[doc.FileName]; ok {
+			// format the key for the s3 bucket
 			key := fmt.Sprintf("%s=%s", doc.FileName, doc.ID)
 			keysToDelete = append(keysToDelete, key)
 			IDsToDelete = append(IDsToDelete, doc.ID)

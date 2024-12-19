@@ -181,3 +181,29 @@ h2 {
   font: 400;
   margin-top: 0.5rem;
 }
+
+#lock-staged-button {
+    border: 1px solid rgb(240, 233, 221);
+    color: rgb(240, 233, 221);
+    border-radius: 0.5rem;
+    padding: 0.4rem;
+    background-color: rgb(90, 71, 106);
+    margin-top: 1rem;
+    }
+#lock-staged-button:hover {
+    background-color: rgb(118, 102, 131);
+    cursor: pointer;
+}
+
+input::file-selector-button {
+    color: rgb(240, 233, 221);
+    background-color: rgb(90, 71, 106);
+    padding: 0.4rem;
+    margin-top: 1rem;
+    border: 1px solid rgb(240, 233, 221);
+    border-radius: 0.5rem;
+}
+input::file-selector-button:hover {
+    background-color: rgb(118, 102, 131);
+    cursor: pointer;
+}
