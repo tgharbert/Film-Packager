@@ -27,6 +27,7 @@ type UploadDocumentResponse struct {
 	Date string
 }
 
+// this is where it gets interesting. the file name has to be unique as there could be multiple uploads with the same name - script, etc. add the uuid or date stamp to the FileName to make it unique??
 func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid.UUID, fileName, fileType string, fileBody interface{}) (map[string]UploadDocumentResponse, error) {
 	// check if repos are nil
 	if s.docRepo == nil || s.s3Repo == nil {

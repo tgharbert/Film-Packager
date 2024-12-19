@@ -162,10 +162,11 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID,
 	// put all project IDs in a slice
 	keys := []string{}
 	for _, d := range docs {
-		keys = append(keys, d.FileName)
+		k := fmt.Sprintf("%s=%s", d.FileName, d.ID)
+		keys = append(keys, k)
 	}
 
-	// pass the slice to the DeleteAllOrgFiles function
+	// delete all the project files from s3
 	err = s.s3Repo.DeleteAllOrgFiles(ctx, keys)
 	if err != nil {
 		return nil, fmt.Errorf("error deleting project files from s3: %v", err)
