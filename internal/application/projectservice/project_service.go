@@ -16,14 +16,16 @@ import (
 type ProjectService struct {
 	projRepo   project.ProjectRepository
 	docRepo    document.DocumentRepository
+	s3Repo     document.S3Repository
 	userRepo   user.UserRepository
 	memberRepo membership.MembershipRepository
 }
 
-func NewProjectService(projRepo project.ProjectRepository, docRepo document.DocumentRepository, userRepo user.UserRepository, memberRepo membership.MembershipRepository) *ProjectService {
+func NewProjectService(projRepo project.ProjectRepository, docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository, memberRepo membership.MembershipRepository) *ProjectService {
 	return &ProjectService{
 		projRepo:   projRepo,
 		docRepo:    docRepo,
+		s3Repo:     s3Repo,
 		userRepo:   userRepo,
 		memberRepo: memberRepo,
 	}
@@ -147,14 +149,37 @@ func (s *ProjectService) CreateNewProject(ctx context.Context, projectName strin
 // TODO: need to delete from the s3 bucket
 func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID, user *user.User) (*GetUsersProjectsResponse, error) {
 	rv := &GetUsersProjectsResponse{}
-	err := s.projRepo.DeleteProject(ctx, projectId)
+	// function to get all of the documents for a project
+	docs, err := s.docRepo.GetAllByOrgId(ctx, projectId)
+	if err != nil {
+		return nil, fmt.Errorf("error getting project documents from db: %v", err)
+	}
+
+	// put all project IDs in a slice
+	keys := []string{}
+	for _, d := range docs {
+		keys = append(keys, d.FileName)
+	}
+
+	// HERE IS WHERE THE ERROR IS!!!!
+	// pass the slice to the DeleteAllOrgFiles function
+	err = s.s3Repo.DeleteAllOrgFiles(ctx, keys)
+	if err != nil {
+		fmt.Println("error deleting project files from s3: ", err)
+		return nil, fmt.Errorf("error deleting project files from s3: %v", err)
+	}
+
+	// delete the project from the db
+	err = s.projRepo.DeleteProject(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error deleting projects from db: %v", err)
 	}
+
 	userMemberships, err := s.memberRepo.GetProjectMemberships(ctx, user.Id)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user memberships: %v", err)
 	}
+
 	projIDs := []uuid.UUID{}
 	for _, membership := range userMemberships {
 		projIDs = append(projIDs, membership.ProjectID)
@@ -165,6 +190,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID,
 	if err != nil {
 		return nil, fmt.Errorf("error getting projects from db: %v", err)
 	}
+
 	// colate the projects and memberships on ID
 	for _, p := range projects {
 		for _, m := range userMemberships {
@@ -186,12 +212,15 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID,
 			}
 		}
 	}
+
 	// get the user info
 	user, err = s.userRepo.GetUserById(ctx, user.Id)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user from db: %v", err)
 	}
+
 	rv.User = *user
+
 	return rv, nil
 }
 

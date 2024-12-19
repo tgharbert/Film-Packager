@@ -57,7 +57,7 @@ func NewServer(app *fiber.App) *Server {
 
 	// instantiate the services
 	userService := userservice.NewUserService(userRepo, projectRepo)
-	projService := projectservice.NewProjectService(projectRepo, docPGRepo, userRepo, memberRepo)
+	projService := projectservice.NewProjectService(projectRepo, docPGRepo, docS3Repo, userRepo, memberRepo)
 	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo)
 	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
 
