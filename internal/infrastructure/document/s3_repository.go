@@ -52,8 +52,8 @@ func (r *S3DocumentRepository) DeleteFile(ctx context.Context, doc *document.Doc
 	return nil
 }
 
+// this is boiler plate found here: https://docs.aws.amazon.com/code-library/latest/ug/go_2_s3_code_examples.html
 func (r *S3DocumentRepository) DeleteAllOrgFiles(ctx context.Context, keys []string) error {
-	// this is boiler plate found here: https://docs.aws.amazon.com/code-library/latest/ug/go_2_s3_code_examples.html
 	if len(keys) == 0 {
 		return nil
 	}

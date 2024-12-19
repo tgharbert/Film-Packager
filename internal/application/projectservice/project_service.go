@@ -31,16 +31,21 @@ func NewProjectService(projRepo project.ProjectRepository, docRepo document.Docu
 	}
 }
 
-// need to attach documents
+// fix the document objects in the response - make it like in the doc service
 // what I should do is get all the project documents in an array.
 // loop through that array and make a map of staged and locked documents
 // then return that map
 type GetProjectDetailsResponse struct {
 	Project *project.Project
-	Staged  map[string]document.Document
-	Locked  map[string]document.Document
+	Staged  *map[string]DocOverview
+	Locked  *map[string]DocOverview
 	Members []membership.Membership
 	Invited []membership.Membership
+}
+
+type DocOverview struct {
+	ID   uuid.UUID
+	Date string
 }
 
 type ProjectOverview struct {
@@ -161,11 +166,9 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID,
 		keys = append(keys, d.FileName)
 	}
 
-	// HERE IS WHERE THE ERROR IS!!!!
 	// pass the slice to the DeleteAllOrgFiles function
 	err = s.s3Repo.DeleteAllOrgFiles(ctx, keys)
 	if err != nil {
-		fmt.Println("error deleting project files from s3: ", err)
 		return nil, fmt.Errorf("error deleting project files from s3: %v", err)
 	}
 
@@ -244,24 +247,29 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 	}
 
 	// make the maps for staged and locked documents
-	stagedMap := make(map[string]document.Document)
-	lockedMap := make(map[string]document.Document)
+	stagedMap := make(map[string]DocOverview)
+	lockedMap := make(map[string]DocOverview)
 
 	// sort the projects by staged or not
 	for _, d := range documents {
 		// format the document date
+		dOverview := &DocOverview{
+			ID:   d.ID,
+			Date: d.Date.Format("01-02-2006"),
+		}
 		if d.Status == "staged" {
 			// assign the document to the map based on the fileType
-			stagedMap[d.FileType] = *d
+
+			stagedMap[d.FileType] = *dOverview
 		} else {
 			// assign the document to the map based on the fileType
-			lockedMap[d.FileType] = *d
+			lockedMap[d.FileType] = *dOverview
 		}
 	}
 
 	// assign the maps to the response
-	rv.Staged = stagedMap
-	rv.Locked = lockedMap
+	rv.Staged = &stagedMap
+	rv.Locked = &lockedMap
 
 	// get project members
 	members, err := s.memberRepo.GetProjectMemberships(ctx, projectId)
