@@ -20,11 +20,11 @@
     {{block "project-list" .}}
 
     <ul id="project-list-items">
-      {{ range .Memberships }} {{block "project-list-item" .}}
-      <li id="{{.Id}}" class="project-list-item">
+      {{ range .Accepted }} {{block "project-list-item" .}}
+      <li id="{{.ID}}" class="project-list-item">
         <p
           class="project-title"
-          hx-get="/get-project/{{.Id}}"
+          hx-get="/get-project/{{.ID}}"
           hx-target="#project-list"
           hx-swap="innerHTML"
         >
@@ -36,10 +36,10 @@
         {{$isOwner = true}} {{end}} {{end}} {{if $isOwner}}
         <button
           class="button-std"
-          hx-get="/delete-project/{{$.Id}}/"
+          hx-get="/delete-project/{{$.ID}}/"
           type="submit"
           hx-swap="innerHTML"
-          hx-target="#membership-list"
+          hx-target="#project-list"
         >
           Delete Org
         </button>
@@ -50,21 +50,20 @@
     <h2 class="sub-title">Projects Invites:</h2>
     <ul id="pending-list">
       {{ range .Invited }} {{ $org := . }}
-      <li id="{{.Id}}" class="project-list-item">
+      <li id="{{.ID}}" class="project-list-item">
         <p class="project-title">
           <b>{{.Name}}: </b>
         </p>
-        {{range .Roles}}
         <button
           class="button-std"
           type="submit"
-          hx-post="/join-org/{{$org.Id}}/{{.}}"
+          hx-post="/join-org/{{.ID}}/{{.}}"
           hx-swap="innerHTML"
           hx-target="#project-list"
         >
-          Accept Invite as <b> {{.}} </b>
+          Accept Invite
         </button>
-        {{end}} {{end}}
+        {{end}}
       </li>
       {{end}}
     </ul>

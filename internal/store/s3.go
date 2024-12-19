@@ -1,27 +1,28 @@
 package s3
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"mime/multipart"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-func GetS3Session() *s3.S3 {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-2"),
-	})
+func GetS3Client(ctx context.Context) *s3.Client {
+	// Load the default configuration
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-2"))
 	if err != nil {
-		log.Fatalf("Failed to create session: %v", err)
+		log.Fatalf("Failed to load AWS configuration: %v", err)
 	}
-	return s3.New(sess)
+	// Create the S3 client
+	return s3.NewFromConfig(cfg)
 }
 
-func WriteToS3(s3Client *s3.S3, bucket string, key string, f multipart.File) error {
-	_, err := s3Client.PutObject(&s3.PutObjectInput{
+func WriteToS3(ctx context.Context, s3Client *s3.Client, bucket string, key string, f multipart.File) error {
+	_, err := s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 		Body:   f,
@@ -32,8 +33,8 @@ func WriteToS3(s3Client *s3.S3, bucket string, key string, f multipart.File) err
 	return nil
 }
 
-func DeleteS3Object(s3Client *s3.S3, bucket string, key string) error {
-	_, err := s3Client.DeleteObject(&s3.DeleteObjectInput{
+func DeleteS3Object(ctx context.Context, s3Client *s3.Client, bucket string, key string) error {
+	_, err := s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
@@ -43,26 +44,26 @@ func DeleteS3Object(s3Client *s3.S3, bucket string, key string) error {
 	return nil
 }
 
-func DeleteMultipleS3Objects(s3Client *s3.S3, bucket string, keys []string) error {
-	objectsToDelete := make([]*s3.ObjectIdentifier, len(keys))
-	for i, key := range keys {
-		objectsToDelete[i] = &s3.ObjectIdentifier{
-			Key: aws.String(key),
-		}
-	}
-	input := &s3.DeleteObjectsInput{
-		Bucket: aws.String(bucket),
-		Delete: &s3.Delete{
-			Objects: objectsToDelete,
-			Quiet:   aws.Bool(true),
-		},
-	}
-	output, err := s3Client.DeleteObjects(input)
-	if err != nil {
-		return fmt.Errorf("failed to delete objects: %w", err)
-	}
-	for _, deleted := range output.Deleted {
-		log.Printf("Deleted object: %s", *deleted.Key)
-	}
-	return nil
-}
+// func DeleteMultipleS3Objects(ctx context.Context, s3Client *s3.Client, bucket string, keys []string) error {
+// 	objectsToDelete := make([]*s3.ObjectIdentifier, len(keys))
+// 	for i, key := range keys {
+// 		objectsToDelete[i] = &s3.ObjectIdentifier{
+// 			Key: aws.String(key),
+// 		}
+// 	}
+// 	input := &s3.DeleteObjectsInput{
+// 		Bucket: aws.String(bucket),
+// 		Delete: &s3.Delete{
+// 			Objects: objectsToDelete,
+// 			Quiet:   aws.Bool(true),
+// 		},
+// 	}
+// 	output, err := s3Client.DeleteObjects(input)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to delete objects: %w", err)
+// 	}
+// 	for _, deleted := range output.Deleted {
+// 		log.Printf("Deleted object: %s", *deleted.Key)
+// 	}
+// 	return nil
+// }

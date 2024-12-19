@@ -1,11 +1,15 @@
 package document
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Document struct {
-	ID             int
-	OrganizationID int
-	UserID         int
+	ID             uuid.UUID
+	OrganizationID uuid.UUID
+	UserID         uuid.UUID
 	FileName       string
 	FileType       string
 	Status         string
@@ -15,17 +19,4 @@ type Document struct {
 
 func (d *Document) IsStaged() bool {
 	return d.Status == "staged"
-}
-
-// create new document
-func NewDocument(organizationID, userID int, fileName, fileType, status, color string, date *time.Time) *Document {
-	return &Document{
-		OrganizationID: organizationID,
-		UserID:         userID,
-		FileName:       fileName,
-		FileType:       fileType,
-		Status:         status,
-		Date:           date,
-		Color:          color,
-	}
 }

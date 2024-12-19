@@ -4,9 +4,9 @@
   <div id="list-of-accepted-members">
     <ul>
       {{range .Members}}
-      <li id="{{.UserId}}">
+      <li id="{{.UserID}}">
         <b
-          hx-get="/get-member/{{$.Id}}/{{.UserId}}/"
+          hx-get="/get-member/{{$.Project.ID}}/{{.UserID}}/"
           hx-target="#sidebar"
           hx-swap="innerHTML"
           >{{.UserName}}</b
@@ -18,11 +18,8 @@
       {{end}}
     </ul>
   </div>
-
-  <div id="invites">
-    {{template "search-membersHTML" .}}
-    <h2 id="sub-header">Invited Members:</h2>
-    <div id="invited-members">{{template "invited-membersHTML" .}}</div>
-  </div>
-</div>
+    <div id="search-members-form">
+  {{ template "form-search-membersHTML" . }}
+    </div>
+    </div>
 {{end}}

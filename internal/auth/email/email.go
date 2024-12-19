@@ -15,5 +15,5 @@ func SendEmail(to string, subject string, body string) error {
 
 	msg := []byte("Subject: " + subject + "\r\n" + "\r\n" + body + "\r\n")
 
-	return smtp.SendMail(smtpHost+":"+ smtpPort, auth, from, []string{to}, msg)
+	return smtp.SendMail(smtpHost+":"+smtpPort, auth, from, []string{to}, msg)
 }

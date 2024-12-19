@@ -1,23 +1,34 @@
 {{define "fileUploadHTML" }}
 <div id="doc-input">
   <form
-    hx-post="/file-submit/{{.Id}}"
+    hx-post="/file-submit/{{.Project.ID}}"
     name="file-form"
+    hx-target="#staged-list"
+    hx-swap="innerHTML"
     hx-encoding="multipart/form-data"
     enctype="multipart/form-data"
+    hx-on::after-request="this.reset()"
   >
-    <input type="file" name="file" />
+    <input id="file-input" type="file" name="file" />
     <select name="file-type">
-      <option value="script">Script</option>
-      <option value="lookbook">Lookbook</option>
-      <option value="shotlist">Shotlist</option>
+      <option value="Script">Script</option>
+      <option value="Logline">Logline</option>
+      <option value="Synopsis">Synopsis</option>
+      <option value="PitchDeck">Pitch Deck</option>
+      <option value="Schedule">Schedule</option>
       <option value="Budget">Budget</option>
-      <option value="schedule">Schedule</option>
-      <option value="synopsis">Synopsis</option>
-      <option value="logline">Logline</option>
-      <option value="story">Story</option>
+      <option value="Shotlist">Shotlist</option>
+      <option value="Lookbook">Lookbook</option>
     </select>
     <button class="button-std" type="submit">Submit File</button>
   </form>
 </div>
+<script>
+  document.getElementById("file-input").addEventListener("change", function () {
+    const fileName = this.files.length
+      ? this.files[0].name
+      : "No file selected";
+    document.getElementById("file-name").textContent = fileName;
+  });
+</script>
 {{end}}

@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS memberships_organizations, doc_comments, documents, members
 DROP TYPE IF EXISTS invite_status;
 
 CREATE TABLE "users" (
-    "id" serial PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
     "name" VARCHAR(100),
     "email" VARCHAR(100) UNIQUE,
     "password" VARCHAR(255),
@@ -10,41 +10,44 @@ CREATE TABLE "users" (
 );
 
 CREATE TABLE "organizations" (
-    "id" serial PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
+    "owner_id" UUID REFERENCES users(id) ON DELETE CASCADE,
+    "created_at" TIMESTAMP,
+    "updated_at" TIMESTAMP,
     "name" VARCHAR(50)
 );
 
 CREATE TYPE invite_status AS ENUM ('pending', 'accepted', 'rejected', 'revoked');
 
 CREATE TABLE "memberships" (
-    "id" serial PRIMARY KEY,
-    "user_id" int,
-    "organization_id" int REFERENCES organizations(id) ON DELETE CASCADE,
+    "id" UUID PRIMARY KEY,
+    "user_id" UUID REFERENCES users(id) ON DELETE CASCADE,
+    "organization_id" UUID REFERENCES organizations(id) ON DELETE CASCADE,
     "access_tier" TEXT[] DEFAULT ARRAY['reader'],
     "invite_status" invite_status DEFAULT 'pending'
 );
 
 CREATE TABLE "documents" (
-    "id" serial PRIMARY KEY,
-    "organization_id" int REFERENCES organizations(id) ON DELETE CASCADE,
-    "user_id" int,
+    "id" UUID PRIMARY KEY,
+    "organization_id" UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    "user_id" UUID REFERENCES users(id),
     "file_name" VARCHAR(100),
     "file_type" VARCHAR(50),
-    "date" date,
+    "date" TIMESTAMP,
     "color" VARCHAR(50),
     "status" VARCHAR(50)
 );
 
 CREATE TABLE "doc_comments" (
-    "id" serial PRIMARY KEY,
-    "document_id" int,
-    "user_id" int,
+    "id" UUID PRIMARY KEY,
+    "document_id" UUID,
+    "user_id" UUID,
     "comment" VARCHAR(250)
 );
 
 CREATE TABLE "memberships_organizations" (
-    "membership_id" int REFERENCES "memberships" ("id") ON DELETE CASCADE,
-    "organization_id" int REFERENCES "organizations" ("id") ON DELETE CASCADE,
+    "membership_id" UUID REFERENCES "memberships" ("id") ON DELETE CASCADE,
+    "organization_id" UUID REFERENCES "organizations" ("id") ON DELETE CASCADE,
     PRIMARY KEY ("membership_id", "organization_id")
 );
 
@@ -53,3 +56,5 @@ ALTER TABLE "documents" ADD FOREIGN KEY ("organization_id") REFERENCES "organiza
 ALTER TABLE "doc_comments" ADD FOREIGN KEY ("document_id") REFERENCES "documents" ("id");
 ALTER TABLE "doc_comments" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 ALTER TABLE "documents" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+CREATE UNIQUE INDEX unique_org_file_status ON documents (organization_id, file_type) WHERE status IN ('locked');
+

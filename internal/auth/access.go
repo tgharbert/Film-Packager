@@ -9,34 +9,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
-
-// type User struct {
-// 	ID       int
-// 	Name     string
-// 	Email    string
-// 	Password string // For storing hashed password
-// 	Role     string // Roles - writer, producer, director, cinematographer, production designer
-// }
-
-// type Organization struct {
-// 	ID   int
-// 	Name string
-// }
-
-// type Membership struct {
-// 	UserID         int
-// 	OrganizationID int
-// 	AccessTier     string // roles specific to film - owner, producer, director, writer, pd, cinematographer, etc.
-// }
-
-// type UserInfo struct {
-// 	Id    int
-// 	Name  string
-// 	Email string
-// 	Role  string
-// }
 
 // hashing function is here:
 func HashPassword(password string) (string, error) {
@@ -49,17 +24,18 @@ func HashPassword(password string) (string, error) {
 }
 
 // Potential issue here in not reading the env first??
+// what the fuck am I doing with this env var?
 var jwtKey = []byte(os.Getenv("DEV_DATABASE_URL"))
 
 type Claims struct {
-	UserID int
+	UserID uuid.UUID
 	Name   string
 	Email  string
 	Role   string
 	jwt.StandardClaims
 }
 
-func GenerateJWT(userID int, name string, email string) (string, error) {
+func GenerateJWT(userID uuid.UUID, name string, email string) (string, error) {
 	expirationTime := time.Now().Add(48 * time.Hour) // valid for 48 hours
 	claims := &Claims{
 		UserID: userID,
@@ -113,7 +89,8 @@ func GetUserNameFromToken(tokenString string) (*user.User, error) {
 	return userInfo, nil
 }
 
-func CheckAccess(role string, orgID int, requiredTier string) (bool, error) {
+// TODO: MODIFY THIS SO IT'S NOT BAD
+func CheckAccess(role string, orgID uuid.UUID, requiredTier string) (bool, error) {
 	if role == "owner" {
 		return true, nil
 	}
