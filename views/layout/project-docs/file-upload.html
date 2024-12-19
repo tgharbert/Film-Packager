@@ -12,21 +12,23 @@
     <input id="file-input" type="file" name="file" />
     <select name="file-type">
       <option value="Script">Script</option>
-      <option value="Lookbook">Lookbook</option>
-      <option value="Shotlist">Shotlist</option>
-      <option value="Budget">Budget</option>
-      <option value="Schedule">Schedule</option>
-      <option value="Synopsis">Synopsis</option>
       <option value="Logline">Logline</option>
-      <option value="Story">Story</option>
+      <option value="Synopsis">Synopsis</option>
+      <option value="PitchDeck">Pitch Deck</option>
+      <option value="Schedule">Schedule</option>
+      <option value="Budget">Budget</option>
+      <option value="Shotlist">Shotlist</option>
+      <option value="Lookbook">Lookbook</option>
     </select>
     <button class="button-std" type="submit">Submit File</button>
   </form>
 </div>
 <script>
-  document.getElementById('file-input').addEventListener('change', function () {
-    const fileName = this.files.length ? this.files[0].name : 'No file selected';
-    document.getElementById('file-name').textContent = fileName;
+  document.getElementById("file-input").addEventListener("change", function () {
+    const fileName = this.files.length
+      ? this.files[0].name
+      : "No file selected";
+    document.getElementById("file-name").textContent = fileName;
   });
 </script>
 {{end}}
