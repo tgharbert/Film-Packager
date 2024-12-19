@@ -151,3 +151,48 @@ func (r *PostgresDocumentRepository) FindStagedByOrganization(ctx context.Contex
 	}
 	return docs, nil
 }
+
+func (r *PostgresDocumentRepository) GetAllLockedDocuments(ctx context.Context, orgID uuid.UUID) ([]*document.Document, error) {
+	query := `SELECT id, organization_id, user_id, file_name, file_type, status, date, color FROM documents WHERE organization_id = $1 AND status = 'locked'`
+
+	rows, err := r.db.Query(ctx, query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving documents from db: %v", err)
+	}
+	defer rows.Close()
+
+	var docs []*document.Document
+
+	for rows.Next() {
+		var doc document.Document
+
+		err = rows.Scan(&doc.ID, &doc.OrganizationID, &doc.UserID, &doc.FileName, &doc.FileType, &doc.Status, &doc.Date, &doc.Color)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning rows: %v", err)
+		}
+
+		docs = append(docs, &doc)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	return docs, nil
+}
+
+func (r *PostgresDocumentRepository) DeleteAllLockedByProjectID(ctx context.Context, orgID uuid.UUID) error {
+	deleteQuery := `DELETE FROM documents WHERE organization_id = $1 AND status = 'locked'`
+
+	_, err := r.db.Exec(ctx, deleteQuery, orgID)
+
+	return err
+}
+
+func (r *PostgresDocumentRepository) UpdateAllStagedToLocked(ctx context.Context, orgID uuid.UUID) error {
+	updateQuery := `UPDATE documents SET status = 'locked' WHERE organization_id = $1 AND status = 'staged'`
+
+	_, err := r.db.Exec(ctx, updateQuery, orgID)
+
+	return err
+}

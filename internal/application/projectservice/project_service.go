@@ -151,7 +151,6 @@ func (s *ProjectService) CreateNewProject(ctx context.Context, projectName strin
 	return rv, nil
 }
 
-// TODO: need to delete from the s3 bucket
 func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID, user *user.User) (*GetUsersProjectsResponse, error) {
 	rv := &GetUsersProjectsResponse{}
 	// function to get all of the documents for a project
@@ -259,7 +258,6 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 		}
 		if d.Status == "staged" {
 			// assign the document to the map based on the fileType
-
 			stagedMap[d.FileType] = *dOverview
 		} else {
 			// assign the document to the map based on the fileType

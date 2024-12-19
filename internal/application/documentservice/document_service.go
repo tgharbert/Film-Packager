@@ -123,3 +123,38 @@ func (s *DocumentService) GetUploaderDetails(ctx context.Context, userId uuid.UU
 	}
 	return s.userRepo.GetUserById(ctx, userId)
 }
+
+func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) error {
+	// delete the previous locked documents
+	lockedDocs, err := s.docRepo.GetAllLockedDocumentsByProjectID(ctx, pID)
+	if err != nil {
+		return fmt.Errorf("error getting locked documents: %v", err)
+	}
+
+	// delete the files from the s3 bucket
+	lockedNames := []string{}
+	for _, doc := range lockedDocs {
+		lockedNames = append(lockedNames, doc.FileName)
+	}
+
+	// delete the files from the s3 bucket
+	err = s.s3Repo.DeleteAllOrgFiles(ctx, lockedNames)
+	if err != nil {
+		return fmt.Errorf("error deleting files: %v", err)
+	}
+
+	// delete the documents from the PG database
+	err = s.docRepo.DeleteAllLockedByProjectID(ctx, pID)
+	if err != nil {
+		return fmt.Errorf("error deleting documents: %v", err)
+	}
+
+	// go through all staged docs and update "staged" to "locked" in PG
+	err = s.docRepo.UpdateAllStagedToLocked(ctx, pID)
+	if err != nil {
+		return fmt.Errorf("error updating staged to locked: %v", err)
+	}
+
+	// only returning an error bc it would need to do so much work, get docs-membmerships-p details, etc
+	return nil
+}

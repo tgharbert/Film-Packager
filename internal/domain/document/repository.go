@@ -15,6 +15,9 @@ type DocumentRepository interface {
 	GetDocumentDetails(ctx context.Context, docID uuid.UUID) (*Document, error)
 	FindStagedByOrganization(ctx context.Context, orgID uuid.UUID) ([]*Document, error)
 	UpdateDocument(ctx context.Context, doc *Document) error
+	GetAllLockedDocumentsByProjectID(ctx context.Context, orgID uuid.UUID) ([]*Document, error)
+	DeleteAllLockedByProjectID(ctx context.Context, orgID uuid.UUID) error
+	UpdateAllStagedToLocked(ctx context.Context, orgID uuid.UUID) error
 }
 
 type S3Repository interface {
