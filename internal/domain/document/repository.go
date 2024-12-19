@@ -18,6 +18,7 @@ type DocumentRepository interface {
 	GetAllLockedDocumentsByProjectID(ctx context.Context, orgID uuid.UUID) ([]*Document, error)
 	DeleteAllLockedByProjectID(ctx context.Context, orgID uuid.UUID) error
 	UpdateAllStagedToLocked(ctx context.Context, orgID uuid.UUID) error
+	DeleteSelectedDocuments(ctx context.Context, dIDs []uuid.UUID) error
 }
 
 type S3Repository interface {

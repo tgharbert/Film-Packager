@@ -127,27 +127,46 @@ func (s *DocumentService) GetUploaderDetails(ctx context.Context, userId uuid.UU
 
 func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) error {
 	// TODO: consider what sort of business logic will be need to confirm that a lock is possible?
+	// the lock should keep what is already locked if there is no new staged document
 
-	// delete the previous locked documents
+	// get all the locked documents
 	lockedDocs, err := s.docRepo.GetAllLockedDocumentsByProjectID(ctx, pID)
 	if err != nil {
 		return fmt.Errorf("error getting locked documents: %v", err)
 	}
 
-	// delete the files from the s3 bucket
-	lockedNames := []string{}
+	// get all the staged documents
+	stagedDocs, err := s.docRepo.FindStagedByOrganization(ctx, pID)
+	if err != nil {
+		return fmt.Errorf("error getting staged documents: %v", err)
+	}
+
+	// I only want to delete the files that are both locked and staged
+	// so I will create a map of the staged documents
+	stagedMap := make(map[string]*document.Document)
+	for _, doc := range stagedDocs {
+		stagedMap[doc.FileName] = doc
+	}
+
+	// create a list of the locked documents that are also staged
+	keysToDelete := []string{}
+	IDsToDelete := []uuid.UUID{}
 	for _, doc := range lockedDocs {
-		lockedNames = append(lockedNames, doc.FileName)
+		if _, ok := stagedMap[doc.FileName]; ok {
+			key := fmt.Sprintf("%s=%s", doc.FileName, doc.ID)
+			keysToDelete = append(keysToDelete, key)
+			IDsToDelete = append(IDsToDelete, doc.ID)
+		}
 	}
 
 	// delete the previous locked files from the s3 bucket
-	err = s.s3Repo.DeleteAllOrgFiles(ctx, lockedNames)
+	err = s.s3Repo.DeleteAllOrgFiles(ctx, keysToDelete)
 	if err != nil {
 		return fmt.Errorf("error deleting files: %v", err)
 	}
 
-	// delete the previous locked documents from the PG database
-	err = s.docRepo.DeleteAllLockedByProjectID(ctx, pID)
+	// delete the locked documents from the PG database only when there is a replacement available
+	err = s.docRepo.DeleteSelectedDocuments(ctx, IDsToDelete)
 	if err != nil {
 		return fmt.Errorf("error deleting documents: %v", err)
 	}

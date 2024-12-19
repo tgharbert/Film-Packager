@@ -196,3 +196,11 @@ func (r *PostgresDocumentRepository) UpdateAllStagedToLocked(ctx context.Context
 
 	return err
 }
+
+func (r *PostgresDocumentRepository) DeleteSelectedDocuments(ctx context.Context, dIDs []uuid.UUID) error {
+	deleteQuery := `DELETE FROM documents WHERE id = ANY($1)`
+
+	_, err := r.db.Exec(ctx, deleteQuery, dIDs)
+
+	return err
+}
