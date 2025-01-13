@@ -494,6 +494,7 @@ func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
 
 		err = svc.LockDocuments(c.Context(), pID)
 		if err != nil {
+			fmt.Println(err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
 		}
 

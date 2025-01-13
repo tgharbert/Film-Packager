@@ -143,7 +143,7 @@ func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) erro
 	// so I will create a map of the staged documents for simpler access
 	stagedMap := make(map[string]*document.Document)
 	for _, doc := range stagedDocs {
-		stagedMap[doc.FileName] = doc
+		stagedMap[doc.FileType] = doc
 	}
 
 	// create a list of the locked documents that are also staged
@@ -151,7 +151,7 @@ func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) erro
 	keysToDelete := []string{}
 	IDsToDelete := []uuid.UUID{}
 	for _, doc := range lockedDocs {
-		if _, ok := stagedMap[doc.FileName]; ok {
+		if _, ok := stagedMap[doc.FileType]; ok {
 			// format the key for the s3 bucket
 			key := fmt.Sprintf("%s=%s", doc.FileName, doc.ID)
 			keysToDelete = append(keysToDelete, key)
