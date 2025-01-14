@@ -2,8 +2,8 @@ package document
 
 import (
 	"context"
+	"os"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 )
 
@@ -27,5 +27,5 @@ type S3Repository interface {
 	DeleteFile(ctx context.Context, doc *Document) error
 	DeleteAllOrgFiles(ctx context.Context, keys []string) error
 	// yet to write
-	DownloadFile(ctx context.Context, fileName string, ID uuid.UUID) (*s3.GetObjectOutput, error)
+	DownloadFile(ctx context.Context, fileName string, ID uuid.UUID) (*os.File, error)
 }

@@ -514,12 +514,6 @@ func DownloadDocument(svc *documentservice.DocumentService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error downloading document")
 		}
 
-		defer fileStream.Body.Close()
-		fmt.Println("value to return: ", fileStream.Body)
-
-		c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", "test"))
-		c.Set("Content-Type", "application/octet-stream")
-
-		return c.SendStream(fileStream.Body)
+		return c.SendStream(fileStream)
 	}
 }

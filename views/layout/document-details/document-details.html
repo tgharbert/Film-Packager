@@ -24,22 +24,6 @@
         <p>{{.Uploader.Name}}</p>
     </div>
     <button class="button-std" hx-get="/download-doc/{{.Document.ID}}"
-        hx-trigger="click"
-        hx-on="click"
-        hx-swap="outerHTML"
-        hx-target="body"
         >Download Document</button>
 </div>
-
-<script>
-    function triggerDownload(event) {
-        const url = event.detail.xhr.responseURL;
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = url.split('/').pop();
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-</script>
 {{ end }} 
