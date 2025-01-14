@@ -189,7 +189,8 @@ h2 {
     padding: 0.4rem;
     background-color: rgb(90, 71, 106);
     margin-top: 1rem;
-    }
+}
+
 #lock-staged-button:hover {
     background-color: rgb(118, 102, 131);
     cursor: pointer;
@@ -203,7 +204,15 @@ input::file-selector-button {
     border: 1px solid rgb(240, 233, 221);
     border-radius: 0.5rem;
 }
+
 input::file-selector-button:hover {
     background-color: rgb(118, 102, 131);
     cursor: pointer;
+}
+
+.doc-data-container {
+    display: flex;
+    justify-content: left;
+    align-items: left;
+    margin-top: 1rem;
 }

@@ -494,10 +494,23 @@ func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
 
 		err = svc.LockDocuments(c.Context(), pID)
 		if err != nil {
-			fmt.Println(err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
 		}
 
 		return c.Redirect("/get-project/" + pIDString + "/")
+	}
+}
+
+func DownloadDocument(svc *documentservice.DocumentService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		docId := c.Params("doc_id")
+		docUUID, err := uuid.Parse(docId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		fmt.Println("downloading doc: ", docUUID)
+		return nil
+		// fiber to download the desired file
 	}
 }
