@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 )
 
@@ -179,4 +180,25 @@ func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) erro
 
 	// only returning an error bc it would need to do so much work, get docs-membmerships-p details, etc
 	return nil
+}
+
+// need to document and further understand
+func (s *DocumentService) DownloadDocument(ctx context.Context, docID uuid.UUID) (*s3.GetObjectOutput, error) {
+	if s.s3Repo == nil {
+		return nil, fmt.Errorf("nil repository")
+	}
+
+	// get the document details
+	doc, err := s.docRepo.GetDocumentDetails(ctx, docID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting document details: %v", err)
+	}
+
+	// download the file from the s3 bucket
+	stream, err := s.s3Repo.DownloadFile(ctx, doc.FileName, doc.ID)
+	if err != nil {
+		return nil, fmt.Errorf("error downloading file: %v", err)
+	}
+
+	return stream, nil
 }
