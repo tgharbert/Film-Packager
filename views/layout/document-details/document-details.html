@@ -1,5 +1,4 @@
 {{ define "document-detailsHTML" }}
-
 <div>
 	<div>
 		<button class="button-std"
@@ -8,10 +7,36 @@
 			hx-target="#main"
 			>Back To Project</button>
 	<h3>Document Details:</h3>
-	<h2>{{ .Document.FileType }}</h2>
-	<h2>{{ .Document.Date }}</h2>
-	<p>{{.Document.FileName}}</p>
-	<label>Uploaded By: </label><p>{{.Uploader.Name}}</p>
+    <div class="doc-data-container">
+        <label>Doc Type: </label>
+	    <p>{{ .Document.FileType }}</p>
+    </div>
+    <div class="doc-data-container">
+        <label>Date Uploaded: </label>
+        <p>{{ .Document.Date }}</p>
+    </div>
+    <div class="doc-data-container">
+        <label>Filename: </label>
+        <p>{{ .Document.FileName }}</p>
+    </div>
+    <div class="doc-data-container">
+	    <label>Uploaded By: </label>
+        <p>{{.Uploader.Name}}</p>
+    </div>
+    <button class="button-std" hx-get="/download-doc/{{.Document.ID}}"
+        hx-on::after-request="downloadDoc(event)"
+        hx-swap="none"
+        >
+        Download Document</button>
 </div>
 
+<script>
+    function downloadDoc(event) {
+        const url = event.detail.xhr.responseURL;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = url.split('/').pop();
+        a.click();
+    }
+</script>
 {{ end }} 

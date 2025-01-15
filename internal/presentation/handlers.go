@@ -10,6 +10,7 @@ import (
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 	"time"
@@ -498,5 +499,36 @@ func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
 		}
 
 		return c.Redirect("/get-project/" + pIDString + "/")
+	}
+}
+
+func DownloadDocument(svc *documentservice.DocumentService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		docId := c.Params("doc_id")
+		docUUID, err := uuid.Parse(docId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		rv, err := svc.DownloadDocument(c.Context(), docUUID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error downloading document")
+		}
+		defer rv.DocStream.Body.Close()
+
+		// need the file name...
+		attachment := fmt.Sprintf("attachment; filename=%s", rv.FileName)
+
+		// Set the appropriate headers
+		c.Set("Content-Type", "application/octet-stream") // Adjust Content-Type as needed
+		c.Set("Content-Disposition", attachment)
+
+		// Stream the body to the client
+		if _, err := io.Copy(c, rv.DocStream.Body); err != nil {
+			fmt.Println("error copying file to response", err)
+			return c.Status(fiber.StatusInternalServerError).SendString("error copying file to response")
+		}
+
+		return nil
 	}
 }

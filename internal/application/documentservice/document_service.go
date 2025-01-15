@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 )
 
@@ -25,6 +26,11 @@ func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3R
 type UploadDocumentResponse struct {
 	ID   uuid.UUID
 	Date string
+}
+
+type DownloadDocumentResponse struct {
+	DocStream *s3.GetObjectOutput
+	FileName  string
 }
 
 // this is where it gets interesting. the file name has to be unique as there could be multiple uploads with the same name - script, etc. add the uuid or date stamp to the FileName to make it unique??
@@ -143,7 +149,7 @@ func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) erro
 	// so I will create a map of the staged documents for simpler access
 	stagedMap := make(map[string]*document.Document)
 	for _, doc := range stagedDocs {
-		stagedMap[doc.FileName] = doc
+		stagedMap[doc.FileType] = doc
 	}
 
 	// create a list of the locked documents that are also staged
@@ -151,7 +157,7 @@ func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) erro
 	keysToDelete := []string{}
 	IDsToDelete := []uuid.UUID{}
 	for _, doc := range lockedDocs {
-		if _, ok := stagedMap[doc.FileName]; ok {
+		if _, ok := stagedMap[doc.FileType]; ok {
 			// format the key for the s3 bucket
 			key := fmt.Sprintf("%s=%s", doc.FileName, doc.ID)
 			keysToDelete = append(keysToDelete, key)
@@ -179,4 +185,29 @@ func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) erro
 
 	// only returning an error bc it would need to do so much work, get docs-membmerships-p details, etc
 	return nil
+}
+
+// need to document and further understand
+func (s *DocumentService) DownloadDocument(ctx context.Context, docID uuid.UUID) (DownloadDocumentResponse, error) {
+	rv := DownloadDocumentResponse{}
+
+	if s.s3Repo == nil {
+		return rv, fmt.Errorf("nil repository")
+	}
+
+	// get the document details
+	doc, err := s.docRepo.GetDocumentDetails(ctx, docID)
+	if err != nil {
+		return rv, fmt.Errorf("error getting document details: %v", err)
+	}
+
+	// download the file from the s3 bucket
+	stream, err := s.s3Repo.DownloadFile(ctx, doc.FileName, doc.ID)
+	if err != nil {
+		return rv, fmt.Errorf("error downloading file: %v", err)
+	}
+
+	rv.DocStream = stream
+	rv.FileName = doc.FileName
+	return rv, nil
 }

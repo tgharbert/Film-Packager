@@ -2,14 +2,18 @@ package infrastructure
 
 import (
 	"context"
+	"errors"
 	"filmPackager/internal/domain/document"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/google/uuid"
 )
 
 type S3DocumentRepository struct {
@@ -82,19 +86,41 @@ func (r *S3DocumentRepository) DeleteAllOrgFiles(ctx context.Context, keys []str
 	return nil
 }
 
-func (r *S3DocumentRepository) DownloadFile(ctx context.Context, key string) ([]byte, error) {
-	input := &s3.GetObjectInput{
+// should this be the io.Reader type?
+// DownloadFile gets an object from a bucket and stores it in a local file.
+func (r *S3DocumentRepository) DownloadFile(ctx context.Context, fileName string, id uuid.UUID) (*s3.GetObjectOutput, error) {
+	key := fmt.Sprintf("%s=%s", fileName, id)
+
+	result, err := r.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(r.bucket),
 		Key:    aws.String(key),
-	}
-	resp, err := r.client.GetObject(ctx, input)
+	})
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to download the file from the s3: %w", err)
+		var noKey *types.NoSuchKey
+
+		if errors.As(err, &noKey) {
+			log.Printf("Can't get object %s from bucket %s. No such key exists.\n", key, r.bucket)
+			err = noKey
+		} else {
+			log.Printf("Couldn't get object %v:%v. Here's why: %v\n", r.bucket, key, err)
+		}
+		return nil, err
 	}
-	defer resp.Body.Close()
-	data, err := io.ReadAll(resp.Body)
+
+	return result, nil
+	// EVERYTHING BELOW IS NOT BEING USED
+	defer result.Body.Close()
+	file, err := os.Create(fileName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read s3 object data: %w", err)
+		log.Printf("Couldn't create file %v. Here's why: %v\n", fileName, err)
+		return nil, err
 	}
-	return data, nil
+	defer file.Close()
+	body, err := io.ReadAll(result.Body)
+	if err != nil {
+		log.Printf("Couldn't read object body from %v. Here's why: %v\n", key, err)
+	}
+	_, err = file.Write(body)
+	return result, err
 }
