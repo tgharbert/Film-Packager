@@ -25,14 +25,13 @@
     </div>
     <button class="button-std" hx-get="/download-doc/{{.Document.ID}}"
         hx-on::after-request="downloadDoc(event)"
-
+        hx-swap="none"
         >
         Download Document</button>
 </div>
 
 <script>
     function downloadDoc(event) {
-        alert("Downloaded");
         const url = event.detail.xhr.responseURL;
         const a = document.createElement('a');
         a.href = url;

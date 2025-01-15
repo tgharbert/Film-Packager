@@ -514,14 +514,17 @@ func DownloadDocument(svc *documentservice.DocumentService) fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error downloading document")
 		}
-		defer rv.Body.Close()
+		defer rv.DocStream.Body.Close()
+
+		// need the file name...
+		attachment := fmt.Sprintf("attachment; filename=%s", rv.FileName)
 
 		// Set the appropriate headers
 		c.Set("Content-Type", "application/octet-stream") // Adjust Content-Type as needed
-		c.Set("Content-Disposition", "attachment; filename=testfile.txt")
+		c.Set("Content-Disposition", attachment)
 
 		// Stream the body to the client
-		if _, err := io.Copy(c, rv.Body); err != nil {
+		if _, err := io.Copy(c, rv.DocStream.Body); err != nil {
 			fmt.Println("error copying file to response", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error copying file to response")
 		}

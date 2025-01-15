@@ -28,6 +28,11 @@ type UploadDocumentResponse struct {
 	Date string
 }
 
+type DownloadDocumentResponse struct {
+	DocStream *s3.GetObjectOutput
+	FileName  string
+}
+
 // this is where it gets interesting. the file name has to be unique as there could be multiple uploads with the same name - script, etc. add the uuid or date stamp to the FileName to make it unique??
 func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid.UUID, fileName, fileType string, fileBody interface{}) (map[string]UploadDocumentResponse, error) {
 	// check if repos are nil
@@ -183,22 +188,26 @@ func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) erro
 }
 
 // need to document and further understand
-func (s *DocumentService) DownloadDocument(ctx context.Context, docID uuid.UUID) (*s3.GetObjectOutput, error) {
+func (s *DocumentService) DownloadDocument(ctx context.Context, docID uuid.UUID) (DownloadDocumentResponse, error) {
+	rv := DownloadDocumentResponse{}
+
 	if s.s3Repo == nil {
-		return nil, fmt.Errorf("nil repository")
+		return rv, fmt.Errorf("nil repository")
 	}
 
 	// get the document details
 	doc, err := s.docRepo.GetDocumentDetails(ctx, docID)
 	if err != nil {
-		return nil, fmt.Errorf("error getting document details: %v", err)
+		return rv, fmt.Errorf("error getting document details: %v", err)
 	}
 
 	// download the file from the s3 bucket
-	rv, err := s.s3Repo.DownloadFile(ctx, doc.FileName, doc.ID)
+	stream, err := s.s3Repo.DownloadFile(ctx, doc.FileName, doc.ID)
 	if err != nil {
-		return nil, fmt.Errorf("error downloading file: %v", err)
+		return rv, fmt.Errorf("error downloading file: %v", err)
 	}
 
+	rv.DocStream = stream
+	rv.FileName = doc.FileName
 	return rv, nil
 }
