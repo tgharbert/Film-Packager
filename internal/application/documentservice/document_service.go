@@ -7,9 +7,9 @@ import (
 	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/user"
 	"fmt"
-	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 )
 
@@ -183,7 +183,7 @@ func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) erro
 }
 
 // need to document and further understand
-func (s *DocumentService) DownloadDocument(ctx context.Context, docID uuid.UUID) (*os.File, error) {
+func (s *DocumentService) DownloadDocument(ctx context.Context, docID uuid.UUID) (*s3.GetObjectOutput, error) {
 	if s.s3Repo == nil {
 		return nil, fmt.Errorf("nil repository")
 	}
@@ -195,10 +195,10 @@ func (s *DocumentService) DownloadDocument(ctx context.Context, docID uuid.UUID)
 	}
 
 	// download the file from the s3 bucket
-	stream, err := s.s3Repo.DownloadFile(ctx, doc.FileName, doc.ID)
+	rv, err := s.s3Repo.DownloadFile(ctx, doc.FileName, doc.ID)
 	if err != nil {
 		return nil, fmt.Errorf("error downloading file: %v", err)
 	}
 
-	return stream, nil
+	return rv, nil
 }

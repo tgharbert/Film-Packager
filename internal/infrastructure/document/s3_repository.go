@@ -88,42 +88,39 @@ func (r *S3DocumentRepository) DeleteAllOrgFiles(ctx context.Context, keys []str
 
 // should this be the io.Reader type?
 // DownloadFile gets an object from a bucket and stores it in a local file.
-func (r *S3DocumentRepository) DownloadFile(ctx context.Context, fileName string, id uuid.UUID) (*os.File, error) {
+func (r *S3DocumentRepository) DownloadFile(ctx context.Context, fileName string, id uuid.UUID) (*s3.GetObjectOutput, error) {
 	key := fmt.Sprintf("%s=%s", fileName, id)
+
 	result, err := r.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(r.bucket),
 		Key:    aws.String(key),
 	})
+
 	if err != nil {
 		var noKey *types.NoSuchKey
+
 		if errors.As(err, &noKey) {
-			log.Printf("Can't get object. No such key exists.\n")
+			log.Printf("Can't get object %s from bucket %s. No such key exists.\n", key, r.bucket)
 			err = noKey
 		} else {
-			log.Printf("Couldn't get object. Here's why: %v\n", err)
+			log.Printf("Couldn't get object %v:%v. Here's why: %v\n", r.bucket, key, err)
 		}
 		return nil, err
 	}
-	defer result.Body.Close()
 
+	return result, nil
+	// EVERYTHING BELOW IS NOT BEING USED
+	defer result.Body.Close()
 	file, err := os.Create(fileName)
 	if err != nil {
 		log.Printf("Couldn't create file %v. Here's why: %v\n", fileName, err)
 		return nil, err
 	}
-
+	defer file.Close()
 	body, err := io.ReadAll(result.Body)
 	if err != nil {
-		file.Close() // Ensure to close the file on error
-		return nil, fmt.Errorf("Failed to download from S3: %v", err)
+		log.Printf("Couldn't read object body from %v. Here's why: %v\n", key, err)
 	}
-
-	if _, err := file.Write(body); err != nil {
-		file.Close() // Ensure to close the file on error
-		return nil, fmt.Errorf("Failed to write to file: %v", err)
-	}
-
-	// Return the open file handle
-	log.Printf("Downloaded file: %s, bytes: %d\n", fileName, len(body))
-	return file, nil
+	_, err = file.Write(body)
+	return result, err
 }

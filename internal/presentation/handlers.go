@@ -10,6 +10,7 @@ import (
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 	"time"
@@ -509,11 +510,22 @@ func DownloadDocument(svc *documentservice.DocumentService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		fileStream, err := svc.DownloadDocument(c.Context(), docUUID)
+		rv, err := svc.DownloadDocument(c.Context(), docUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error downloading document")
 		}
+		defer rv.Body.Close()
 
-		return c.SendStream(fileStream)
+		// Set the appropriate headers
+		c.Set("Content-Type", "application/octet-stream") // Adjust Content-Type as needed
+		c.Set("Content-Disposition", "attachment; filename=testfile.txt")
+
+		// Stream the body to the client
+		if _, err := io.Copy(c, rv.Body); err != nil {
+			fmt.Println("error copying file to response", err)
+			return c.Status(fiber.StatusInternalServerError).SendString("error copying file to response")
+		}
+
+		return nil
 	}
 }
