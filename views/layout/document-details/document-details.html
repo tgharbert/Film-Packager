@@ -33,7 +33,11 @@
 <script>
     function downloadDoc(event) {
         alert("Downloaded");
-        console.log(event);
+        const url = event.detail.xhr.responseURL;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = url.split('/').pop();
+        a.click();
     }
 </script>
 {{ end }} 
