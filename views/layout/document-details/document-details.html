@@ -23,7 +23,17 @@
 	    <label>Uploaded By: </label>
         <p>{{.Uploader.Name}}</p>
     </div>
-    <button class="button-std" hx-get="/download-doc/{{.Document.ID}}">
+    <button class="button-std" hx-get="/download-doc/{{.Document.ID}}"
+        hx-on::after-request="downloadDoc(event)"
+
+        >
         Download Document</button>
 </div>
+
+<script>
+    function downloadDoc(event) {
+        alert("Downloaded");
+        console.log(event);
+    }
+</script>
 {{ end }} 
