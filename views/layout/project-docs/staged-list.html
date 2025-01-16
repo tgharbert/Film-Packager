@@ -14,6 +14,7 @@
   <tr>
     {{ if .Staged.Script }}
     <td
+        class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Script.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
@@ -24,6 +25,7 @@
     <td>No document yet</td>
     {{ end }} {{ if .Staged.Logline }}
     <td
+        class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Logline.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
@@ -31,9 +33,10 @@
       {{.Staged.Logline.Date}}
     </td>
     {{else}}
-    <td>No document yet</td>
+    <td></td>
     {{ end }} {{ if .Staged.Synopsis }}
     <td
+        class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Synopsis.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
@@ -41,9 +44,10 @@
       {{.Staged.Synopsis.Date}}
     </td>
     {{else}}
-    <td>No document yet</td>
+    <td></td>
     {{ end }} {{ if .Staged.PitchDeck }}
     <td
+        class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.PitchDeck.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
@@ -51,9 +55,10 @@
       {{.Staged.PitchDeck.Date}}
     </td>
     {{else}}
-    <td>No document yet</td>
+    <td></td>
     {{ end }} {{ if .Staged.Schedule }}
     <td
+        class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Schedule.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
@@ -61,9 +66,10 @@
       {{.Staged.Schedule.Date}}
     </td>
     {{else}}
-    <td>No document yet</td>
+    <td></td>
     {{ end }} {{ if .Staged.Budget }}
     <td
+        class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Budget.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
@@ -71,9 +77,10 @@
       {{.Staged.Budget.Date}}
     </td>
     {{else}}
-    <td>No document yet</td>
+    <td></td>
     {{ end }} {{ if .Staged.Shotlist }}
     <td
+        class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Shotlist.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
@@ -81,9 +88,10 @@
       {{.Staged.Shotlist.Date}}
     </td>
     {{else}}
-    <td>No document yet</td>
+    <td></td>
     {{ end }} {{ if .Staged.Lookbook }}
     <td
+        class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Lookbook.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
@@ -91,7 +99,7 @@
       {{.Staged.Lookbook.Date}}
     </td>
     {{else}}
-    <td>No document yet</td>
+    <td></td>
     {{ end }}
   </tr>
 </table>

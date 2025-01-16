@@ -216,3 +216,46 @@ input::file-selector-button:hover {
     align-items: left;
     margin-top: 1rem;
 }
+
+.member-list {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0rem;
+    margin: 0rem;
+    list-style-type: none;
+}
+
+.invite-member {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0rem;
+    margin: 0rem;
+    list-style-type: none;
+}
+
+.invite-btn {
+    margin-left: 1rem;
+}
+
+.doc-list-item {
+    font-weight: 300;
+    align-items: center;
+}
+
+.doc-list-item:hover {
+    color: cadetblue;
+    cursor: pointer;
+}
+
+.staged-list-item {
+    font-weight: 300;
+    align-items: center;
+}
+
+.staged-list-item:hover {
+    color: cadetblue;
+    cursor: pointer;
+}
+
