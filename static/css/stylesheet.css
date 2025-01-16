@@ -259,3 +259,7 @@ input::file-selector-button:hover {
     cursor: pointer;
 }
 
+.member-name:hover {
+    color: cadetblue;
+    cursor: pointer;
+}

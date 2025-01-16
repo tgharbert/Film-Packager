@@ -166,15 +166,19 @@ func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
 		if tokenString == "" {
 			return c.Redirect("/login/")
 		}
+
 		tokenString = tokenString[len("Bearer "):]
+
 		userInfo, err := access.GetUserNameFromToken(tokenString)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 		}
+
 		rv, err := svc.GetUsersProjects(c.Context(), userInfo)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 		}
+
 		return c.Render("index", *rv)
 	}
 }

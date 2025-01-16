@@ -6,7 +6,8 @@
       {{range .Members}}
       <li id="{{.UserID}}">
         <b
-          hx-get="/get-member/{{$.Project.ID}}/{{.UserID}}/"
+            class="member-name"
+            hx-get="/get-member/{{.ProjectID}}/{{.UserID}}/"
           hx-target="#sidebar"
           hx-swap="innerHTML"
           >{{.UserName}}</b
