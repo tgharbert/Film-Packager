@@ -263,3 +263,14 @@ input::file-selector-button:hover {
     color: cadetblue;
     cursor: pointer;
 }
+
+.user-details-roles {
+    list-style-type: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0rem;
+    margin-left: 0rem;
+}
+
