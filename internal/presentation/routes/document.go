@@ -3,6 +3,7 @@ package routes
 import (
 	"filmPackager/internal/application/documentservice"
 	access "filmPackager/internal/auth"
+	"filmPackager/internal/domain/document"
 	"fmt"
 	"io"
 
@@ -86,6 +87,10 @@ func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
 		// returns a map of staged documents
 		documents, err := svc.UploadDocument(c.Context(), orgUUID, userInfo.Id, file.Filename, fileType, f)
 		if err != nil {
+			// if the user doesn't have permission to upload the document type
+			if err == document.ErrAccessDenied {
+				return c.Status(fiber.StatusUnauthorized).SendString("error uploading document")
+			}
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
 
@@ -103,21 +108,11 @@ func GetDocDetails(svc *documentservice.DocumentService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		// combine these into one call -- Rett
-		doc, err := svc.GetDocumentDetails(c.Context(), docUUID)
+		rv, err := svc.GetDocumentDetails(c.Context(), docUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting document details")
 		}
 
-		// need to get the user info as well
-		uploadingUser, err := svc.GetUploaderDetails(c.Context(), doc.UserID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting uploader details")
-		}
-
-		return c.Render("document-detailsHTML", fiber.Map{
-			"Document": *doc,
-			"Uploader": *uploadingUser,
-		})
+		return c.Render("document-detailsHTML", *rv)
 	}
 }

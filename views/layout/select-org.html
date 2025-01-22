@@ -48,7 +48,7 @@
     </ul>
     <h2 class="sub-title">Projects Invites:</h2>
     {{ if eq (len .Invited) 0 }}
-    <i>You have no current invites</i>
+    <i class="no-invites-msg">You have no current invites</i>
     {{ else }}
     <ul id="pending-list">
       {{ range .Invited }} {{ $org := . }}

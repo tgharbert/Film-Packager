@@ -59,7 +59,7 @@ func NewServer(app *fiber.App) *Server {
 	// instantiate the services
 	userService := userservice.NewUserService(userRepo, projectRepo)
 	projService := projectservice.NewProjectService(projectRepo, docPGRepo, docS3Repo, userRepo, memberRepo)
-	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo)
+	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo)
 	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
 
 	// register the routes
@@ -76,6 +76,7 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	// homepage
 	s.fiberApp.Get("/", GetHomePage(projectService))
 
+	// login routes
 	s.fiberApp.Get("/login/", GetLoginPage(userService))
 	s.fiberApp.Post("/post-login/", LoginUserHandler(userService))
 	s.fiberApp.Post("/post-create-account", PostCreateAccount(userService))

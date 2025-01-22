@@ -152,12 +152,18 @@ func (s *MembershipService) GetMembership(ctx context.Context, projectID, userID
 	return rv, nil
 }
 
-// update membership roles
+// NEED TO REMOVE "READER" ROLE FROM MEMBERSHIP
 func (s *MembershipService) UpdateMemberRoles(ctx context.Context, projectID, userID uuid.UUID, role string) (*membership.Membership, error) {
 	// get the membership
 	m, err := s.memberRepo.GetMembership(ctx, projectID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting membership: %v", err)
+	}
+
+	// remove the reader role upon addition of further roles
+	if m.Roles[0] == "reader" {
+		// effectively setting it to an empty slice
+		m.Roles = m.Roles[1:]
 	}
 
 	// add the role

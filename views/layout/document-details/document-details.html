@@ -2,28 +2,28 @@
 <div>
 	<div>
 		<button class="button-std"
-			hx-get="/get-project/{{.Document.OrganizationID}}"
+			hx-get="/get-project/{{.OrgID}}"
 			hx-swap="innerHTML"
 			hx-target="#main"
 			>Back To Project</button>
 	<h3>Document Details:</h3>
     <div class="doc-data-container">
         <label>Doc Type: </label>
-	    <p>{{ .Document.FileType }}</p>
+	    <p>{{ .DocType }}</p>
     </div>
     <div class="doc-data-container">
         <label>Date Uploaded: </label>
-        <p>{{ .Document.Date }}</p>
+        <p>{{ .UploadDate }}</p>
     </div>
     <div class="doc-data-container">
         <label>Filename: </label>
-        <p>{{ .Document.FileName }}</p>
+        <p>{{ .FileName }}</p>
     </div>
     <div class="doc-data-container">
 	    <label>Uploaded By: </label>
-        <p>{{.Uploader.Name}}</p>
+        <p>{{.UploaderName}}</p>
     </div>
-    <button class="button-std" hx-get="/download-doc/{{.Document.ID}}"
+    <button class="button-std" hx-get="/download-doc/{{.ID}}"
         hx-on::after-request="downloadDoc(event)"
         hx-swap="none"
         >
