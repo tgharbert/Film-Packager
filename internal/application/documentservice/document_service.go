@@ -178,7 +178,18 @@ func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID uuid.UUI
 }
 
 // TODO: consider what sort of business logic will be need to confirm that a lock is possible?
-func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) error {
+func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID, uID uuid.UUID) error {
+	// member access - owner, director, producer
+	m, err := s.memberRepo.GetMembership(ctx, pID, uID)
+	if err != nil {
+		return fmt.Errorf("error getting membership: %v", err)
+	}
+
+	// check if the user has the correct access
+	if !slices.Contains([]string{"owner", "director", "producer"}, m.Roles[0]) {
+		return document.ErrAccessDenied
+	}
+
 	// get all the locked documents
 	lockedDocs, err := s.docRepo.GetAllLockedDocumentsByProjectID(ctx, pID)
 	if err != nil {

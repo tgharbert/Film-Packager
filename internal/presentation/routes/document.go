@@ -13,14 +13,22 @@ import (
 
 func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		u, err := access.GetUserDataFromCookie(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
+		}
+
 		pIDString := c.Params("project_id")
 		pID, err := uuid.Parse(pIDString)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		err = svc.LockDocuments(c.Context(), pID)
+		err = svc.LockDocuments(c.Context(), pID, u.Id)
 		if err != nil {
+			if err == document.ErrAccessDenied {
+				return c.Status(fiber.StatusUnauthorized).SendString("error locking documents")
+			}
 			return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
 		}
 
@@ -68,7 +76,7 @@ func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).SendString("File is required")
 		}
 
-		userInfo, err := access.GetUserDataFromCookie(c)
+		u, err := access.GetUserDataFromCookie(c)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
 		}
@@ -85,10 +93,11 @@ func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
 		}
 
 		// returns a map of staged documents
-		documents, err := svc.UploadDocument(c.Context(), orgUUID, userInfo.Id, file.Filename, fileType, f)
+		documents, err := svc.UploadDocument(c.Context(), orgUUID, u.Id, file.Filename, fileType, f)
 		if err != nil {
 			// if the user doesn't have permission to upload the document type
 			if err == document.ErrAccessDenied {
+				// UPDATE: this should send the template for the access error
 				return c.Status(fiber.StatusUnauthorized).SendString("error uploading document")
 			}
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
