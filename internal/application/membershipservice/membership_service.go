@@ -29,6 +29,12 @@ type GetProjectMembershipsResponse struct {
 	Members []membership.Membership
 }
 
+type UpdateMemberRolesResponse struct {
+	UserName   string
+	Membership *membership.Membership
+	Roles      []string
+}
+
 // search for memberhips based on a term string and a project id
 func (s *MembershipService) SearchForNewMembers(ctx context.Context, term string, projectID uuid.UUID) ([]user.User, error) {
 	// get all memberships for the project - could write func to get only the user ids
@@ -152,13 +158,19 @@ func (s *MembershipService) GetMembership(ctx context.Context, projectID, userID
 	return rv, nil
 }
 
-// NEED TO REMOVE "READER" ROLE FROM MEMBERSHIP
 func (s *MembershipService) UpdateMemberRoles(ctx context.Context, projectID, userID uuid.UUID, role string) (*membership.Membership, error) {
 	// get the membership
 	m, err := s.memberRepo.GetMembership(ctx, projectID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting membership: %v", err)
 	}
+
+	u, err := s.userRepo.GetUserById(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting user by id: %v", err)
+	}
+
+	m.UserName = u.Name
 
 	// remove the reader role upon addition of further roles
 	if m.Roles[0] == "reader" {

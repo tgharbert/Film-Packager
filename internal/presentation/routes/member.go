@@ -3,6 +3,7 @@ package routes
 import (
 	"filmPackager/internal/application/membershipservice"
 	"filmPackager/internal/domain/project"
+	"fmt"
 	"slices"
 
 	"github.com/gofiber/fiber/v2"
@@ -48,8 +49,9 @@ func UpdateMemberRoles(svc *membershipservice.MembershipService) fiber.Handler {
 
 		role := c.FormValue("role-select")
 
-		member, err := svc.UpdateMemberRoles(c.Context(), projUUID, mUserUUID, role)
+		m, err := svc.UpdateMemberRoles(c.Context(), projUUID, mUserUUID, role)
 		if err != nil {
+			fmt.Println("error is here: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error updating member roles")
 		}
 
@@ -57,14 +59,14 @@ func UpdateMemberRoles(svc *membershipservice.MembershipService) fiber.Handler {
 
 		allRoles := []string{"director", "producer", "writer", "cinematographer", "production_designer"}
 		for _, role := range allRoles {
-			if slices.Contains(member.Roles, role) {
+			if slices.Contains(m.Roles, role) {
 				continue
 			} else {
 				availRoles = append(availRoles, role)
 			}
 		}
 
-		return c.Render("member-detailsHTML", fiber.Map{"Member": *member, "ProjectId": projectId, "Roles": availRoles})
+		return c.Render("member-detailsHTML", fiber.Map{"Member": m, "ProjectId": projectId, "Roles": availRoles})
 	}
 }
 

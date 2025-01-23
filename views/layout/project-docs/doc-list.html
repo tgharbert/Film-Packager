@@ -3,12 +3,8 @@
   <h2 id="sub-header"><i>{{.Project.Name}}</i> Production Documents</h2>
   {{template "fileUploadHTML" .}}
   <div id="staged-list">{{template "staged-listHTML" .}}</div>
-  {{if .Error}}
-  <b>{{.Error}}</b>
-  {{end}}
   <button
     id="lock-staged-button"
-    hx-trigger="click"
     hx-post="/lock-staged-docs/{{.Project.ID}}/"
     hx-target="#main"
   >
@@ -16,13 +12,5 @@
   </button>
       <i>Doing this will move them to the locked list below.</i>
       {{template "locked-listHTML" .}}
-    <script>
-        document.body.addEventListener('htmx:trigger', function(event) {
-            console.log("hit", event.detail);
-            if (event.detail.showAlert) {
-                alert("can't do that");
-            }
-        })
-    </script>
 </div>
 {{end}}
