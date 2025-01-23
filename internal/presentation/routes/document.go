@@ -27,9 +27,12 @@ func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
 		err = svc.LockDocuments(c.Context(), pID, u.Id)
 		if err != nil {
 			if err == document.ErrAccessDenied {
-				return c.Status(fiber.StatusUnauthorized).SendString("error locking documents")
+				// alert the user that they don't have permission to lock the documents
+				c.Set("HX-Trigger", `{"showAlert": "Access denied: You don't have permission to lock the documents."}`)
+				// Send a 200 OK with the response body (or you can use another status if needed)
+				return c.Status(fiber.StatusOK).SendString("Access denied.")
 			}
-			return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
+			//return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
 		}
 
 		return c.Redirect("/get-project/" + pIDString + "/")

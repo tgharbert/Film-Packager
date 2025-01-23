@@ -179,13 +179,12 @@ func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID uuid.UUI
 
 // TODO: consider what sort of business logic will be need to confirm that a lock is possible?
 func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID, uID uuid.UUID) error {
-	// member access - owner, director, producer
 	m, err := s.memberRepo.GetMembership(ctx, pID, uID)
 	if err != nil {
 		return fmt.Errorf("error getting membership: %v", err)
 	}
 
-	// check if the user has the correct access
+	// check if the user has the correct access - only owner, director, producer can lock
 	if !slices.Contains([]string{"owner", "director", "producer"}, m.Roles[0]) {
 		return document.ErrAccessDenied
 	}

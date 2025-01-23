@@ -246,6 +246,10 @@ input::file-selector-button:hover {
     align-items: center;
 }
 
+#doc-details {
+    padding-top: 1rem;
+}
+
 .doc-list-item:hover {
     color: cadetblue;
     cursor: pointer;
@@ -281,4 +285,24 @@ input::file-selector-button:hover {
     list-style-type: none;
     margin-left: 0rem;
     padding: 0rem;
+}
+
+.accept-invite {
+    background-color: #206934;
+    margin-left: 1rem;
+}
+
+.stage-file-btn {
+    background-color: #b58502;
+}
+
+.stage-file-btn:hover { 
+    background-color: #694f0a;
+}
+
+.back-to-sidebar {
+    margin-top: 1rem;
+    margin-left: 2rem;
+    justify-content: left;
+    display: flex;
 }
