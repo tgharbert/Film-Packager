@@ -3,6 +3,7 @@
   <h2 id="sub-header"><i>{{.Project.Name}}</i> Production Documents</h2>
   {{template "fileUploadHTML" .}}
   <div id="staged-list">{{template "staged-listHTML" .}}</div>
+  {{ if .LockStatus }}
   <button
     id="lock-staged-button"
     hx-post="/lock-staged-docs/{{.Project.ID}}/"
@@ -10,7 +11,8 @@
   >
     Lock All Staged Documents
   </button>
-      <i>Doing this will move them to the locked list below.</i>
-      {{template "locked-listHTML" .}}
+    <i>Doing this will move them to the locked list below.</i>
+    {{ end }}
+        {{template "locked-listHTML" .}}
 </div>
 {{end}}

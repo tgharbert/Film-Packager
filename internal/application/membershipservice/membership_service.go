@@ -170,6 +170,7 @@ func (s *MembershipService) UpdateMemberRoles(ctx context.Context, projectID, us
 		return nil, fmt.Errorf("error getting user by id: %v", err)
 	}
 
+	// attach the username to the membership
 	m.UserName = u.Name
 
 	// remove the reader role upon addition of further roles

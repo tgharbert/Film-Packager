@@ -6,6 +6,7 @@ import (
 	"filmPackager/internal/domain/membership"
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
+	"slices"
 	"time"
 
 	"fmt"
@@ -36,11 +37,12 @@ func NewProjectService(projRepo project.ProjectRepository, docRepo document.Docu
 // loop through that array and make a map of staged and locked documents
 // then return that map
 type GetProjectDetailsResponse struct {
-	Project *project.Project
-	Staged  *map[string]DocOverview
-	Locked  *map[string]DocOverview
-	Members []membership.Membership
-	Invited []membership.Membership
+	Project    *project.Project
+	Staged     *map[string]DocOverview
+	Locked     *map[string]DocOverview
+	Members    []membership.Membership
+	Invited    []membership.Membership
+	LockStatus bool
 }
 
 type DocOverview struct {
@@ -69,15 +71,18 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 	if err != nil {
 		return nil, fmt.Errorf("error getting user memberships: %v", err)
 	}
+
 	projIDs := []uuid.UUID{}
 	for _, membership := range userMemberships {
 		projIDs = append(projIDs, membership.ProjectID)
 	}
+
 	// get the projects for the user
 	projects, err := s.projRepo.GetProjectsByMembershipIDs(ctx, projIDs)
 	if err != nil {
 		return nil, fmt.Errorf("error getting projects from db: %v", err)
 	}
+
 	// colate the projects and memberships on ID
 	for _, p := range projects {
 		for _, m := range userMemberships {
@@ -99,12 +104,15 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 			}
 		}
 	}
+
 	// get the user info
 	user, err = s.userRepo.GetUserById(ctx, user.Id)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user from db: %v", err)
 	}
+
 	rv.User = *user
+
 	return rv, nil
 }
 
@@ -227,7 +235,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID,
 	return rv, nil
 }
 
-func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.UUID) (*GetProjectDetailsResponse, error) {
+func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.UUID, userID uuid.UUID) (*GetProjectDetailsResponse, error) {
 	// get the project from the db
 	rv := &GetProjectDetailsResponse{}
 
@@ -291,6 +299,8 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 		uMap[u.Id] = u
 	}
 
+	rv.LockStatus = false
+
 	// loop through the members and add the user data
 	for _, m := range members {
 		m.UserName = uMap[m.UserID].Name
@@ -298,6 +308,11 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 
 		// sort the roles
 		m.Roles = membership.SortRoles(m.Roles)
+
+		// if the user has the correct status allow them to lock the docs
+		if memberHasLockingStatus(m.Roles) && m.UserID == userID {
+			rv.LockStatus = true
+		}
 
 		// sort the members based on invite status
 		if m.InviteStatus == "pending" {
@@ -345,4 +360,12 @@ func (s *ProjectService) JoinProject(ctx context.Context, projectId uuid.UUID, u
 	}
 	//	projects, err := s.projRepo.GetProjectsByUserID(ctx, userId)
 	return nil
+}
+
+// utility functions
+func memberHasLockingStatus(roles []string) bool {
+	if slices.Contains(roles, "owner") || slices.Contains(roles, "director") || slices.Contains(roles, "producer") {
+		return true
+	}
+	return false
 }

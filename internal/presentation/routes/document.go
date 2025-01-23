@@ -28,7 +28,6 @@ func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
 		if err != nil {
 			if err == document.ErrAccessDenied {
 				// alert the user that they don't have permission to lock the documents
-
 				return c.Status(fiber.StatusOK).SendString("Access denied.")
 			}
 			//return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
