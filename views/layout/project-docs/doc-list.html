@@ -1,7 +1,9 @@
 {{define "docListHTML"}}
 <div id="doc-list">
   <h2 id="sub-header"><i>{{.Project.Name}}</i> Production Documents</h2>
-  {{template "fileUploadHTML" .}}
+    {{ if .UploadStatus }}
+        {{template "fileUploadHTML" .}}
+    {{end}}
   <div id="staged-list">{{template "staged-listHTML" .}}</div>
   {{ if .LockStatus }}
   <button

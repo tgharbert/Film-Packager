@@ -177,7 +177,6 @@ func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID uuid.UUI
 	return rv, nil
 }
 
-// TODO: consider what sort of business logic will be need to confirm that a lock is possible?
 func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID, uID uuid.UUID) error {
 	m, err := s.memberRepo.GetMembership(ctx, pID, uID)
 	if err != nil {

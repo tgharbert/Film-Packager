@@ -37,12 +37,13 @@ func NewProjectService(projRepo project.ProjectRepository, docRepo document.Docu
 // loop through that array and make a map of staged and locked documents
 // then return that map
 type GetProjectDetailsResponse struct {
-	Project    *project.Project
-	Staged     *map[string]DocOverview
-	Locked     *map[string]DocOverview
-	Members    []membership.Membership
-	Invited    []membership.Membership
-	LockStatus bool
+	Project      *project.Project
+	Staged       *map[string]DocOverview
+	Locked       *map[string]DocOverview
+	Members      []membership.Membership
+	Invited      []membership.Membership
+	LockStatus   bool
+	UploadStatus bool
 }
 
 type DocOverview struct {
@@ -300,6 +301,7 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 	}
 
 	rv.LockStatus = false
+	rv.UploadStatus = false
 
 	// loop through the members and add the user data
 	for _, m := range members {
@@ -312,6 +314,9 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 		// if the user has the correct status allow them to lock the docs
 		if memberHasLockingStatus(m.Roles) && m.UserID == userID {
 			rv.LockStatus = true
+		}
+		if m.Roles[0] != "reader" && m.UserID == userID {
+			rv.UploadStatus = true
 		}
 
 		// sort the members based on invite status
