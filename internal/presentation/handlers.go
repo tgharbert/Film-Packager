@@ -2,21 +2,15 @@ package interfaces
 
 import (
 	"errors"
-	"filmPackager/internal/application/documentservice"
-	"filmPackager/internal/application/membershipservice"
 	"filmPackager/internal/application/projectservice"
 	"filmPackager/internal/application/userservice"
 	access "filmPackager/internal/auth"
-	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
-	"io"
-	"slices"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 // user handlers:
@@ -144,41 +138,6 @@ func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 	}
 }
 
-func InviteMember(svc *membershipservice.MembershipService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		userId := c.Params("id")
-		projectId := c.Params("project_id")
-
-		projUUID, err := uuid.Parse(projectId)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing project Id from request")
-		}
-
-		userUUID, err := uuid.Parse(userId)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing user Id from request")
-		}
-
-		var errMess string
-
-		invitedMembers, err := svc.InviteUserToProject(c.Context(), userUUID, projUUID)
-		if err != nil {
-			if err == project.ErrMemberAlreadyInvited {
-				// return the proper html fragment
-				errMess = "You've already invited this user!"
-				return c.Render("project-list", fiber.Map{
-					"Error": errMess,
-				})
-			}
-			return c.Status(fiber.StatusInternalServerError).SendString("error inviting user to project")
-		}
-
-		return c.Render("form-search-membersHTML", fiber.Map{
-			"Invited": invitedMembers,
-		})
-	}
-}
-
 func LogoutUser(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		c.Cookie(&fiber.Cookie{
@@ -207,328 +166,19 @@ func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
 		if tokenString == "" {
 			return c.Redirect("/login/")
 		}
+
 		tokenString = tokenString[len("Bearer "):]
+
 		userInfo, err := access.GetUserNameFromToken(tokenString)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 		}
+
 		rv, err := svc.GetUsersProjects(c.Context(), userInfo)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 		}
+
 		return c.Render("index", *rv)
-	}
-}
-
-func CreateProject(svc *projectservice.ProjectService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		projectName := c.FormValue("project-name")
-		tokenString := c.Cookies("Authorization")
-		if tokenString == "" {
-			return c.Redirect("/login/")
-		}
-		tokenString = tokenString[len("Bearer "):]
-
-		userInfo, err := access.GetUserNameFromToken(tokenString)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
-		}
-
-		project, err := svc.CreateNewProject(c.Context(), projectName, userInfo.Id)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error creating org")
-		}
-
-		return c.Render("project-list-item", *project)
-	}
-}
-
-func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		userInfo, err := access.GetUserDataFromCookie(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-		}
-
-		projectId := c.Params("project_id")
-		projUUID, err := uuid.Parse(projectId)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		rv, err := svc.DeleteProject(c.Context(), projUUID, userInfo)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error deleting project")
-		}
-
-		rv, err = svc.GetUsersProjects(c.Context(), userInfo)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
-		}
-
-		return c.Render("selectOrgHTML", *rv)
-	}
-}
-
-func GetProject(svc *projectservice.ProjectService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		projectId := c.Params("project_id")
-
-		projUUID, err := uuid.Parse(projectId)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		p, err := svc.GetProjectDetails(c.Context(), projUUID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error retrieving project data")
-		}
-
-		return c.Render("project-page", *p)
-	}
-}
-
-func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		orgID := c.Params("project_id")
-		fileType := c.FormValue("file-type")
-		file, err := c.FormFile("file")
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString("File is required")
-		}
-
-		userInfo, err := access.GetUserDataFromCookie(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-		}
-
-		f, err := file.Open()
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error opening file")
-		}
-		defer f.Close()
-
-		orgUUID, err := uuid.Parse(orgID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		// returns a map of staged documents
-		documents, err := svc.UploadDocument(c.Context(), orgUUID, userInfo.Id, file.Filename, fileType, f)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-		}
-
-		return c.Render("staged-listHTML", fiber.Map{
-			"Staged": documents,
-		})
-	}
-}
-
-func GetDocDetails(svc *documentservice.DocumentService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		docId := c.Params("doc_id")
-		docUUID, err := uuid.Parse(docId)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		// combine these into one call -- Rett
-		doc, err := svc.GetDocumentDetails(c.Context(), docUUID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting document details")
-		}
-
-		// need to get the user info as well
-		uploadingUser, err := svc.GetUploaderDetails(c.Context(), doc.UserID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting uploader details")
-		}
-
-		return c.Render("document-detailsHTML", fiber.Map{
-			"Document": *doc,
-			"Uploader": *uploadingUser,
-		})
-	}
-}
-
-func SearchUsers(svc *membershipservice.MembershipService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		searchTerm := c.FormValue("username")
-		projectID := c.Params("id")
-
-		// parse the project id
-		projUUID, err := uuid.Parse(projectID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		// search for new members
-		users, err := svc.SearchForNewMembers(c.Context(), searchTerm, projUUID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
-		}
-
-		return c.Render("search-resultsHTML", fiber.Map{
-			"SearchedMembers": users,
-			"ProjectID":       projectID,
-		})
-	}
-}
-
-func JoinOrg(svc *projectservice.ProjectService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		projectId := c.Params("project_id")
-		projUUID, err := uuid.Parse(projectId)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		userInfo, err := access.GetUserDataFromCookie(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-		}
-
-		err = svc.JoinProject(c.Context(), projUUID, userInfo.Id)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error joining project")
-		}
-
-		rv, err := svc.GetUsersProjects(c.Context(), userInfo)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
-		}
-
-		return c.Render("selectOrgHTML", *rv)
-	}
-}
-
-func GetMemberPage(svc *membershipservice.MembershipService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		memberId := c.Params("member_id")
-		memberUUID, err := uuid.Parse(memberId)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		projectId := c.Params("project_id")
-		projUUID, err := uuid.Parse(projectId)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		rv, err := svc.GetMembership(c.Context(), projUUID, memberUUID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting project member")
-		}
-
-		return c.Render("member-detailsHTML", fiber.Map{"Member": *rv.Membership, "ProjectId": projectId, "Roles": rv.AvailableRoles})
-	}
-}
-
-func UpdateMemberRoles(svc *membershipservice.MembershipService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		mUserID := c.Params("member_id")
-		mUserUUID, err := uuid.Parse(mUserID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		projectId := c.Params("project_id")
-		projUUID, err := uuid.Parse(projectId)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		role := c.FormValue("role-select")
-
-		member, err := svc.UpdateMemberRoles(c.Context(), projUUID, mUserUUID, role)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error updating member roles")
-		}
-
-		var availRoles []string
-
-		allRoles := []string{"director", "producer", "writer", "cinematographer", "production_designer"}
-		for _, role := range allRoles {
-			if slices.Contains(member.Roles, role) {
-				continue
-			} else {
-				availRoles = append(availRoles, role)
-			}
-		}
-
-		return c.Render("member-detailsHTML", fiber.Map{"Member": *member, "ProjectId": projectId, "Roles": availRoles})
-	}
-}
-
-func GetSidebar(svc *membershipservice.MembershipService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		pIDString := c.Params("project_id")
-		pID, err := uuid.Parse(pIDString)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		// get all project membership info for the sidebar
-		rv, err := svc.GetProjectMemberships(c.Context(), pID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting project memberships")
-		}
-
-		// confirm render and target, something seems off right now, likely with HTMX
-		return c.Render("sidebarHTML", fiber.Map{
-			"ProjectID": pID,
-			"Invited":   rv.Invited,
-			"Members":   rv.Members,
-		})
-	}
-}
-
-func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		pIDString := c.Params("project_id")
-		pID, err := uuid.Parse(pIDString)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		err = svc.LockDocuments(c.Context(), pID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
-		}
-
-		return c.Redirect("/get-project/" + pIDString + "/")
-	}
-}
-
-func DownloadDocument(svc *documentservice.DocumentService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		docId := c.Params("doc_id")
-		docUUID, err := uuid.Parse(docId)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
-		}
-
-		rv, err := svc.DownloadDocument(c.Context(), docUUID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error downloading document")
-		}
-		defer rv.DocStream.Body.Close()
-
-		// need the file name...
-		attachment := fmt.Sprintf("attachment; filename=%s", rv.FileName)
-
-		// Set the appropriate headers
-		c.Set("Content-Type", "application/octet-stream") // Adjust Content-Type as needed
-		c.Set("Content-Disposition", attachment)
-
-		// Stream the body to the client
-		if _, err := io.Copy(c, rv.DocStream.Body); err != nil {
-			fmt.Println("error copying file to response", err)
-			return c.Status(fiber.StatusInternalServerError).SendString("error copying file to response")
-		}
-
-		return nil
 	}
 }

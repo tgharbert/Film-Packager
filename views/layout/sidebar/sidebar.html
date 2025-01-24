@@ -2,11 +2,12 @@
 <div id="sidebar">
   <h2 id="sub-header">Members</h2>
   <div id="list-of-accepted-members">
-    <ul>
+    <ul class="member-list">
       {{range .Members}}
       <li id="{{.UserID}}">
         <b
-          hx-get="/get-member/{{$.Project.ID}}/{{.UserID}}/"
+            class="member-name"
+            hx-get="/get-member/{{.ProjectID}}/{{.UserID}}/"
           hx-target="#sidebar"
           hx-swap="innerHTML"
           >{{.UserName}}</b
@@ -19,7 +20,8 @@
     </ul>
   </div>
     <div id="search-members-form">
-  {{ template "form-search-membersHTML" . }}
+    <h3 id="sub-header">Search Members:</h3>
+        {{ template "form-search-membersHTML" . }}
     </div>
     </div>
 {{end}}

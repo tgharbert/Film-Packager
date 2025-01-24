@@ -5,8 +5,10 @@ package documentservice
 import (
 	"context"
 	"filmPackager/internal/domain/document"
+	"filmPackager/internal/domain/membership"
 	"filmPackager/internal/domain/user"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -14,13 +16,14 @@ import (
 )
 
 type DocumentService struct {
-	docRepo  document.DocumentRepository
-	s3Repo   document.S3Repository
-	userRepo user.UserRepository
+	docRepo    document.DocumentRepository
+	s3Repo     document.S3Repository
+	userRepo   user.UserRepository
+	memberRepo membership.MembershipRepository
 }
 
-func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository) *DocumentService {
-	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo}
+func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository, memberRepo membership.MembershipRepository) *DocumentService {
+	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo, memberRepo: memberRepo}
 }
 
 type UploadDocumentResponse struct {
@@ -33,8 +36,38 @@ type DownloadDocumentResponse struct {
 	FileName  string
 }
 
-// this is where it gets interesting. the file name has to be unique as there could be multiple uploads with the same name - script, etc. add the uuid or date stamp to the FileName to make it unique??
+type GetDocumentDetailsResponse struct {
+	ID           uuid.UUID
+	OrgID        uuid.UUID
+	FileName     string
+	UploaderName string
+	UploadDate   string
+	DocType      string
+}
+
+// map of access tiers and the file types they can access
+var accessTiers = map[string][]string{
+	"owner":               {"Script", "Logline", "Synopsis", "PitchDeck", "Schedule", "Budget", "Shotlist", "Lookbook"},
+	"director":            {"Script", "Logline", "Synopsis", "PitchDeck", "Schedule", "Budget", "Shotlist", "Lookbook"},
+	"producer":            {"Script", "Logline", "Synopsis", "PitchDeck", "Schedule", "Budget", "Shotlist", "Lookbook"},
+	"writer":              {"Script", "Logline", "Synopsis", "PitchDeck", "Lookbook"},
+	"cinematographer":     {"PitchDeck", "Budget", "Shotlist", "Lookbook"},
+	"production_designer": {"PitchDeck", "Budget", "Lookbook"},
+}
+
+// update to limit file size ?? -- harbert
 func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid.UUID, fileName, fileType string, fileBody interface{}) (map[string]UploadDocumentResponse, error) {
+	m, err := s.memberRepo.GetMembership(ctx, orgID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting membership: %v", err)
+	}
+
+	// checks the users highest role against their access tier
+	if !slices.Contains(accessTiers[m.Roles[0]], fileType) {
+		// return custom error for template
+		return nil, document.ErrAccessDenied
+	}
+
 	// check if repos are nil
 	if s.docRepo == nil || s.s3Repo == nil {
 		return nil, fmt.Errorf("nil repository")
@@ -117,22 +150,45 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 	return rv, nil
 }
 
-func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID uuid.UUID) (*document.Document, error) {
+func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID uuid.UUID) (*GetDocumentDetailsResponse, error) {
 	if s.docRepo == nil {
 		return nil, fmt.Errorf("nil repository")
 	}
-	return s.docRepo.GetDocumentDetails(ctx, docID)
-}
 
-func (s *DocumentService) GetUploaderDetails(ctx context.Context, userId uuid.UUID) (*user.User, error) {
-	if s.docRepo == nil {
-		return nil, fmt.Errorf("nil repository")
+	doc, err := s.docRepo.GetDocumentDetails(ctx, docID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting document details: %v", err)
 	}
-	return s.userRepo.GetUserById(ctx, userId)
+
+	uploader, err := s.userRepo.GetUserById(ctx, doc.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting uploader details: %v", err)
+	}
+
+	rv := &GetDocumentDetailsResponse{
+		ID:           doc.ID,
+		OrgID:        doc.OrganizationID,
+		FileName:     doc.FileName,
+		UploaderName: uploader.Name,
+		UploadDate:   doc.Date.Format("01-02-2006, 15:04"),
+		DocType:      doc.FileType,
+	}
+
+	return rv, nil
 }
 
 // TODO: consider what sort of business logic will be need to confirm that a lock is possible?
-func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID) error {
+func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID, uID uuid.UUID) error {
+	m, err := s.memberRepo.GetMembership(ctx, pID, uID)
+	if err != nil {
+		return fmt.Errorf("error getting membership: %v", err)
+	}
+
+	// check if the user has the correct access - only owner, director, producer can lock
+	if !slices.Contains([]string{"owner", "director", "producer"}, m.Roles[0]) {
+		return document.ErrAccessDenied
+	}
+
 	// get all the locked documents
 	lockedDocs, err := s.docRepo.GetAllLockedDocumentsByProjectID(ctx, pID)
 	if err != nil {

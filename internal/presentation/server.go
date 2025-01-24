@@ -10,6 +10,7 @@ import (
 	memInf "filmPackager/internal/infrastructure/membership"
 	projectInf "filmPackager/internal/infrastructure/project"
 	userInf "filmPackager/internal/infrastructure/user"
+	"filmPackager/internal/presentation/routes"
 	s3Conn "filmPackager/internal/store"
 	"filmPackager/internal/store/db"
 	"log"
@@ -58,7 +59,7 @@ func NewServer(app *fiber.App) *Server {
 	// instantiate the services
 	userService := userservice.NewUserService(userRepo, projectRepo)
 	projService := projectservice.NewProjectService(projectRepo, docPGRepo, docS3Repo, userRepo, memberRepo)
-	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo)
+	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo)
 	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
 
 	// register the routes
@@ -72,23 +73,32 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService) {
+	// homepage
 	s.fiberApp.Get("/", GetHomePage(projectService))
+
+	// login routes
 	s.fiberApp.Get("/login/", GetLoginPage(userService))
 	s.fiberApp.Post("/post-login/", LoginUserHandler(userService))
 	s.fiberApp.Post("/post-create-account", PostCreateAccount(userService))
 	s.fiberApp.Get("/get-create-account/", GetCreateAccount(userService))
-	s.fiberApp.Get("/create-project/", CreateProject(projectService))
-	s.fiberApp.Get("/get-project/:project_id/", GetProject(projectService))
 	s.fiberApp.Get("/logout/", LogoutUser(userService))
-	s.fiberApp.Post("/file-submit/:project_id", UploadDocumentHandler(documentService))
-	s.fiberApp.Post("/search-users/:id", SearchUsers(membershipService))
-	s.fiberApp.Post("/invite-member/:id/:project_id/", InviteMember(membershipService))
-	s.fiberApp.Post("/join-org/:project_id/:role", JoinOrg(projectService))
-	s.fiberApp.Get("/delete-project/:project_id/", DeleteProject(projectService))
-	s.fiberApp.Get("/get-member/:project_id/:member_id/", GetMemberPage(membershipService))
-	s.fiberApp.Post("/update-member-roles/:project_id/:member_id/", UpdateMemberRoles(membershipService))
-	s.fiberApp.Get("/get-doc-details/:doc_id", GetDocDetails(documentService))
-	s.fiberApp.Get("/get-sidebar/:project_id/", GetSidebar(membershipService))
-	s.fiberApp.Post("/lock-staged-docs/:project_id/", LockStagedDocs(documentService))
-	s.fiberApp.Get("/download-doc/:doc_id", DownloadDocument(documentService))
+
+	// member routes
+	s.fiberApp.Post("/search-users/:id", routes.SearchUsers(membershipService))
+	s.fiberApp.Post("/invite-member/:id/:project_id/", routes.InviteMember(membershipService))
+	s.fiberApp.Get("/get-member/:project_id/:member_id/", routes.GetMemberPage(membershipService))
+	s.fiberApp.Post("/update-member-roles/:project_id/:member_id/", routes.UpdateMemberRoles(membershipService))
+	s.fiberApp.Get("/get-sidebar/:project_id/", routes.GetSidebar(membershipService))
+
+	// project routes
+	s.fiberApp.Get("/create-project/", routes.CreateProject(projectService))
+	s.fiberApp.Post("/join-org/:project_id/:role", routes.JoinOrg(projectService))
+	s.fiberApp.Get("/get-project/:project_id/", routes.GetProject(projectService))
+	s.fiberApp.Get("/delete-project/:project_id/", routes.DeleteProject(projectService))
+
+	// document routes
+	s.fiberApp.Get("/get-doc-details/:doc_id", routes.GetDocDetails(documentService))
+	s.fiberApp.Post("/file-submit/:project_id", routes.UploadDocumentHandler(documentService))
+	s.fiberApp.Post("/lock-staged-docs/:project_id/", routes.LockStagedDocs(documentService))
+	s.fiberApp.Get("/download-doc/:doc_id", routes.DownloadDocument(documentService))
 }

@@ -18,7 +18,6 @@
   <h2 id="sub-title">Projects that you're a member of:</h2>
   <div id="membership-list">
     {{block "project-list" .}}
-
     <ul id="project-list-items">
       {{ range .Accepted }} {{block "project-list-item" .}}
       <li id="{{.ID}}" class="project-list-item">
@@ -48,6 +47,9 @@
       {{end}}{{end}}
     </ul>
     <h2 class="sub-title">Projects Invites:</h2>
+    {{ if eq (len .Invited) 0 }}
+    <i class="no-invites-msg">You have no current invites</i>
+    {{ else }}
     <ul id="pending-list">
       {{ range .Invited }} {{ $org := . }}
       <li id="{{.ID}}" class="project-list-item">
@@ -55,7 +57,7 @@
           <b>{{.Name}}: </b>
         </p>
         <button
-          class="button-std"
+          class="button-std accept-invite"
           type="submit"
           hx-post="/join-org/{{.ID}}/{{.}}"
           hx-swap="innerHTML"
@@ -67,6 +69,7 @@
       </li>
       {{end}}
     </ul>
+    {{end}}
   </div>
 </div>
 {{end}}
