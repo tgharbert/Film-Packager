@@ -28,7 +28,13 @@
         hx-swap="none"
         >
         Download Document</button>
-</div>
+
+    <button class="button-std" hx-get="/delete-doc/{{.ID}}"
+        hx-swap="innerHTML"
+        hx-target="#main"
+        >
+        Delete Document</button>
+    </div>
 
 <script>
     function downloadDoc(event) {

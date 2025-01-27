@@ -266,3 +266,28 @@ func (s *DocumentService) DownloadDocument(ctx context.Context, docID uuid.UUID)
 	rv.FileName = doc.FileName
 	return rv, nil
 }
+
+func (s *DocumentService) DeleteDocument(ctx context.Context, docID uuid.UUID) (uuid.UUID, error) {
+	pID := uuid.UUID{}
+
+	// get the doc from the PG database
+	doc, err := s.docRepo.GetDocumentDetails(ctx, docID)
+	if err != nil {
+		return pID, fmt.Errorf("error getting document details: %v", err)
+	}
+
+	// delete the file from the s3 bucket
+	err = s.s3Repo.DeleteFile(ctx, doc)
+	if err != nil {
+		return pID, fmt.Errorf("error deleting file: %v", err)
+	}
+
+	// delete the document from the PG database
+	err = s.docRepo.Delete(ctx, doc)
+	if err != nil {
+		return pID, fmt.Errorf("error deleting document: %v", err)
+	}
+
+	// return the project ID to redirect to the project page
+	return doc.OrganizationID, nil
+}

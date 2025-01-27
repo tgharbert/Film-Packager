@@ -126,3 +126,22 @@ func GetDocDetails(svc *documentservice.DocumentService) fiber.Handler {
 		return c.Render("document-detailsHTML", *rv)
 	}
 }
+
+func DeleteDocument(svc *documentservice.DocumentService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		docId := c.Params("doc_id")
+		docUUID, err := uuid.Parse(docId)
+
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		pID, err := svc.DeleteDocument(c.Context(), docUUID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error deleting document")
+		}
+
+		url := fmt.Sprintf("/get-project/%s/", pID)
+		return c.Redirect(url)
+	}
+}

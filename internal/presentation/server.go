@@ -101,4 +101,5 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Post("/file-submit/:project_id", routes.UploadDocumentHandler(documentService))
 	s.fiberApp.Post("/lock-staged-docs/:project_id/", routes.LockStagedDocs(documentService))
 	s.fiberApp.Get("/download-doc/:doc_id", routes.DownloadDocument(documentService))
+	s.fiberApp.Get("/delete-doc/:doc_id", routes.DeleteDocument(documentService))
 }
