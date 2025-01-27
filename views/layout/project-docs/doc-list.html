@@ -6,14 +6,17 @@
     {{end}}
   <div id="staged-list">{{template "staged-listHTML" .}}</div>
   {{ if .LockStatus }}
+  <div id="lock-docs">
   <button
     id="lock-staged-button"
     hx-post="/lock-staged-docs/{{.Project.ID}}/"
     hx-target="#main"
   >
-    Lock All Staged Documents
+        <img src="/static/icons/lock_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" class="std-icon" alt="trash icon" />
+         &nbsp;Staged Documents
   </button>
-    <i>Doing this will move them to the locked list below.</i>
+    <i id="lock-message">Doing this will move them to the locked list below.</i>
+  </div>
     {{ end }}
         {{template "locked-listHTML" .}}
 </div>
