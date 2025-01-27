@@ -29,12 +29,14 @@
         >
         Download Document</button>
 
+    {{ if eq .Status "staged" }}
     <button class="button-std" hx-get="/delete-doc/{{.ID}}"
         hx-swap="innerHTML"
         hx-target="#main"
         >
         Delete Document</button>
     </div>
+    {{ end }}
 
 <script>
     function downloadDoc(event) {

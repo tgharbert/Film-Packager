@@ -43,6 +43,7 @@ type GetDocumentDetailsResponse struct {
 	UploaderName string
 	UploadDate   string
 	DocType      string
+	Status       string
 }
 
 // map of access tiers and the file types they can access
@@ -172,6 +173,7 @@ func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID uuid.UUI
 		UploaderName: uploader.Name,
 		UploadDate:   doc.Date.Format("01-02-2006, 15:04"),
 		DocType:      doc.FileType,
+		Status:       doc.Status,
 	}
 
 	return rv, nil
