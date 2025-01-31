@@ -28,7 +28,7 @@
         <p>{{.UploaderName}}</p>
     </div>
     <div id="document-actions">
-    <button class="button-std" hx-get="/download-doc/{{.ID}}"
+    <button class="button-std doc-action-btn" hx-get="/download-doc/{{.ID}}"
         hx-on::after-request="downloadDoc(event)"
         hx-swap="none"
         >
@@ -36,7 +36,7 @@
         &nbsp;Download Document</button>
 
     {{ if eq .Status "staged" }}
-    <button class="button-std" hx-get="/delete-doc/{{.ID}}"
+    <button class="button-std doc-action-btn" hx-get="/delete-doc/{{.ID}}"
         hx-swap="innerHTML"
         hx-target="#main"
         >

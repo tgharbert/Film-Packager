@@ -1,6 +1,7 @@
 {{define "fileUploadHTML" }}
-<div id="doc-input">
+<div>
   <form
+      id="doc-input"
     hx-post="/file-submit/{{.Project.ID}}"
     name="file-form"
     hx-target="#staged-list"
@@ -22,7 +23,8 @@
     </select>
     <button class="button-std stage-file-btn" type="submit">
         <img src="/static/icons/cloud_upload_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" class="std-icon" alt="trash icon" />
-        &nbsp;Stage File</button>
+        &nbsp;Stage File
+    </button>
   </form>
 </div>
 <script>

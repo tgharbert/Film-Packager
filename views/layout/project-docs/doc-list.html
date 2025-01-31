@@ -2,8 +2,10 @@
 <div id="doc-list">
   <h2 id="sub-header"><i>{{.Project.Name}}</i> Production Documents</h2>
     {{ if .UploadStatus }}
+    <div id="file-upload-cont">
         {{template "fileUploadHTML" .}}
-    {{end}}
+    </div>
+        {{end}}
   <div id="staged-list">{{template "staged-listHTML" .}}</div>
   {{ if .LockStatus }}
   <div id="lock-docs">

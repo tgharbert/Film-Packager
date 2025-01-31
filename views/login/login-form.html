@@ -1,6 +1,7 @@
 {{define "login-formHTML"}}
 <form
-  hx-post="/post-login/"
+    id="login-form"
+    hx-post="/post-login/"
   hx-trigger="submit"
   hx-target="#login"
   hx-swap="innerHTML"
@@ -14,7 +15,7 @@
     <label>Password: </label>
     <input type="password" name="password" />
   </div>
-  <div>
+  <div id="sub-login">
     <p>
       If you do not have an account, create one
       <span
