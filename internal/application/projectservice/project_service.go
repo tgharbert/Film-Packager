@@ -241,7 +241,7 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 	rv := &GetProjectDetailsResponse{}
 
 	// get project details
-	p, err := s.projRepo.GetProjectDetails(ctx, projectId)
+	p, err := s.projRepo.GetProjectByID(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project from db: %v", err)
 	}

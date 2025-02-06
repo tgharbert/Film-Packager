@@ -75,7 +75,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 	rv := make(map[string]UploadDocumentResponse)
 
 	// create uniform file name
-	project, err := s.projRepo.GetProjectDetails(ctx, orgID)
+	project, err := s.projRepo.GetProjectByID(ctx, orgID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project: %v", err)
 	}
