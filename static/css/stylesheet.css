@@ -286,7 +286,10 @@ input::file-selector-button:hover {
 
 .staged-list-item {
     font-weight: 300;
+    font-size: smaller;
     color: #f7ce81;
+    display: flex;
+    justify-content: center;
     align-items: center;
 }
 

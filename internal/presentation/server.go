@@ -13,11 +13,13 @@ import (
 	"filmPackager/internal/presentation/routes"
 	s3Conn "filmPackager/internal/store"
 	"filmPackager/internal/store/db"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
+	"github.com/joho/godotenv"
 )
 
 type Server struct {
@@ -26,6 +28,13 @@ type Server struct {
 }
 
 func NewServer(app *fiber.App) *Server {
+	// load the .env file
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+		panic(err)
+	}
+
 	// set up the database connection
 	db.PoolConnect()
 	conn := db.GetPool()

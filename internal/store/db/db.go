@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,12 +17,6 @@ func CheckPasswordHash(hashedPassword string, password string) error {
 var DBPool *pgxpool.Pool
 
 func PoolConnect() {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file")
-		panic(err)
-	}
-
 	dbURL := os.Getenv("DEV_DATABASE_URL")
 	if dbURL == "" {
 		fmt.Println("DEV_DATABASE_URL not found in environment")
