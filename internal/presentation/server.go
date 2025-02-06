@@ -53,6 +53,8 @@ func NewServer(app *fiber.App) *Server {
 		fiberApp: fiber.New(
 			fiber.Config{
 				Views: viewEngine,
+				// 30orgIDMB file size limit
+				BodyLimit: 1024 * 1024 * 30,
 			},
 		),
 	}
@@ -70,7 +72,7 @@ func NewServer(app *fiber.App) *Server {
 	// instantiate the services
 	userService := userservice.NewUserService(userRepo, projectRepo)
 	projService := projectservice.NewProjectService(projectRepo, docPGRepo, docS3Repo, userRepo, memberRepo)
-	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo)
+	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo, projectRepo)
 	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
 
 	// register the routes

@@ -6,6 +6,7 @@ import (
 	"context"
 	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/membership"
+	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
 	"slices"
@@ -20,10 +21,11 @@ type DocumentService struct {
 	s3Repo     document.S3Repository
 	userRepo   user.UserRepository
 	memberRepo membership.MembershipRepository
+	projRepo   project.ProjectRepository
 }
 
-func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository, memberRepo membership.MembershipRepository) *DocumentService {
-	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo, memberRepo: memberRepo}
+func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository, memberRepo membership.MembershipRepository, projRepo project.ProjectRepository) *DocumentService {
+	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo, memberRepo: memberRepo, projRepo: projRepo}
 }
 
 type UploadDocumentResponse struct {
@@ -56,7 +58,7 @@ var accessTiers = map[string][]string{
 	"production_designer": {"PitchDeck", "Budget", "Lookbook"},
 }
 
-// update to limit file size ?? -- harbert
+// standardize the file naming on upload - ProjectName-FileType-Date
 func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid.UUID, fileName, fileType string, fileBody interface{}) (map[string]UploadDocumentResponse, error) {
 	m, err := s.memberRepo.GetMembership(ctx, orgID, userID)
 	if err != nil {
@@ -69,13 +71,16 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 		return nil, document.ErrAccessDenied
 	}
 
-	// check if repos are nil
-	if s.docRepo == nil || s.s3Repo == nil {
-		return nil, fmt.Errorf("nil repository")
-	}
-
 	// create a return value
 	rv := make(map[string]UploadDocumentResponse)
+
+	// create uniform file name
+	project, err := s.projRepo.GetProjectDetails(ctx, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting project: %v", err)
+	}
+
+	fileName = fmt.Sprintf("%s_%s_%s", project.Name, fileType, time.Now().Format("01-02-2006"))
 
 	// create a new document object
 	now := time.Now()
