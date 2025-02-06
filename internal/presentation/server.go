@@ -48,7 +48,9 @@ func NewServer(app *fiber.App) *Server {
 		),
 	}
 
+	// serve the static files
 	s.fiberApp.Static("/static", "./static")
+
 	// instantiate the repositories
 	userRepo := userInf.NewPostgresUserRepository(conn)
 	projectRepo := projectInf.NewPostgresProjectRepository(conn)
