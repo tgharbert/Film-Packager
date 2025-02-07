@@ -153,10 +153,12 @@ func (s *ProjectService) CreateNewProject(ctx context.Context, projectName strin
 	if err != nil {
 		return nil, fmt.Errorf("error creating membership: %v", err)
 	}
+
 	rv.ID = createdProject.ID
 	rv.Name = createdProject.Name
 	rv.Status = "invited"
 	rv.Roles = newMember.Roles
+
 	return rv, nil
 }
 
