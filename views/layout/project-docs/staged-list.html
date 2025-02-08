@@ -22,8 +22,10 @@
       {{.Staged.Script.Date}}
     </td>
     {{else}}
-    <td></td>
-    {{ end }} {{ if .Staged.Logline }}
+    <td><td>
+    {{ end }} 
+   
+    {{ if .Staged.Logline }}
     <td
         class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Logline.ID}}"
@@ -34,7 +36,9 @@
     </td>
     {{else}}
     <td></td>
-    {{ end }} {{ if .Staged.Synopsis }}
+    {{ end }} 
+   
+    {{ if .Staged.Synopsis }}
     <td
         class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Synopsis.ID}}"
@@ -45,7 +49,9 @@
     </td>
     {{else}}
     <td></td>
-    {{ end }} {{ if .Staged.PitchDeck }}
+    {{ end }} 
+   
+    {{ if .Staged.PitchDeck }}
     <td
         class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.PitchDeck.ID}}"
