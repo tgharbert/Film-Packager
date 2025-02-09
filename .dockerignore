@@ -1,0 +1,6 @@
+# flyctl launch added from .gitignore
+**/.env
+
+**/postgres_help.txt
+**/scripts.txt
+fly.toml

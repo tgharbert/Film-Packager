@@ -27,7 +27,7 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 
 # Copy the .env file
-COPY --from=builder /app/.env .
+#COPY --from=builder /app/.env .
 
 # Copy the views
 COPY views/ views/
