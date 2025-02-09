@@ -17,9 +17,9 @@ func CheckPasswordHash(hashedPassword string, password string) error {
 var DBPool *pgxpool.Pool
 
 func PoolConnect() {
-	dbURL := os.Getenv("DEV_DATABASE_URL")
+	dbURL := os.Getenv("RDS_URL")
 	if dbURL == "" {
-		fmt.Println("DEV_DATABASE_URL not found in environment")
+		fmt.Println("database url not found in environment")
 		os.Exit(1)
 	}
 
