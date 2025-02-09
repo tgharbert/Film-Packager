@@ -1,6 +1,6 @@
 # Start from the official Golang image as the builder stage
-FROM golang:1.22.4 AS builder
-
+#FROM golang:1.22.4 AS builder
+FROM golang:1.22.4-alpine as builder
 # Set the working directory
 WORKDIR /app
 
@@ -27,7 +27,7 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 
 # Copy the .env file
-#COPY --from=builder /app/.env .
+# COPY --from=builder /app/.env .
 
 # Copy the views
 COPY views/ views/

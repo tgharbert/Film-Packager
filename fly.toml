@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for film-packager-thrumming-sunset-7265 on 2025-02-09T11:28:15-06:00
+# fly.toml app configuration file generated for film-packager-fragrant-moon-3723 on 2025-02-09T17:40:58-06:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'film-packager-thrumming-sunset-7265'
+app = 'film-packager-fragrant-moon-3723'
 primary_region = 'dfw'
 
 [build]

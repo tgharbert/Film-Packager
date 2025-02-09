@@ -82,7 +82,7 @@ func NewServer(app *fiber.App) *Server {
 }
 
 func (s *Server) Start() error {
-	return s.fiberApp.Listen(":3000")
+	return s.fiberApp.Listen(":8080")
 }
 
 func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService) {
