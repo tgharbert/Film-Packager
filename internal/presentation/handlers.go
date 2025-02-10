@@ -121,6 +121,7 @@ func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 					"Error": "Error: user not found!",
 				})
 			}
+			fmt.Println("login error: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error logging in")
 		}
 		tokenString, err := access.GenerateJWT(currentUser.Id, currentUser.Name, currentUser.Email)

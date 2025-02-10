@@ -28,16 +28,16 @@ type Server struct {
 }
 
 func NewServer(app *fiber.App) *Server {
-	// load the .env file
+	// load the .env file locally if one exists
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Println("Error loading .env file")
-		panic(err)
+		log.Println("No .env file found, using system environment variables")
 	}
 
 	// set up the database connection
-	db.PoolConnect()
-	conn := db.GetPool()
+	// REWRITE THIS TO MAKE AND RETURN CONNECTION POOL, THEN PASS TO REPOSITORIES
+	conn := db.PoolConnect()
+	//conn := db.GetPool()
 
 	// set up the S3 client
 	s3Client := s3Conn.GetS3Client(context.Background())
@@ -46,6 +46,7 @@ func NewServer(app *fiber.App) *Server {
 		log.Fatal("BUCKET env var not set")
 	}
 
+	fmt.Printf("DBPool address: %p\n", conn)
 	// set up views and static files
 	viewEngine := html.New("./views", ".html")
 
@@ -53,7 +54,7 @@ func NewServer(app *fiber.App) *Server {
 		fiberApp: fiber.New(
 			fiber.Config{
 				Views: viewEngine,
-				// 30orgIDMB file size limit
+				// 30MB file size limit
 				BodyLimit: 1024 * 1024 * 30,
 			},
 		),

@@ -16,12 +16,16 @@ type PostgresUserRepository struct {
 }
 
 func NewPostgresUserRepository(db *pgxpool.Pool) *PostgresUserRepository {
+	fmt.Println("in postgres repo", &db)
 	return &PostgresUserRepository{db: db}
 }
 
 func (r *PostgresUserRepository) GetUserByEmail(ctx context.Context, email string, password string) (*user.User, error) {
+	fmt.Println("in postgres repo", r.db)
 	query := `SELECT id, name, email, password FROM users WHERE email = $1`
+
 	var existingUser user.User
+
 	err := r.db.QueryRow(ctx, query, email).Scan(&existingUser.Id, &existingUser.Name, &existingUser.Email, &existingUser.Password)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -29,6 +33,7 @@ func (r *PostgresUserRepository) GetUserByEmail(ctx context.Context, email strin
 		}
 		return nil, fmt.Errorf("error scanning user: %v", err)
 	}
+
 	return &existingUser, nil
 }
 

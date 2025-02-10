@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -13,26 +12,27 @@ func CheckPasswordHash(hashedPassword string, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
-// globally available db pool for connections
-var DBPool *pgxpool.Pool
-
-func PoolConnect() {
+func PoolConnect() *pgxpool.Pool {
 	dbURL := os.Getenv("RDS_URL")
 	if dbURL == "" {
-		fmt.Println("database url not found in environment")
-		os.Exit(1)
+		panic("database url not found in environment")
+	}
+
+	config, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		panic(err)
 	}
 
 	// later need to work on pool settings
-	pool, err := pgxpool.New(context.Background(), dbURL)
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-		os.Exit(1)
+		panic(err)
 	}
 
-	DBPool = pool
-}
+	err = pool.Ping(context.Background())
+	if err != nil {
+		panic(err)
+	}
 
-func GetPool() *pgxpool.Pool {
-	return DBPool
+	return pool
 }
