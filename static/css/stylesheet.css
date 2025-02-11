@@ -32,9 +32,6 @@ body {
 }
 
 #project-list-items {
-  /* display: flex;
-  justify-content: center;
-  min-height: 80vh; */
   margin-left: 2rem;
   padding-left: 2rem;
   border: 2px solid rgb(240, 233, 221);
@@ -58,6 +55,20 @@ body {
 #doc-input {
   color: rgb(240, 233, 221);
   padding: 0.4rem;
+  align-items: center;
+    justify-content: left;
+    width: 100%;
+}
+
+#file-input {
+    margin-bottom: 1rem;
+}
+
+form {
+  display: flex;
+  padding: 0.5rem;
+  justify-content: center;
+  align-items: center;
 }
 
 #sidebar {
@@ -101,6 +112,8 @@ h2 {
   border-radius: 0.5rem;
   padding: 0.4rem;
   background-color: rgb(90, 71, 106);
+  display: flex;
+  align-items: center;
 }
 .button-std:hover {
   background-color: rgb(118, 102, 131);
@@ -132,7 +145,7 @@ h2 {
 }
 
 #login {
-  border: 2px solid rgb(240, 233, 221);
+    border: 2px solid rgb(240, 233, 221);
   border-radius: 1rem;
   text-align: center;
   position: absolute;
@@ -145,10 +158,24 @@ h2 {
   padding-left: 2rem;
 }
 
+#login-form {
+    display:flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
 .login-input {
   text-align: right;
   margin-right: 4rem;
   margin-bottom: 1rem;
+    align-self: flex-end;
+}
+
+#sub-login {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
 }
 
 #form-inputs {
@@ -188,7 +215,9 @@ h2 {
     border-radius: 0.5rem;
     padding: 0.4rem;
     background-color: rgb(90, 71, 106);
-    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #lock-staged-button:hover {
@@ -257,8 +286,9 @@ input::file-selector-button:hover {
 
 .staged-list-item {
     font-weight: 300;
+    font-size: smaller;
     color: #f7ce81;
-    align-items: center;
+    text-align: center;
 }
 
 .staged-list-item:hover {
@@ -293,6 +323,7 @@ input::file-selector-button:hover {
 }
 
 .stage-file-btn {
+    margin-left: 1rem;
     background-color: #b58502;
 }
 
@@ -306,3 +337,31 @@ input::file-selector-button:hover {
     justify-content: left;
     display: flex;
 }
+
+.std-icon {
+    width: 16px;
+    height: 16px;
+}
+
+#document-actions {
+    display: flex;
+    justify-content: left;
+    margin-top: 1rem;
+    margin-left: 2rem;
+}
+
+.doc-action-btn {
+    margin-left: 1rem;
+}
+
+#lock-docs {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+#lock-message {
+    padding-left: 1rem;
+}
+

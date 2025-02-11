@@ -6,6 +6,7 @@ import (
 	"context"
 	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/membership"
+	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
 	"slices"
@@ -20,10 +21,11 @@ type DocumentService struct {
 	s3Repo     document.S3Repository
 	userRepo   user.UserRepository
 	memberRepo membership.MembershipRepository
+	projRepo   project.ProjectRepository
 }
 
-func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository, memberRepo membership.MembershipRepository) *DocumentService {
-	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo, memberRepo: memberRepo}
+func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository, memberRepo membership.MembershipRepository, projRepo project.ProjectRepository) *DocumentService {
+	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo, memberRepo: memberRepo, projRepo: projRepo}
 }
 
 type UploadDocumentResponse struct {
@@ -43,6 +45,7 @@ type GetDocumentDetailsResponse struct {
 	UploaderName string
 	UploadDate   string
 	DocType      string
+	Status       string
 }
 
 // map of access tiers and the file types they can access
@@ -55,7 +58,7 @@ var accessTiers = map[string][]string{
 	"production_designer": {"PitchDeck", "Budget", "Lookbook"},
 }
 
-// update to limit file size ?? -- harbert
+// standardize the file naming on upload - ProjectName-FileType-Date
 func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid.UUID, fileName, fileType string, fileBody interface{}) (map[string]UploadDocumentResponse, error) {
 	m, err := s.memberRepo.GetMembership(ctx, orgID, userID)
 	if err != nil {
@@ -68,13 +71,16 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 		return nil, document.ErrAccessDenied
 	}
 
-	// check if repos are nil
-	if s.docRepo == nil || s.s3Repo == nil {
-		return nil, fmt.Errorf("nil repository")
-	}
-
 	// create a return value
 	rv := make(map[string]UploadDocumentResponse)
+
+	// create uniform file name
+	project, err := s.projRepo.GetProjectByID(ctx, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting project: %v", err)
+	}
+
+	fileName = fmt.Sprintf("%s_%s_%s", project.Name, fileType, time.Now().Format("01-02-2006"))
 
 	// create a new document object
 	now := time.Now()
@@ -172,12 +178,12 @@ func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID uuid.UUI
 		UploaderName: uploader.Name,
 		UploadDate:   doc.Date.Format("01-02-2006, 15:04"),
 		DocType:      doc.FileType,
+		Status:       doc.Status,
 	}
 
 	return rv, nil
 }
 
-// TODO: consider what sort of business logic will be need to confirm that a lock is possible?
 func (s *DocumentService) LockDocuments(ctx context.Context, pID uuid.UUID, uID uuid.UUID) error {
 	m, err := s.memberRepo.GetMembership(ctx, pID, uID)
 	if err != nil {
@@ -266,4 +272,29 @@ func (s *DocumentService) DownloadDocument(ctx context.Context, docID uuid.UUID)
 	rv.DocStream = stream
 	rv.FileName = doc.FileName
 	return rv, nil
+}
+
+func (s *DocumentService) DeleteDocument(ctx context.Context, docID uuid.UUID) (uuid.UUID, error) {
+	pID := uuid.UUID{}
+
+	// get the doc from the PG database
+	doc, err := s.docRepo.GetDocumentDetails(ctx, docID)
+	if err != nil {
+		return pID, fmt.Errorf("error getting document details: %v", err)
+	}
+
+	// delete the file from the s3 bucket
+	err = s.s3Repo.DeleteFile(ctx, doc)
+	if err != nil {
+		return pID, fmt.Errorf("error deleting file: %v", err)
+	}
+
+	// delete the document from the PG database
+	err = s.docRepo.Delete(ctx, doc)
+	if err != nil {
+		return pID, fmt.Errorf("error deleting document: %v", err)
+	}
+
+	// return the project ID to redirect to the project page
+	return doc.OrganizationID, nil
 }

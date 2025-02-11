@@ -11,17 +11,30 @@
 
 .project-list-item:hover {
   color: cadetblue;
-  cursor: pointer;
 }
 
-#project-title {
+.project-title {
   padding-right: 2rem;
+}
+
+.project-title:hover {
+    cursor: pointer;
 }
 
 #project-role {
   margin-left: 1rem;
 }
 
+#create-project {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+}
+
 .no-invites-msg {
     padding-left: 4rem;
-}   
+}  
+
+.create-proj-btn {
+    margin-left: .5rem;
+}

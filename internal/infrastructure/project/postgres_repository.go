@@ -56,39 +56,48 @@ func (r *PostgresProjectRepository) DeleteProject(ctx context.Context, projectId
 	return nil
 }
 
-func (r *PostgresProjectRepository) GetProjectDetails(ctx context.Context, projectId uuid.UUID) (*project.Project, error) {
+func (r *PostgresProjectRepository) GetProjectByID(ctx context.Context, projectId uuid.UUID) (*project.Project, error) {
 	var project project.Project
+
 	query := `SELECT id, name, owner_id FROM organizations WHERE id = $1`
+
 	err := r.db.QueryRow(ctx, query, projectId).Scan(&project.ID, &project.Name, &project.OwnerID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project from db: %v", err)
 	}
+
 	return &project, nil
 }
 
 func (r *PostgresProjectRepository) InviteMember(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) error {
 	query := `INSERT INTO memberships (user_id, organization_id) VALUES ($1, $2)`
+
 	_, err := r.db.Exec(ctx, query, userId, projectId)
 	if err != nil {
 		return fmt.Errorf("error inviting user to project: %v", err)
 	}
+
 	return nil
 }
 
 func (r *PostgresProjectRepository) JoinProject(ctx context.Context, projectId uuid.UUID, userId uuid.UUID) error {
 	query := `UPDATE memberships SET invite_status = 'accepted' WHERE user_id = $1 AND organization_id = $2`
+
 	_, err := r.db.Exec(ctx, query, userId, projectId)
 	if err != nil {
 		return fmt.Errorf("error joining project: %v", err)
 	}
+
 	return nil
 }
 
 func (r *PostgresProjectRepository) UpdateMemberRoles(ctx context.Context, projectId uuid.UUID, userId uuid.UUID, role string) error {
 	query := `UPDATE memberships SET access_tier = array_append(array_remove(access_tier, $1), $2) WHERE organization_id = $3 AND user_id = $4`
+
 	_, err := r.db.Query(ctx, query, "reader", role, projectId, userId)
 	if err != nil {
 		return fmt.Errorf("error updating member roles: %v", err)
 	}
+
 	return nil
 }

@@ -13,11 +13,13 @@ import (
 	"filmPackager/internal/presentation/routes"
 	s3Conn "filmPackager/internal/store"
 	"filmPackager/internal/store/db"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
+	"github.com/joho/godotenv"
 )
 
 type Server struct {
@@ -26,9 +28,16 @@ type Server struct {
 }
 
 func NewServer(app *fiber.App) *Server {
+	// load the .env file locally if one exists
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+
 	// set up the database connection
-	db.PoolConnect()
-	conn := db.GetPool()
+	// REWRITE THIS TO MAKE AND RETURN CONNECTION POOL, THEN PASS TO REPOSITORIES
+	conn := db.PoolConnect()
+	//conn := db.GetPool()
 
 	// set up the S3 client
 	s3Client := s3Conn.GetS3Client(context.Background())
@@ -37,6 +46,7 @@ func NewServer(app *fiber.App) *Server {
 		log.Fatal("BUCKET env var not set")
 	}
 
+	fmt.Printf("DBPool address: %p\n", conn)
 	// set up views and static files
 	viewEngine := html.New("./views", ".html")
 
@@ -44,11 +54,15 @@ func NewServer(app *fiber.App) *Server {
 		fiberApp: fiber.New(
 			fiber.Config{
 				Views: viewEngine,
+				// 30MB file size limit
+				BodyLimit: 1024 * 1024 * 30,
 			},
 		),
 	}
 
+	// serve the static files
 	s.fiberApp.Static("/static", "./static")
+
 	// instantiate the repositories
 	userRepo := userInf.NewPostgresUserRepository(conn)
 	projectRepo := projectInf.NewPostgresProjectRepository(conn)
@@ -59,7 +73,7 @@ func NewServer(app *fiber.App) *Server {
 	// instantiate the services
 	userService := userservice.NewUserService(userRepo, projectRepo)
 	projService := projectservice.NewProjectService(projectRepo, docPGRepo, docS3Repo, userRepo, memberRepo)
-	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo)
+	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo, projectRepo)
 	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
 
 	// register the routes
@@ -69,7 +83,7 @@ func NewServer(app *fiber.App) *Server {
 }
 
 func (s *Server) Start() error {
-	return s.fiberApp.Listen(":3000")
+	return s.fiberApp.Listen(":8080")
 }
 
 func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService) {
@@ -101,4 +115,5 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Post("/file-submit/:project_id", routes.UploadDocumentHandler(documentService))
 	s.fiberApp.Post("/lock-staged-docs/:project_id/", routes.LockStagedDocs(documentService))
 	s.fiberApp.Get("/download-doc/:doc_id", routes.DownloadDocument(documentService))
+	s.fiberApp.Get("/delete-doc/:doc_id", routes.DeleteDocument(documentService))
 }

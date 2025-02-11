@@ -13,7 +13,7 @@
       placeholder="enter project title"
       name="project-name"
     />
-    <button class="button-std" type="submit">Create Project</button>
+    <button class="button-std create-proj-btn" type="submit">Create Project</button>
   </form>
   <h2 id="sub-title">Projects that you're a member of:</h2>
   <div id="membership-list">
@@ -40,7 +40,8 @@
           hx-swap="innerHTML"
           hx-target="#project-list"
         >
-          Delete Org
+        <img src="/static/icons/delete_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" class="std-icon" alt="trash icon" />
+          &nbsp;Delete Org
         </button>
         {{end}}
       </li>

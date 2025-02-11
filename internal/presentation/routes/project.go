@@ -3,7 +3,6 @@ package routes
 import (
 	"filmPackager/internal/application/projectservice"
 	access "filmPackager/internal/auth"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -26,7 +25,6 @@ func GetProject(svc *projectservice.ProjectService) fiber.Handler {
 
 		p, err := svc.GetProjectDetails(c.Context(), projUUID, u.Id)
 		if err != nil {
-			fmt.Println(err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error retrieving project data")
 		}
 

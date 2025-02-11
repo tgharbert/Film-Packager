@@ -10,6 +10,6 @@ import (
 
 func main() {
 	server := interfaces.NewServer(fiber.New())
-	log.Print("Listening on port 3000...")
+	log.Print("Listening on port 8080...")
 	server.Start()
 }
