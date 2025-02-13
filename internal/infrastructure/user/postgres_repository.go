@@ -16,12 +16,10 @@ type PostgresUserRepository struct {
 }
 
 func NewPostgresUserRepository(db *pgxpool.Pool) *PostgresUserRepository {
-	fmt.Println("in postgres repo", &db)
 	return &PostgresUserRepository{db: db}
 }
 
 func (r *PostgresUserRepository) GetUserByEmail(ctx context.Context, email string, password string) (*user.User, error) {
-	fmt.Println("in postgres repo", r.db)
 	query := `SELECT id, name, email, password FROM users WHERE email = $1`
 
 	var existingUser user.User

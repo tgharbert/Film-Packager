@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
+	log.Print("Starting server...")
 	server := interfaces.NewServer(fiber.New())
-	log.Print("Listening on port 8080...")
 	server.Start()
 }
