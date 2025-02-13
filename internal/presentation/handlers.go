@@ -16,6 +16,7 @@ import (
 // user handlers:
 func GetLoginPage(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		fmt.Println("login page")
 		// need to check if cookie is valid, if not render login
 		tokenString := c.Cookies("Authorization")
 		if tokenString == "" {

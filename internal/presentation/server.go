@@ -79,7 +79,17 @@ func NewServer(app *fiber.App) *Server {
 }
 
 func (s *Server) Start() error {
-	return s.fiberApp.Listen("0.0.0.0:8080")
+	addr := "0.0.0.0:8080"
+	log.Println("Binding to address:", addr)
+
+	err := s.fiberApp.Listen(addr)
+	if err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+
+	return nil
+
+	// return s.fiberApp.Listen("0.0.0.0:8080")
 }
 
 func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService) {

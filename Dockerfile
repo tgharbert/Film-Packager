@@ -11,12 +11,9 @@ RUN go mod download
 # Copy the application source code
 COPY . .
 
-# Build the Go application
-RUN go build -o main ./cmd
-
 # Build
-RUN GOOS=linux GOARCH=amd64 go build -o main ./cmd
-
+#RUN GOOS=linux GOARCH=amd64 go build -o main ./cmd
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main ./cmd
 # Use a minimal base image for the final container
 FROM alpine:latest
 
