@@ -13,7 +13,6 @@ import (
 	"filmPackager/internal/presentation/routes"
 	s3Conn "filmPackager/internal/store"
 	"filmPackager/internal/store/db"
-	"fmt"
 	"log"
 	"os"
 
@@ -35,9 +34,7 @@ func NewServer(app *fiber.App) *Server {
 	}
 
 	// set up the database connection
-	// REWRITE THIS TO MAKE AND RETURN CONNECTION POOL, THEN PASS TO REPOSITORIES
 	conn := db.PoolConnect()
-	//conn := db.GetPool()
 
 	// set up the S3 client
 	s3Client := s3Conn.GetS3Client(context.Background())
@@ -46,7 +43,6 @@ func NewServer(app *fiber.App) *Server {
 		log.Fatal("BUCKET env var not set")
 	}
 
-	fmt.Printf("DBPool address: %p\n", conn)
 	// set up views and static files
 	viewEngine := html.New("./views", ".html")
 
