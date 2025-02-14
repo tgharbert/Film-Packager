@@ -33,12 +33,6 @@ func NewServer(app *fiber.App) *Server {
 		log.Println("No .env file found, using system environment variables")
 	}
 
-	// set up the database connection
-	conn := db.PoolConnect()
-	if conn == nil {
-		log.Fatal("Error connecting to the database")
-	}
-
 	// set up the S3 client
 	s3Client := s3Conn.GetS3Client(context.Background())
 	if s3Client == nil {
@@ -47,6 +41,12 @@ func NewServer(app *fiber.App) *Server {
 	bucket := os.Getenv("S3_BUCKET_NAME")
 	if bucket == "" {
 		log.Fatal("BUCKET env var not set")
+	}
+
+	// set up the database connection
+	conn := db.PoolConnect()
+	if conn == nil {
+		log.Fatal("Error connecting to the database")
 	}
 
 	// set up views and static files
@@ -85,7 +85,6 @@ func NewServer(app *fiber.App) *Server {
 }
 
 func (s *Server) Start() error {
-	log.Println("Starting server on 0.0.0.0:8080...")
 	return s.fiberApp.Listen("0.0.0.0:8080")
 }
 
