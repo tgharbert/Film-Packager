@@ -19,6 +19,7 @@ func PoolConnect() *pgxpool.Pool {
 	}
 
 	config, err := pgxpool.ParseConfig(dbURL)
+
 	if err != nil {
 		panic(err)
 	}

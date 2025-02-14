@@ -11,5 +11,5 @@ import (
 func main() {
 	server := interfaces.NewServer(fiber.New())
 	log.Print("Listening on port 8080...")
-	server.Start()
+	log.Fatal(server.Start())
 }

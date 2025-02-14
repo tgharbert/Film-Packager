@@ -13,7 +13,6 @@ import (
 	"filmPackager/internal/presentation/routes"
 	s3Conn "filmPackager/internal/store"
 	"filmPackager/internal/store/db"
-	"fmt"
 	"log"
 	"os"
 
@@ -34,19 +33,22 @@ func NewServer(app *fiber.App) *Server {
 		log.Println("No .env file found, using system environment variables")
 	}
 
-	// set up the database connection
-	// REWRITE THIS TO MAKE AND RETURN CONNECTION POOL, THEN PASS TO REPOSITORIES
-	conn := db.PoolConnect()
-	//conn := db.GetPool()
-
 	// set up the S3 client
 	s3Client := s3Conn.GetS3Client(context.Background())
+	if s3Client == nil {
+		log.Fatal("Error connecting to the s3 client")
+	}
 	bucket := os.Getenv("S3_BUCKET_NAME")
 	if bucket == "" {
 		log.Fatal("BUCKET env var not set")
 	}
 
-	fmt.Printf("DBPool address: %p\n", conn)
+	// set up the database connection
+	conn := db.PoolConnect()
+	if conn == nil {
+		log.Fatal("Error connecting to the database")
+	}
+
 	// set up views and static files
 	viewEngine := html.New("./views", ".html")
 
@@ -83,7 +85,7 @@ func NewServer(app *fiber.App) *Server {
 }
 
 func (s *Server) Start() error {
-	return s.fiberApp.Listen(":8080")
+	return s.fiberApp.Listen("0.0.0.0:8080")
 }
 
 func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService) {

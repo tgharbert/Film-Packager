@@ -12,9 +12,6 @@ RUN go mod download
 # Copy the application source code
 COPY . .
 
-# Build the Go application
-RUN go build -o main ./cmd
-
 # Build
 RUN GOOS=linux GOARCH=amd64 go build -o main ./cmd
 
