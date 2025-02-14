@@ -35,9 +35,15 @@ func NewServer(app *fiber.App) *Server {
 
 	// set up the database connection
 	conn := db.PoolConnect()
+	if conn == nil {
+		log.Fatal("Error connecting to the database")
+	}
 
 	// set up the S3 client
 	s3Client := s3Conn.GetS3Client(context.Background())
+	if s3Client == nil {
+		log.Fatal("Error connecting to the s3 client")
+	}
 	bucket := os.Getenv("S3_BUCKET_NAME")
 	if bucket == "" {
 		log.Fatal("BUCKET env var not set")
@@ -79,7 +85,8 @@ func NewServer(app *fiber.App) *Server {
 }
 
 func (s *Server) Start() error {
-	return s.fiberApp.Listen(":8080")
+	log.Println("Starting server on 0.0.0.0:8080...")
+	return s.fiberApp.Listen("0.0.0.0:8080")
 }
 
 func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService) {
