@@ -111,6 +111,8 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Post("/join-org/:project_id/:role", routes.JoinOrg(projectService))
 	s.fiberApp.Get("/get-project/:project_id/", routes.GetProject(projectService))
 	s.fiberApp.Get("/delete-project/:project_id/", routes.DeleteProject(projectService))
+	s.fiberApp.Get("/click-delete-project/:project_id/", routes.ClickDeleteProject(projectService))
+	s.fiberApp.Get("/cancel-delete-project/:project_id/", routes.CancelDeleteProject(projectService))
 
 	// document routes
 	s.fiberApp.Get("/get-doc-details/:doc_id", routes.GetDocDetails(documentService))
