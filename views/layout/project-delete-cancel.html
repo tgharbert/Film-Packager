@@ -12,13 +12,14 @@
         &nbsp;Yes, Delete
         </button>
                 <button 
-                    class="button-std"
+                    class="button-std cancel-btn"
                     hx-get="/cancel-delete-project/{{$.ID}}/"
                     type="submit"
                     hx-swap="innerHTML"
                     hx-target=".project-delete-{{$.ID}}"
                     >
-                    No, Cancel
+                    <img src="/static/icons/close_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" class="std-icon" alt="close icon" />
+                   &nbsp;No, Cancel
                 </button>
 </div>
 {{end}}

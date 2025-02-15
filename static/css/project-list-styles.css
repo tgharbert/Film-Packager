@@ -55,3 +55,14 @@
     background-color: #7dc986;
     cursor: pointer;
 }
+
+.cancel-btn {
+    background-color: #9c2c1f;
+    margin-right: .5rem;
+    margin-left: .5rem;
+}
+
+.cancel-btn:hover {
+    background-color: #d95041;
+    cursor: pointer;
+}
