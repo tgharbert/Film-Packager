@@ -32,10 +32,6 @@ func NewProjectService(projRepo project.ProjectRepository, docRepo document.Docu
 	}
 }
 
-// fix the document objects in the response - make it like in the doc service
-// what I should do is get all the project documents in an array.
-// loop through that array and make a map of staged and locked documents
-// then return that map
 type GetProjectDetailsResponse struct {
 	Project      *project.Project
 	Staged       *map[string]DocOverview

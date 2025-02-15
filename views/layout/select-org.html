@@ -19,7 +19,8 @@
   <div id="membership-list">
     {{block "project-list" .}}
     <ul id="project-list-items">
-      {{ range .Accepted }} {{block "project-list-item" .}}
+      {{ range .Accepted }} 
+      {{block "project-list-item" .}}
       <li id="{{.ID}}" class="project-list-item">
         <p
           class="project-title"
