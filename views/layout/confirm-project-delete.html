@@ -1,0 +1,19 @@
+{{ define "clickProjectDeleteHTML" }}
+
+<button
+            class="button-std"
+            hx-get="/click-delete-project/{{$.ID}}/"
+            type="submit"
+            hx-swap="innerHTML"
+            hx-target=".project-delete-{{$.ID}}"
+          >
+            <img
+              src="/static/icons/delete_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg"
+              class="std-icon"
+              alt="trash icon"
+            />
+            &nbsp;Delete Project
+          </button>
+
+
+{{end}}

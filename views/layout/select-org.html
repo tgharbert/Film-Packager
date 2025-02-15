@@ -19,7 +19,8 @@
   <div id="membership-list">
     {{block "project-list" .}}
     <ul id="project-list-items">
-      {{ range .Accepted }} {{block "project-list-item" .}}
+      {{ range .Accepted }} 
+      {{block "project-list-item" .}}
       <li id="{{.ID}}" class="project-list-item">
         <p
           class="project-title"
@@ -33,16 +34,10 @@
         <p id="project-role">{{.}}</p>
         {{end}} {{$isOwner := false}} {{range .Roles}} {{ if eq . "owner"}}
         {{$isOwner = true}} {{end}} {{end}} {{if $isOwner}}
-        <button
-          class="button-std"
-          hx-get="/delete-project/{{$.ID}}/"
-          type="submit"
-          hx-swap="innerHTML"
-          hx-target="#project-list"
-        >
-        <img src="/static/icons/delete_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" class="std-icon" alt="trash icon" />
-          &nbsp;Delete Org
-        </button>
+        <div class="project-delete-{{.ID}}">
+        {{template "clickProjectDeleteHTML" .}}
+        </div> 
+
         {{end}}
       </li>
       {{end}}{{end}}

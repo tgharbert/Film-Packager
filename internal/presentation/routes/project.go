@@ -3,6 +3,7 @@ package routes
 import (
 	"filmPackager/internal/application/projectservice"
 	access "filmPackager/internal/auth"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -32,6 +33,32 @@ func GetProject(svc *projectservice.ProjectService) fiber.Handler {
 	}
 }
 
+func ClickDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		projectId := c.Params("project_id")
+
+		projUUID, err := uuid.Parse(projectId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		return c.Render("projectDeleteCancelHTML", fiber.Map{"ID": projUUID})
+	}
+}
+
+func CancelDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		projectId := c.Params("project_id")
+
+		projUUID, err := uuid.Parse(projectId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		return c.Render("clickProjectDeleteHTML", fiber.Map{"ID": projUUID})
+	}
+}
+
 func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userInfo, err := access.GetUserDataFromCookie(c)
@@ -42,6 +69,7 @@ func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 		projectId := c.Params("project_id")
 		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
+			fmt.Println(err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 

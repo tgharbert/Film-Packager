@@ -13,18 +13,22 @@ func CheckPasswordHash(hashedPassword string, password string) error {
 }
 
 func PoolConnect() *pgxpool.Pool {
-	dbURL := os.Getenv("RDS_URL")
+	var dbURL string
+	if os.Getenv("ENV") == "DEV" {
+		dbURL = os.Getenv("DEV_DATABASE_URL")
+	} else {
+		dbURL = os.Getenv("RDS_URL")
+	}
+
 	if dbURL == "" {
 		panic("database url not found in environment")
 	}
 
 	config, err := pgxpool.ParseConfig(dbURL)
-
 	if err != nil {
 		panic(err)
 	}
 
-	// later need to work on pool settings
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
 		panic(err)
