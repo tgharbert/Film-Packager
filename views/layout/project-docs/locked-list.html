@@ -2,8 +2,8 @@
   <h3 id="table-title">Locked Documents:</h3>
   <table id="table">
     <tr>
-      <td id="table-header">Script</td>
         {{ if .Locked.Script }}
+      <td id="table-header">Script</td>
       <td
         class="doc-list-item"
         hx-get="/get-doc-details/{{.Locked.Script.ID}}"
@@ -16,8 +16,8 @@
           {{ end }}
     </tr>
     <tr>
-      <td id="table-header">Logline</td>
         {{ if .Locked.Logline }}
+      <td id="table-header">Logline</td>
       <td
         class="doc-list-item"
         hx-get="/get-doc-details/{{.Locked.Logline.ID}}"
@@ -30,8 +30,8 @@
           {{ end }}
     </tr>
     <tr>
-      <td id="table-header">Synopsis</td>
       {{ if .Locked.Synopsis }}
+      <td id="table-header">Synopsis</td>
       <td
         class="doc-list-item"
         hx-get="/get-doc-details/{{.Locked.Synopsis.ID}}"
@@ -44,8 +44,8 @@
           {{ end }}
     </tr>
     <tr>
-      <td id="table-header">Pitch Deck</td>
     {{ if .Locked.PitchDeck }}
+      <td id="table-header">Pitch Deck</td>
       <td
         class="doc-list-item"
         hx-get="/get-doc-details/{{.Locked.PitchDeck.ID}}"
@@ -58,8 +58,8 @@
           {{ end }}
     </tr>
     <tr>
-      <td id="table-header">Schedule</td>
       {{ if .Locked.Schedule }}
+      <td id="table-header">Schedule</td>
       <td
         class="doc-list-item"
         hx-get="/get-doc-details/{{.Locked.Schedule.ID}}"
@@ -72,8 +72,8 @@
           {{ end }}
     </tr>
     <tr>
-      <td id="table-header">Budget</td>
       {{ if .Locked.Budget }}
+      <td id="table-header">Budget</td>
       <td
         class="doc-list-item"
         hx-get="/get-doc-details/{{.Locked.Budget.ID}}"
@@ -86,8 +86,8 @@
           {{ end }}
     </tr>
     <tr>
-      <td id="table-header">Shotlist</td>
       {{ if .Locked.Shotlist }}
+      <td id="table-header">Shotlist</td>
       <td
         class="doc-list-item"
         hx-get="/get-doc-details/{{.Locked.Shotlist.ID}}"
@@ -100,8 +100,8 @@
           {{ end }}
     </tr>
     <tr>
-      <td id="table-header">Lookbook</td>
       {{ if .Locked.Lookbook }}
+      <td id="table-header">Lookbook</td>
       <td
         class="doc-list-item"
         hx-get="/get-doc-details/{{.Locked.Lookbook.ID}}"
