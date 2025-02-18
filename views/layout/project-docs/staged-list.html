@@ -8,8 +8,6 @@
     <th id="table-header">Pitch Deck</th>
     <th id="table-header">Schedule</th>
     <th id="table-header">Budget</th>
-    <th id="table-header">Shotlist</th>
-    <th id="table-header">Lookbook</th>
   </tr>
   <tr>
     {{ if .Staged.Script }}
@@ -81,28 +79,6 @@
       hx-swap="innerHTML"
     >
       {{.Staged.Budget.Date}}
-    </td>
-    {{else}}
-    <td></td>
-    {{ end }} {{ if .Staged.Shotlist }}
-    <td
-        class="staged-list-item"
-      hx-get="/get-doc-details/{{.Staged.Shotlist.ID}}"
-      hx-target="#doc-list"
-      hx-swap="innerHTML"
-    >
-      {{.Staged.Shotlist.Date}}
-    </td>
-    {{else}}
-    <td></td>
-    {{ end }} {{ if .Staged.Lookbook }}
-    <td
-        class="staged-list-item"
-      hx-get="/get-doc-details/{{.Staged.Lookbook.ID}}"
-      hx-target="#doc-list"
-      hx-swap="innerHTML"
-    >
-      {{.Staged.Lookbook.Date}}
     </td>
     {{else}}
     <td></td>

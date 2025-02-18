@@ -85,33 +85,5 @@
           {{else}}
           {{ end }}
     </tr>
-    <tr>
-      <td id="table-header">Shotlist</td>
-      {{ if .Locked.Shotlist }}
-      <td
-        class="doc-list-item"
-        hx-get="/get-doc-details/{{.Locked.Shotlist.ID}}"
-        hx-target="#doc-list"
-        hx-swap="innerHTML"
-      >
-        {{.Locked.Shotlist.Date}}
-      </td>
-          {{else}}
-          {{ end }}
-    </tr>
-    <tr>
-      <td id="table-header">Lookbook</td>
-      {{ if .Locked.Lookbook }}
-      <td
-        class="doc-list-item"
-        hx-get="/get-doc-details/{{.Locked.Lookbook.ID}}"
-        hx-target="#doc-list"
-        hx-swap="innerHTML"
-      >
-        {{.Locked.Lookbook.Date}}
-      </td>
-          {{else}}
-          {{ end }}
-    </tr>
   </table>
 {{end}}
