@@ -144,6 +144,11 @@ h2 {
   font-weight: bold;
 }
 
+#user-name:hover {
+  cursor: pointer;
+    color: cadetblue;
+}
+
 #login {
     border: 2px solid rgb(240, 233, 221);
   border-radius: 1rem;

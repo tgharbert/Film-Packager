@@ -157,6 +157,25 @@ func LogoutUser(svc *userservice.UserService) fiber.Handler {
 	}
 }
 
+// write a func to get the reset pw page
+func GetResetPasswordPage(svc *userservice.UserService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// get the user from the cookie
+		tokenString := c.Cookies("Authorization")
+		if tokenString == "" {
+			return c.Redirect("/login/")
+		}
+
+		tokenString = tokenString[len("Bearer "):]
+		userInfo, err := access.GetUserNameFromToken(tokenString)
+		if err != nil {
+			return c.Redirect("/login/")
+		}
+
+		return c.Render("reset-passwordHTML", userInfo)
+	}
+}
+
 func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		tokenString := c.Cookies("Authorization")
