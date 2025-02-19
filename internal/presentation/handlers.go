@@ -121,6 +121,10 @@ func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 				return c.Render("login-formHTML", fiber.Map{
 					"Error": "Error: user not found!",
 				})
+			} else if errors.Is(err, user.ErrInvalidPassword) {
+				return c.Render("login-formHTML", fiber.Map{
+					"Error": "Error: invalid password!",
+				})
 			}
 			return c.Status(fiber.StatusInternalServerError).SendString("error logging in")
 		}
@@ -196,6 +200,14 @@ func VerifyOldPassword(svc *userservice.UserService) fiber.Handler {
 		if pw1 != pw2 {
 			return c.Render("reset-passwordHTML", fiber.Map{
 				"Error": "Error: passwords do not match!",
+			})
+		}
+
+		// verify that the pw is correct
+		err = svc.VerifyOldPassword(c.Context(), userInfo.Id, pw1)
+		if err != nil {
+			return c.Render("reset-passwordHTML", fiber.Map{
+				"Error": "Error: Incorrect password!",
 			})
 		}
 

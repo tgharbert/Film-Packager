@@ -9,6 +9,7 @@ import (
 	"filmPackager/internal/domain/user"
 	"fmt"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -35,6 +36,11 @@ func (s *UserService) UserLogin(ctx context.Context, email string, password stri
 		return nil, user.ErrUserNotFound
 	} else if errors.Is(err, user.ErrUserAlreadyExists) {
 		return nil, user.ErrUserAlreadyExists
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(password))
+	if err != nil {
+		return nil, user.ErrInvalidPassword
 	}
 
 	return existingUser, nil
@@ -64,4 +70,18 @@ func (s *UserService) CreateUser(ctx context.Context, username, email, password 
 	}
 
 	return newUser, nil
+}
+
+func (s *UserService) VerifyOldPassword(ctx context.Context, userID uuid.UUID, password string) error {
+	existingUser, err := s.userRepo.GetUserById(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("error getting user: %v", err)
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(password))
+	if err != nil {
+		return user.ErrInvalidPassword
+	}
+
+	return nil
 }
