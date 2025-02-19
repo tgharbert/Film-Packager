@@ -85,3 +85,26 @@ func (s *UserService) VerifyOldPassword(ctx context.Context, userID uuid.UUID, p
 
 	return nil
 }
+
+func (s *UserService) SetNewPassword(ctx context.Context, userID uuid.UUID, password string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("error hashing password: %v", err)
+	}
+
+	hashedStr := string(hash)
+
+	u, err := s.userRepo.GetUserById(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("error getting user: %v", err)
+	}
+
+	u.Password = hashedStr
+
+	err = s.userRepo.UpdateUser(ctx, u)
+	if err != nil {
+		return fmt.Errorf("error setting new password: %v", err)
+	}
+
+	return nil
+}

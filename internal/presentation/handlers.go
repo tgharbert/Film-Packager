@@ -164,7 +164,6 @@ func LogoutUser(svc *userservice.UserService) fiber.Handler {
 	}
 }
 
-// write a func to get the reset pw page
 func GetResetPasswordPage(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// get the user from the cookie
@@ -212,6 +211,38 @@ func VerifyOldPassword(svc *userservice.UserService) fiber.Handler {
 		}
 
 		return c.Render("new-pw-formHTML", userInfo)
+	}
+}
+
+func SetNewPassword(svc *userservice.UserService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		fmt.Println("setting new password")
+		tokenString := c.Cookies("Authorization")
+		if tokenString == "" {
+			return c.Redirect("/login/")
+		}
+
+		tokenString = tokenString[len("Bearer "):]
+
+		u, err := access.GetUserNameFromToken(tokenString)
+
+		pw1 := c.FormValue("password1")
+		pw2 := c.FormValue("password2")
+
+		if pw1 != pw2 {
+			return c.Render("new-pw-formHTML", fiber.Map{
+				"Error": "Error: passwords do not match!",
+			})
+		}
+
+		err = svc.SetNewPassword(c.Context(), u.Id, pw1)
+		if err != nil {
+			return c.Render("new-pw-formHTML", fiber.Map{
+				"Error": "Error: setting new password!",
+			})
+		}
+
+		return c.Redirect("/")
 	}
 }
 

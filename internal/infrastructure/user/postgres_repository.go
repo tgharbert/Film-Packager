@@ -126,3 +126,14 @@ func (r *PostgresUserRepository) GetAllNewUsersByTerm(ctx context.Context, term 
 	}
 	return users, nil
 }
+
+func (r *PostgresUserRepository) UpdateUser(ctx context.Context, user *user.User) error {
+	query := `UPDATE users SET name = $1, email = $2, password = $3 WHERE id = $4`
+
+	_, err := r.db.Exec(ctx, query, user.Name, user.Email, user.Password, user.Id)
+	if err != nil {
+		return fmt.Errorf("error updating user: %v", err)
+	}
+
+	return nil
+}

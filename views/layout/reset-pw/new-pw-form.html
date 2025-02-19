@@ -7,11 +7,10 @@
 </div>
 <div id="reset-pw-form">
     <h3>Reset your password</h3>
-    <form id="reset-pw-form" hx-post="/reset-password/" hx-swap="innerHTML" hx-target="#reset-pw-form">
-        <input type="email" name="email" placeholder="Email" />
+    <form id="reset-pw-form" hx-get="/set-new-password/" hx-swap="innerHTML" hx-target="#reset-pw-form">
         <input type="password" name="new-password1" placeholder="enter new password" />
         <input type="password" name="new-password2" placeholder="re-enter new password" />
-        <button class="button-std" type="submit">Reset</button>
+        <button class="button-std" type="submit">Reset Password</button>
     </form>
 </div>
 {{end}}
