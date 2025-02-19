@@ -40,6 +40,8 @@ type GetProjectDetailsResponse struct {
 	Invited      []membership.Membership
 	LockStatus   bool
 	UploadStatus bool
+	HasLocked    bool
+	HasStaged    bool
 }
 
 type DocOverview struct {
@@ -253,6 +255,10 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 		return nil, fmt.Errorf("error getting project documents from db: %v", err)
 	}
 
+	// set bools for staged and locked documents
+	rv.HasLocked = false
+	rv.HasStaged = false
+
 	// make the maps for staged and locked documents
 	stagedMap := make(map[string]DocOverview)
 	lockedMap := make(map[string]DocOverview)
@@ -265,9 +271,13 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 			Date: d.Date.Format("01-02-2006"),
 		}
 		if d.Status == "staged" {
+			// set the bool for staged if there is one
+			rv.HasStaged = true
 			// assign the document to the map based on the fileType
 			stagedMap[d.FileType] = *dOverview
 		} else {
+			// set the bool for locked if there is one
+			rv.HasLocked = true
 			// assign the document to the map based on the fileType
 			lockedMap[d.FileType] = *dOverview
 		}

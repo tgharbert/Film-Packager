@@ -1,5 +1,6 @@
 {{ define "locked-listHTML" }}
   <h3 id="table-title">Locked Documents:</h3>
+    {{ if .HasLocked }}
   <table id="table">
     <tr>
         {{ if .Locked.Script }}
@@ -114,4 +115,9 @@
           {{ end }}
     </tr>
   </table>
+  {{else }}
+    <div class="doc-message">
+  <i id="no-docs">No documents locked.</i>
+    </div>
+  {{ end }}
 {{end}}

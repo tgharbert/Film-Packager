@@ -1,5 +1,10 @@
 {{define "staged-listHTML"}}
 <h3 id="table-title">Staged Documents:</h3>
+{{ if eq .HasStaged false}}
+<div class="doc-message">
+    <i id="no-staged">No documents are currently staged.</i>
+</div>
+{{else}}
 <table id="table">
   <tr>
     {{if .Staged.Script}}
@@ -120,4 +125,5 @@
     {{ end }}
   </tr>
 </table>
+{{end}}
 {{end}}
