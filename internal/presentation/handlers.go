@@ -113,6 +113,7 @@ func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 				"Error": "Error: both fields must be filled!",
 			})
 		}
+
 		currentUser, err := svc.UserLogin(c.Context(), email, password)
 		if err != nil {
 			// send html with error message
@@ -121,13 +122,14 @@ func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 					"Error": "Error: user not found!",
 				})
 			}
-			fmt.Println("login error: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error logging in")
 		}
+
 		tokenString, err := access.GenerateJWT(currentUser.Id, currentUser.Name, currentUser.Email)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 		}
+
 		c.Cookie(&fiber.Cookie{
 			Name:     "Authorization",
 			Value:    "Bearer " + tokenString,
@@ -135,6 +137,7 @@ func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 			Path:     "/",
 			Expires:  time.Now().Add(48 * time.Hour),
 		})
+
 		return c.Redirect("/")
 	}
 }
@@ -167,12 +170,36 @@ func GetResetPasswordPage(svc *userservice.UserService) fiber.Handler {
 		}
 
 		tokenString = tokenString[len("Bearer "):]
-		userInfo, err := access.GetUserNameFromToken(tokenString)
-		if err != nil {
+
+		return c.Render("reset-passwordHTML", nil)
+	}
+}
+
+func VerifyOldPassword(svc *userservice.UserService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tokenString := c.Cookies("Authorization")
+		if tokenString == "" {
 			return c.Redirect("/login/")
 		}
+		tokenString = tokenString[len("Bearer "):]
 
-		return c.Render("reset-passwordHTML", userInfo)
+		userInfo, err := access.GetUserNameFromToken(tokenString)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+		}
+
+		// send the passwords to the user service
+		pw1 := c.FormValue("password1")
+		pw2 := c.FormValue("password2")
+
+		// verify that pw1 and pw2 are the same
+		if pw1 != pw2 {
+			return c.Render("reset-passwordHTML", fiber.Map{
+				"Error": "Error: passwords do not match!",
+			})
+		}
+
+		return c.Render("new-pw-formHTML", userInfo)
 	}
 }
 

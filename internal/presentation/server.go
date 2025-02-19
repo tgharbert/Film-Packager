@@ -99,6 +99,7 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Get("/get-create-account/", GetCreateAccount(userService))
 	s.fiberApp.Get("/logout/", LogoutUser(userService))
 	s.fiberApp.Get("/reset-password/", GetResetPasswordPage(userService))
+	s.fiberApp.Get("/verify-old-password/", VerifyOldPassword(userService))
 
 	// member routes
 	s.fiberApp.Post("/search-users/:id", routes.SearchUsers(membershipService))
