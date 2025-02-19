@@ -42,8 +42,6 @@
     >
       {{.Staged.Script.Date}}
     </td>
-    {{else}}
-    <td><td>
     {{ end }} 
    
     {{ if .Staged.Logline }}
@@ -55,8 +53,6 @@
     >
       {{.Staged.Logline.Date}}
     </td>
-    {{else}}
-    <td></td>
     {{ end }} 
    
     {{ if .Staged.Synopsis }}
@@ -68,8 +64,6 @@
     >
       {{.Staged.Synopsis.Date}}
     </td>
-    {{else}}
-    <td></td>
     {{ end }} 
    
     {{ if .Staged.PitchDeck }}
@@ -81,9 +75,8 @@
     >
       {{.Staged.PitchDeck.Date}}
     </td>
-    {{else}}
-    <td></td>
-    {{ end }} {{ if .Staged.Schedule }}
+    {{ end }}
+    {{ if .Staged.Schedule }}
     <td
         class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Schedule.ID}}"
