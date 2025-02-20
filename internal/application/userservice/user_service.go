@@ -3,7 +3,6 @@ package userservice
 import (
 	"context"
 	"errors"
-	access "filmPackager/internal/auth"
 
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
@@ -22,24 +21,22 @@ func NewUserService(userRepo user.UserRepository, projRepo project.ProjectReposi
 	return &UserService{userRepo: userRepo, projRepo: projRepo}
 }
 
-func (s *UserService) UserLogin(ctx context.Context, email string, password string) (*user.User, error) {
-	hashedStr, err := access.HashPassword(password)
-	if err != nil {
-		return nil, fmt.Errorf("error hashing password: %v", err)
-	}
+func (s *UserService) UserLogin(ctx context.Context, email, password string) (*user.User, error) {
+	existingUser, err := s.userRepo.GetUserByEmail(ctx, email)
 
-	existingUser, err := s.userRepo.GetUserByEmail(ctx, email, hashedStr)
+	// refactor this ordering
 	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
 		return nil, fmt.Errorf("error checking for existing user: %v", err)
 	}
 	if errors.Is(err, user.ErrUserNotFound) {
 		return nil, user.ErrUserNotFound
-	} else if errors.Is(err, user.ErrUserAlreadyExists) {
-		return nil, user.ErrUserAlreadyExists
 	}
+
+	fmt.Printf("existing user: '%s' '%s'", existingUser.Password, password)
 
 	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(password))
 	if err != nil {
+		fmt.Println("error comparing password: ", err)
 		return nil, user.ErrInvalidPassword
 	}
 
@@ -55,7 +52,7 @@ func (s *UserService) CreateUser(ctx context.Context, username, email, password 
 
 	hashedStr := string(hash)
 
-	existingUser, err := s.userRepo.GetUserByEmail(ctx, email, hashedStr)
+	existingUser, err := s.userRepo.GetUserByEmail(ctx, email)
 	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
 		return nil, user.ErrUserAlreadyExists
 	}
@@ -92,16 +89,16 @@ func (s *UserService) SetNewPassword(ctx context.Context, userID uuid.UUID, pass
 		return fmt.Errorf("error hashing password: %v", err)
 	}
 
-	hashedStr := string(hash)
-
 	u, err := s.userRepo.GetUserById(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("error getting user: %v", err)
 	}
 
+	hashedStr := string(hash)
+
 	u.Password = hashedStr
 
-	err = s.userRepo.UpdateUser(ctx, u)
+	err = s.userRepo.UpdateUserByID(ctx, u)
 	if err != nil {
 		return fmt.Errorf("error setting new password: %v", err)
 	}

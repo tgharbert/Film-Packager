@@ -192,8 +192,14 @@ func VerifyOldPassword(svc *userservice.UserService) fiber.Handler {
 		}
 
 		// send the passwords to the user service
-		pw1 := c.FormValue("password1")
-		pw2 := c.FormValue("password2")
+		pw1 := strings.TrimSpace(c.FormValue("password1"))
+		pw2 := strings.TrimSpace(c.FormValue("password2"))
+
+		if pw1 == "" || pw2 == "" {
+			return c.Render("login-formHTML", fiber.Map{
+				"Error": "Error: both fields must be filled!",
+			})
+		}
 
 		// verify that pw1 and pw2 are the same
 		if pw1 != pw2 {
@@ -216,7 +222,6 @@ func VerifyOldPassword(svc *userservice.UserService) fiber.Handler {
 
 func SetNewPassword(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		fmt.Println("setting new password")
 		tokenString := c.Cookies("Authorization")
 		if tokenString == "" {
 			return c.Redirect("/login/")
@@ -226,8 +231,9 @@ func SetNewPassword(svc *userservice.UserService) fiber.Handler {
 
 		u, err := access.GetUserNameFromToken(tokenString)
 
-		pw1 := c.FormValue("password1")
-		pw2 := c.FormValue("password2")
+		// send the passwords to the user service
+		pw1 := strings.TrimSpace(c.FormValue("new-password1"))
+		pw2 := strings.TrimSpace(c.FormValue("new-password2"))
 
 		if pw1 != pw2 {
 			return c.Render("new-pw-formHTML", fiber.Map{
@@ -241,7 +247,6 @@ func SetNewPassword(svc *userservice.UserService) fiber.Handler {
 				"Error": "Error: setting new password!",
 			})
 		}
-
 		return c.Redirect("/")
 	}
 }

@@ -13,8 +13,6 @@ type User struct {
 	Email     string
 	Password  string
 	CreatedAt time.Time
-	// Memberships []project.ProjectOverview
-	// Invited     []project.ProjectOverview
 }
 
 func CreateNewUser(name, email, password string) *User {
