@@ -163,7 +163,7 @@ h2 {
   padding-left: 2rem;
 }
 
-#login-form {
+.login-form {
     display:flex;
     flex-direction: column;
     justify-content: center;
@@ -376,4 +376,8 @@ input::file-selector-button:hover {
     align-items: center;
     color: #d95041;
     font-weight: 300;
+}
+
+.pw-reset-input {
+    margin-bottom: 1rem;
 }

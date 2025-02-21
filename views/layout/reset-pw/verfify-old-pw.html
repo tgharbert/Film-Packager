@@ -5,9 +5,9 @@
     </button>
 <div id="login">
     <h3>First, verify your old password</h3>
-    <form id="login-form" hx-get="/verify-old-password/" hx-swap="innerHTML" hx-target="body">
-        <input type="password" name="password1" placeholder="enter password" />
-        <input type="password" name="password2" placeholder="re-enter password" />
+    <form class="login-form" hx-get="/verify-old-password/" hx-swap="innerHTML" hx-target="body">
+        <input class="pw-reset-input" type="password" name="password1" placeholder="enter password" />
+        <input class="pw-reset-input" type="password" name="password2" placeholder="re-enter password" />
         <button class="button-std" type="submit">Verify</button>
     </form>
     <div class="login-error">{{.Error}}</div>

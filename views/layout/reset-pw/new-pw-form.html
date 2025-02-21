@@ -5,11 +5,11 @@
         &nbsp;Projects
     </button>
 </div>
-<div id="reset-pw-form">
-    <h3>Reset your password</h3>
-    <form id="reset-pw-form" hx-get="/set-new-password/" hx-swap="innerHTML" hx-target="#reset-pw-form">
-        <input type="password" name="new-password1" placeholder="enter new password" />
-        <input type="password" name="new-password2" placeholder="re-enter new password" />
+<div id="login">
+    <h3>Now, enter your new password</h3>
+    <form class="login-form" hx-get="/set-new-password/" hx-swap="innerHTML" hx-target="#reset-pw-form">
+        <input class="pw-reset-input" type="password" name="new-password1" placeholder="enter new password" />
+        <input class="pw-reset-input" type="password" name="new-password2" placeholder="re-enter new password" />
         <button class="button-std" type="submit">Reset Password</button>
     </form>
 </div>
