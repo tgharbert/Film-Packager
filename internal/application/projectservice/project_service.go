@@ -115,6 +115,41 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 	return rv, nil
 }
 
+func (s *ProjectService) GetProject(ctx context.Context, pID uuid.UUID) (*project.Project, error) {
+	p, err := s.projRepo.GetProjectByID(ctx, pID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting project from db: %v", err)
+	}
+
+	return p, nil
+}
+
+func (s *ProjectService) GetProjectOverview(ctx context.Context, pID uuid.UUID, uID uuid.UUID) (*ProjectOverview, error) {
+	rv := &ProjectOverview{}
+	// get the project
+	p, err := s.projRepo.GetProjectByID(ctx, pID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting project from db: %v", err)
+	}
+
+	// get the user membership
+	m, err := s.memberRepo.GetMembership(ctx, pID, uID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting user membership: %v", err)
+	}
+
+	// sort the roles
+	m.Roles = membership.SortRoles(m.Roles)
+
+	// assign the project overview
+	rv.ID = p.ID
+	rv.Name = p.Name
+	rv.Status = m.InviteStatus
+	rv.Roles = m.Roles
+
+	return rv, nil
+}
+
 func (s *ProjectService) CreateNewProject(ctx context.Context, projectName string, userId uuid.UUID) (*project.ProjectOverview, error) {
 	rv := &project.ProjectOverview{}
 
@@ -375,10 +410,10 @@ func (s *ProjectService) JoinProject(ctx context.Context, projectId uuid.UUID, u
 	return nil
 }
 
-func (s *ProjectService) UpdateProjectName(ctx context.Context, projectId uuid.UUID, newName string) error {
+func (s *ProjectService) UpdateProjectName(ctx context.Context, projectId uuid.UUID, newName string) (*project.Project, error) {
 	p, err := s.projRepo.GetProjectByID(ctx, projectId)
 	if err != nil {
-		return fmt.Errorf("error getting project: %v", err)
+		return nil, fmt.Errorf("error getting project: %v", err)
 	}
 
 	p.Name = newName
@@ -386,10 +421,15 @@ func (s *ProjectService) UpdateProjectName(ctx context.Context, projectId uuid.U
 
 	err = s.projRepo.UpdateProject(ctx, p)
 	if err != nil {
-		return fmt.Errorf("error editing project name: %v", err)
+		return nil, fmt.Errorf("error editing project name: %v", err)
 	}
 
-	return nil
+	updatedP, err := s.projRepo.GetProjectByID(ctx, projectId)
+	if err != nil {
+		return nil, fmt.Errorf("error getting project: %v", err)
+	}
+
+	return updatedP, nil
 }
 
 // utility functions

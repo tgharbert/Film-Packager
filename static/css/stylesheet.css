@@ -391,3 +391,30 @@ input::file-selector-button:hover {
     cursor: pointer;
     background-color: #16132e;
 }
+
+#edit-project-form-container {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+}
+
+#back-to-project {
+    margin-top: 1rem;
+    margin-left: 2rem;
+    justify-content: left;
+    display: flex;
+}
+
+#edit-project-form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.edit-project-input {
+    margin-bottom: 1rem;
+}

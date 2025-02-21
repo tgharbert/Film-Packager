@@ -42,12 +42,22 @@ func ClickDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		return c.Render("projectDeleteCancelHTML", fiber.Map{"ID": projUUID})
+		p, err := svc.GetProject(c.Context(), projUUID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting project data")
+		}
+
+		return c.Render("projectDeleteCancelHTML", p)
 	}
 }
 
 func CancelDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		userInfo, err := access.GetUserDataFromCookie(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
+		}
+
 		projectId := c.Params("project_id")
 
 		projUUID, err := uuid.Parse(projectId)
@@ -55,7 +65,10 @@ func CancelDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		return c.Render("clickProjectDeleteHTML", fiber.Map{"ID": projUUID})
+		// get all the project info for this one project
+		rv, err := svc.GetProjectOverview(c.Context(), projUUID, userInfo.Id)
+
+		return c.Render("project-list-item", fiber.Map{"ID": projUUID, "Roles": rv.Roles, "Name": rv.Name})
 	}
 }
 
@@ -145,7 +158,12 @@ func GetUpdateNameForm(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		return c.Render("edit-projectHTML", fiber.Map{"ID": projUUID})
+		p, err := svc.GetProject(c.Context(), projUUID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting project data")
+		}
+
+		return c.Render("edit-projectHTML", p)
 	}
 }
 
@@ -159,11 +177,11 @@ func UpdateProjectName(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		err = svc.UpdateProjectName(c.Context(), projUUID, projectName)
+		p, err := svc.UpdateProjectName(c.Context(), projUUID, projectName)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error updating project name")
 		}
 
-		return c.SendString("success")
+		return c.Render("edit-projectHTML", p)
 	}
 }
