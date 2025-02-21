@@ -375,6 +375,23 @@ func (s *ProjectService) JoinProject(ctx context.Context, projectId uuid.UUID, u
 	return nil
 }
 
+func (s *ProjectService) EditProjectName(ctx context.Context, projectId uuid.UUID, newName string) error {
+	p, err := s.projRepo.GetProjectByID(ctx, projectId)
+	if err != nil {
+		return fmt.Errorf("error getting project: %v", err)
+	}
+
+	p.Name = newName
+	p.LastUpdateAt = time.Now()
+
+	err = s.projRepo.UpdateProject(ctx, p)
+	if err != nil {
+		return fmt.Errorf("error editing project name: %v", err)
+	}
+
+	return nil
+}
+
 // utility functions
 func memberHasLockingStatus(roles []string) bool {
 	if slices.Contains(roles, "owner") || slices.Contains(roles, "director") || slices.Contains(roles, "producer") {

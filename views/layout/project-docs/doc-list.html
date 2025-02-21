@@ -1,6 +1,10 @@
 {{define "docListHTML"}}
 <div id="doc-list">
-  <h2 id="sub-header"><i>{{.Project.Name}}</i> Production Documents</h2>
+    <h2 id="sub-header"><i>{{.Project.Name}}
+            {{ if .LockStatus }}
+                <img src="/static/icons/edit_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" hx-get="/edit-project-name/" class="std-icon edit-proj-name-icon" alt="edit icon"/>
+            {{end}} 
+</i> Production Documents</h2>
     {{ if .UploadStatus }}
     <div id="file-upload-cont">
         {{template "fileUploadHTML" .}}

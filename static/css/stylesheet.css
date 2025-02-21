@@ -381,3 +381,13 @@ input::file-selector-button:hover {
 .pw-reset-input {
     margin-bottom: 1rem;
 }
+
+.edit-proj-name-icon {
+    size: .4rem;
+    margin-bottom: .5rem;
+}
+
+.edit-proj-name-icon:hover {
+    cursor: pointer;
+    background-color: #16132e;
+}
