@@ -7,7 +7,7 @@
 </div>
 <div id="login">
     <h3>Now, enter your new password</h3>
-    <form class="login-form" hx-get="/set-new-password/" hx-swap="innerHTML" hx-target=".login-form">
+    <form class="login-form" hx-post="/set-new-password/" hx-swap="innerHTML" hx-target=".login-form">
         <input class="pw-reset-input" type="password" name="new-password1" placeholder="enter new password" />
         <input class="pw-reset-input" type="password" name="new-password2" placeholder="re-enter new password" />
         <button class="button-std" type="submit">Reset Password</button>

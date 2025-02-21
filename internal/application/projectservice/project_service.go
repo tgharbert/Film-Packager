@@ -371,11 +371,11 @@ func (s *ProjectService) JoinProject(ctx context.Context, projectId uuid.UUID, u
 	if err != nil {
 		return fmt.Errorf("error joining project: %v", err)
 	}
-	//	projects, err := s.projRepo.GetProjectsByUserID(ctx, userId)
+
 	return nil
 }
 
-func (s *ProjectService) EditProjectName(ctx context.Context, projectId uuid.UUID, newName string) error {
+func (s *ProjectService) UpdateProjectName(ctx context.Context, projectId uuid.UUID, newName string) error {
 	p, err := s.projRepo.GetProjectByID(ctx, projectId)
 	if err != nil {
 		return fmt.Errorf("error getting project: %v", err)

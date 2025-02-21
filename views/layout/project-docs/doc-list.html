@@ -2,7 +2,7 @@
 <div id="doc-list">
     <h2 id="sub-header"><i>{{.Project.Name}}
             {{ if .LockStatus }}
-                <img src="/static/icons/edit_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" hx-get="/edit-project-name/" class="std-icon edit-proj-name-icon" alt="edit icon"/>
+            <img src="/static/icons/edit_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" hx-get="/get-project-name-form/{{.Project.ID}}/" hx-swap="innerHTML" hx-target="#doc-list" class="std-icon edit-proj-name-icon" alt="edit icon"/>
             {{end}} 
 </i> Production Documents</h2>
     {{ if .UploadStatus }}

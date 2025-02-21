@@ -100,7 +100,7 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Get("/logout/", LogoutUser(userService))
 	s.fiberApp.Get("/reset-password/", GetResetPasswordPage(userService))
 	s.fiberApp.Get("/verify-old-password/", VerifyOldPassword(userService))
-	s.fiberApp.Get("/set-new-password/", SetNewPassword(userService))
+	s.fiberApp.Post("/set-new-password/", SetNewPassword(userService))
 
 	// member routes
 	s.fiberApp.Post("/search-users/:id", routes.SearchUsers(membershipService))
@@ -116,7 +116,8 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Get("/delete-project/:project_id/", routes.DeleteProject(projectService))
 	s.fiberApp.Get("/click-delete-project/:project_id/", routes.ClickDeleteProject(projectService))
 	s.fiberApp.Get("/cancel-delete-project/:project_id/", routes.CancelDeleteProject(projectService))
-	s.fiberApp.Get("/edit-project-name/", routes.EditProjectName(projectService))
+	s.fiberApp.Get("/get-project-name-form/:project_id/", routes.GetUpdateNameForm(projectService))
+	s.fiberApp.Post("/edit-project/:project_id/", routes.UpdateProjectName(projectService))
 
 	// document routes
 	s.fiberApp.Get("/get-doc-details/:doc_id", routes.GetDocDetails(documentService))

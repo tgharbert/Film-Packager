@@ -136,3 +136,34 @@ func JoinOrg(svc *projectservice.ProjectService) fiber.Handler {
 		return c.Render("selectOrgHTML", *rv)
 	}
 }
+
+func GetUpdateNameForm(svc *projectservice.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		projectId := c.Params("project_id")
+		projUUID, err := uuid.Parse(projectId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		return c.Render("edit-projectHTML", fiber.Map{"ID": projUUID})
+	}
+}
+
+func UpdateProjectName(svc *projectservice.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		projectName := c.FormValue("project-name")
+		projectId := c.Params("project_id")
+
+		projUUID, err := uuid.Parse(projectId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		err = svc.UpdateProjectName(c.Context(), projUUID, projectName)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error updating project name")
+		}
+
+		return c.SendString("success")
+	}
+}

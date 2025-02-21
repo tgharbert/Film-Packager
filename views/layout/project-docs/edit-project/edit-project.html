@@ -1,0 +1,17 @@
+{{ define "edit-projectHTML" }}
+<div id="edit-project">
+<div id="back-to-projects">
+    <button class="button-std" type="submit" hx-get="/get-project/{{.ID}}/" hx-target="#main" hx-swap="innerHTML">
+    <img src="/static/icons/arrow_back_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" class="std-icon" alt="back icon" />
+    &nbsp;Projects
+  </button>
+</div>
+<div>
+  <h3>Edit Project</h3>
+  <form id="edit-project-form" hx-post="/edit-project/{{.ID}}" hx-swap="innerHTML" hx-target="#edit-project-form">
+    <input type="text" name="project-name" placeholder="New Name"  />
+    <button class="button-std" type="submit">Edit Project</button>
+  </form>
+</div>
+</div>
+{{end}}
