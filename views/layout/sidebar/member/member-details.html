@@ -22,12 +22,20 @@
       hx-target="#sidebar"
       hx-swap="innerHTML"
     >
-      <select name="role-select">
+      <select name="role-select"
+      class="select-role"
+          >
         {{range .Roles}}
         <option value="{{.}}">{{.}}</option>
         {{end}}
       </select>
-      <button class="button-std" type="submit">Add Role</button>
+      <button class="button-std" type="submit">
+        <img
+          src="/static/icons/add_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg"
+          class="std-icon"
+          alt="add role icon"
+          />
+      </button>
     </form>
   </div>
   {{end}}
