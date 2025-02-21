@@ -314,6 +314,7 @@ input::file-selector-button:hover {
     align-items: center;
     padding: 0rem;
     margin-left: 0rem;
+    margin-top: -1rem;
 }
 
 #invited-members {
@@ -420,10 +421,11 @@ input::file-selector-button:hover {
 }
 
 select {
-    padding: 0.35rem;
+    padding: 0.2rem;
     border-radius: 0.5rem;
 }
 
 .select-role {
     margin-right: .2rem;
 }
+

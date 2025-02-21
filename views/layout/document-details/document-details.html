@@ -12,20 +12,16 @@
         </button>
 	<h3>Document Details:</h3>
     <div class="doc-data-container">
-        <label>Doc Type: </label>
-	    <p>{{ .DocType }}</p>
+        <p>Doc Type: <b>{{ .DocType }}</b></p>
     </div>
     <div class="doc-data-container">
-        <label>Date Uploaded: </label>
-        <p>{{ .UploadDate }}</p>
+        <p>Date Uploaded: <b>{{ .UploadDate }}</b></p>
     </div>
     <div class="doc-data-container">
-        <label>Filename: </label>
-        <p>{{ .FileName }}</p>
+        <p>Filename: <b>{{ .FileName }}</b></p>
     </div>
     <div class="doc-data-container">
-	    <label>Uploaded By: </label>
-        <p>{{.UploaderName}}</p>
+        <p>Uploaded By: <b>{{.UploaderName}}</b></p>
     </div>
     <div id="document-actions">
     <button class="button-std doc-action-btn" hx-get="/download-doc/{{.ID}}"
