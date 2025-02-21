@@ -32,11 +32,8 @@ func (s *UserService) UserLogin(ctx context.Context, email, password string) (*u
 		return nil, user.ErrUserNotFound
 	}
 
-	fmt.Printf("existing user: '%s' '%s'", existingUser.Password, password)
-
 	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(password))
 	if err != nil {
-		fmt.Println("error comparing password: ", err)
 		return nil, user.ErrInvalidPassword
 	}
 
