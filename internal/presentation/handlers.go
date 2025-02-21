@@ -247,6 +247,7 @@ func SetNewPassword(svc *userservice.UserService) fiber.Handler {
 				"Error": "Error: setting new password!",
 			})
 		}
+
 		return c.Redirect("/")
 	}
 }
