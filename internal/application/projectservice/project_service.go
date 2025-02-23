@@ -31,6 +31,8 @@ func NewProjectService(projRepo project.ProjectRepository, docRepo document.Docu
 	}
 }
 
+// Return values from project services--------------------------------------------
+
 type GetProjectDetailsResponse struct {
 	Project      *project.Project
 	Staged       *map[string]DocOverview
@@ -79,27 +81,7 @@ func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) 
 		return nil, fmt.Errorf("error getting projects from db: %v", err)
 	}
 
-	// colate the projects and memberships on ID
-	for _, p := range projects {
-		for _, m := range userMemberships {
-			if p.ID == m.ProjectID {
-				// sort the roles in each project overview here
-				m.Roles = membership.SortRoles(m.Roles)
-				po := ProjectOverview{
-					ID:     p.ID,
-					Name:   p.Name,
-					Status: m.InviteStatus,
-					Roles:  m.Roles,
-				}
-				// sort them based on invite status
-				if m.InviteStatus == "pending" {
-					rv.Invited = append(rv.Invited, po)
-				} else if m.InviteStatus == "accepted" {
-					rv.Accepted = append(rv.Accepted, po)
-				}
-			}
-		}
-	}
+	rv.sortProjectsByPendingAccepted(projects, userMemberships)
 
 	// get the user info
 	user, err = s.userRepo.GetUserById(ctx, user.Id)
@@ -235,27 +217,8 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID,
 		return nil, fmt.Errorf("error getting projects from db: %v", err)
 	}
 
-	// colate the projects and memberships on ID
-	for _, p := range projects {
-		for _, m := range userMemberships {
-			if p.ID == m.ProjectID {
-				// sort the roles in each project overview here
-				m.Roles = membership.SortRoles(m.Roles)
-				po := ProjectOverview{
-					ID:     p.ID,
-					Name:   p.Name,
-					Status: m.InviteStatus,
-					Roles:  m.Roles,
-				}
-				// sort them based on invite status
-				if m.InviteStatus == "pending" {
-					rv.Invited = append(rv.Invited, po)
-				} else if m.InviteStatus == "accepted" {
-					rv.Accepted = append(rv.Accepted, po)
-				}
-			}
-		}
-	}
+	// see project_utils.go for the sortProjectsByPendingAccepted function
+	rv.sortProjectsByPendingAccepted(projects, userMemberships)
 
 	// get the user info
 	user, err = s.userRepo.GetUserById(ctx, user.Id)
@@ -290,7 +253,8 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 	rv.HasLocked = false
 	rv.HasStaged = false
 
-	rv.sortStaged(documents)
+	// see project_utils.go for the sortStaged function
+	rv.sortStagedLockedDocs(documents)
 
 	// get project members
 	members, err := s.memberRepo.GetProjectMemberships(ctx, projectId)
@@ -313,7 +277,8 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 		return nil, fmt.Errorf("error getting users from db: %v", err)
 	}
 
-	rv.sortMembers(members, users, userID)
+	// see project_utils.go for the sortMembers function
+	rv.sortMembersByPendingAccepted(members, users, userID)
 
 	return rv, nil
 }

@@ -3,12 +3,13 @@ package projectservice
 import (
 	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/membership"
+	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 
 	"github.com/google/uuid"
 )
 
-func (rv *GetProjectDetailsResponse) sortStaged(documents []*document.Document) {
+func (rv *GetProjectDetailsResponse) sortStagedLockedDocs(documents []*document.Document) {
 	// make the maps for staged and locked documents
 	stagedMap := make(map[string]DocOverview)
 	lockedMap := make(map[string]DocOverview)
@@ -38,7 +39,7 @@ func (rv *GetProjectDetailsResponse) sortStaged(documents []*document.Document) 
 	rv.Locked = &lockedMap
 }
 
-func (rv *GetProjectDetailsResponse) sortMembers(members []membership.Membership, users []user.User, userID uuid.UUID) {
+func (rv *GetProjectDetailsResponse) sortMembersByPendingAccepted(members []membership.Membership, users []user.User, userID uuid.UUID) {
 	// make a map of userIDs to user data for quicker access
 	uMap := make(map[uuid.UUID]user.User)
 
@@ -69,6 +70,30 @@ func (rv *GetProjectDetailsResponse) sortMembers(members []membership.Membership
 			rv.Invited = append(rv.Invited, m)
 		} else if m.InviteStatus == "accepted" {
 			rv.Members = append(rv.Members, m)
+		}
+	}
+}
+
+func (rv *GetUsersProjectsResponse) sortProjectsByPendingAccepted(projects []project.Project, userMemberships []membership.Membership) {
+	// colate the projects and memberships on ID
+	for _, p := range projects {
+		for _, m := range userMemberships {
+			if p.ID == m.ProjectID {
+				// sort the roles in each project overview here
+				m.Roles = membership.SortRoles(m.Roles)
+				po := ProjectOverview{
+					ID:     p.ID,
+					Name:   p.Name,
+					Status: m.InviteStatus,
+					Roles:  m.Roles,
+				}
+				// sort them based on invite status
+				if m.InviteStatus == "pending" {
+					rv.Invited = append(rv.Invited, po)
+				} else if m.InviteStatus == "accepted" {
+					rv.Accepted = append(rv.Accepted, po)
+				}
+			}
 		}
 	}
 }
