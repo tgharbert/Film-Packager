@@ -6,7 +6,6 @@ import (
 	"filmPackager/internal/domain/membership"
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
-	"slices"
 	"time"
 
 	"fmt"
@@ -64,8 +63,6 @@ type GetUsersProjectsResponse struct {
 
 func (s *ProjectService) GetUsersProjects(ctx context.Context, user *user.User) (*GetUsersProjectsResponse, error) {
 	rv := &GetUsersProjectsResponse{}
-	// do auth work here?
-	// get project IDs - new function in repo
 	userMemberships, err := s.memberRepo.GetAllUserMemberships(ctx, user.Id)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user memberships: %v", err)
@@ -272,7 +269,6 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID,
 }
 
 func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.UUID, userID uuid.UUID) (*GetProjectDetailsResponse, error) {
-	// get the project from the db
 	rv := &GetProjectDetailsResponse{}
 
 	// get project details
@@ -294,33 +290,7 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 	rv.HasLocked = false
 	rv.HasStaged = false
 
-	// make the maps for staged and locked documents
-	stagedMap := make(map[string]DocOverview)
-	lockedMap := make(map[string]DocOverview)
-
-	// sort the projects by staged or not
-	for _, d := range documents {
-		// format the document date
-		dOverview := &DocOverview{
-			ID:   d.ID,
-			Date: d.Date.Format("01-02-2006"),
-		}
-		if d.Status == "staged" {
-			// set the bool for staged if there is one
-			rv.HasStaged = true
-			// assign the document to the map based on the fileType
-			stagedMap[d.FileType] = *dOverview
-		} else {
-			// set the bool for locked if there is one
-			rv.HasLocked = true
-			// assign the document to the map based on the fileType
-			lockedMap[d.FileType] = *dOverview
-		}
-	}
-
-	// assign the maps to the response
-	rv.Staged = &stagedMap
-	rv.Locked = &lockedMap
+	rv.sortStaged(documents)
 
 	// get project members
 	members, err := s.memberRepo.GetProjectMemberships(ctx, projectId)
@@ -328,47 +298,22 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectId uuid.U
 		return nil, fmt.Errorf("error getting project users from db: %v", err)
 	}
 
+	rv.LockStatus = false
+	rv.UploadStatus = false
+
 	// build an array of member userIDs
 	mIDs := []uuid.UUID{}
 	for _, m := range members {
 		mIDs = append(mIDs, m.UserID)
 	}
 
-	// make a map of userIDs to user data for quicker access
-	uMap := make(map[uuid.UUID]user.User)
-
 	// get the user data
 	users, err := s.userRepo.GetUsersByIDs(ctx, mIDs)
-	for _, u := range users {
-		uMap[u.Id] = u
+	if err != nil {
+		return nil, fmt.Errorf("error getting users from db: %v", err)
 	}
 
-	rv.LockStatus = false
-	rv.UploadStatus = false
-
-	// loop through the members and add the user data
-	for _, m := range members {
-		m.UserName = uMap[m.UserID].Name
-		m.UserEmail = uMap[m.UserID].Email
-
-		// sort the roles
-		m.Roles = membership.SortRoles(m.Roles)
-
-		// if the user has the correct status allow them to lock the docs
-		if memberHasLockingStatus(m.Roles) && m.UserID == userID {
-			rv.LockStatus = true
-		}
-		if m.Roles[0] != "reader" && m.UserID == userID {
-			rv.UploadStatus = true
-		}
-
-		// sort the members based on invite status
-		if m.InviteStatus == "pending" {
-			rv.Invited = append(rv.Invited, m)
-		} else if m.InviteStatus == "accepted" {
-			rv.Members = append(rv.Members, m)
-		}
-	}
+	rv.sortMembers(members, users, userID)
 
 	return rv, nil
 }
@@ -430,12 +375,4 @@ func (s *ProjectService) UpdateProjectName(ctx context.Context, projectId uuid.U
 	}
 
 	return updatedP, nil
-}
-
-// utility functions
-func memberHasLockingStatus(roles []string) bool {
-	if slices.Contains(roles, "owner") || slices.Contains(roles, "director") || slices.Contains(roles, "producer") {
-		return true
-	}
-	return false
 }
