@@ -132,15 +132,12 @@ func InviteMember(svc *membershipservice.MembershipService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing user Id from request")
 		}
 
-		var errMess string
-
 		invitedMembers, err := svc.InviteUserToProject(c.Context(), userUUID, projUUID)
 		if err != nil {
 			if err == project.ErrMemberAlreadyInvited {
 				// return the proper html fragment
-				errMess = "You've already invited this user!"
 				return c.Render("project-list", fiber.Map{
-					"Error": errMess,
+					"Error": "You've already invited this user!",
 				})
 			}
 			return c.Status(fiber.StatusInternalServerError).SendString("error inviting user to project")
