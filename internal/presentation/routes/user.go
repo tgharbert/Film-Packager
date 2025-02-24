@@ -1,11 +1,8 @@
 package routes
 
 import (
-	"errors"
 	"filmPackager/internal/application/userservice"
 	access "filmPackager/internal/auth"
-	"filmPackager/internal/domain/user"
-	"fmt"
 	"strings"
 	"time"
 
@@ -35,55 +32,19 @@ func PostCreateAccount(svc *userservice.UserService) fiber.Handler {
 		email := strings.Trim(c.FormValue("email"), " ")
 		password := strings.Trim(c.FormValue("password"), " ")
 		secondPassword := strings.Trim(c.FormValue("secondPassword"), " ")
-		username := fmt.Sprintf("%s %s", firstName, lastName)
-		var mess string
-		// TODO: I want to move all of this into the application layer and wrap in a util function
-		if firstName == "" || lastName == "" {
-			mess = "Error: please enter first and last name!"
-			return c.Render("create-accountHTML", fiber.Map{
-				"Error": mess,
-			})
-		}
-		if email == "" {
-			mess = "Error: email field left blank!"
-			return c.Render("create-accountHTML", fiber.Map{
-				"Error": mess,
-			})
-		}
-		if password != secondPassword {
-			mess = "Error: passwords do not match!"
-			return c.Render("create-accountHTML", fiber.Map{
-				"Error": mess,
-			})
-		}
-		if len(password) < 6 || len(secondPassword) < 6 {
-			mess = "Error: password need to be at least 6 characters!"
-			return c.Render("create-accountHTML", fiber.Map{
-				"Error": mess,
-			})
-		}
-		if !user.IsValidEmail(email) {
-			mess = "Error: invalid email address"
-			return c.Render("create-accountHTML", fiber.Map{
-				"Error": mess,
-			})
-		}
-		createdUser, err := svc.CreateUser(c.Context(), username, email, password)
-		// newUser := user.CreateNewUser(username, email, hashedStr)
-		//createdUser, err := svc.CreateUserAccount(c.Context(), newUser)
+
+		createdUser, err := svc.CreateUser(c.Context(), firstName, lastName, email, password, secondPassword)
 		if err != nil {
-			if errors.Is(err, user.ErrUserAlreadyExists) {
-				mess = "Error: user already exists!"
-				return c.Render("create-accountHTML", fiber.Map{
-					"Error": mess,
-				})
-			}
-			return c.Status(fiber.StatusInternalServerError).SendString("error creating user")
+			return c.Render("create-accountHTML", fiber.Map{
+				"Error": err.Error(),
+			})
 		}
+
 		tokenString, err := access.GenerateJWT(createdUser.Id, createdUser.Name, createdUser.Email)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 		}
+
 		c.Cookie(&fiber.Cookie{
 			Name:     "Authorization",
 			Value:    "Bearer " + tokenString,
@@ -91,6 +52,7 @@ func PostCreateAccount(svc *userservice.UserService) fiber.Handler {
 			Path:     "/",
 			Expires:  time.Now().Add(48 * time.Hour),
 		})
+
 		return c.Redirect("/")
 	}
 }
@@ -103,28 +65,14 @@ func GetCreateAccount(svc *userservice.UserService) fiber.Handler {
 
 func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// TODO: push these checks to the application layer
 		email := strings.TrimSpace(c.FormValue("email"))
 		password := strings.TrimSpace(c.FormValue("password"))
-		if email == "" || password == "" {
-			return c.Render("login-formHTML", fiber.Map{
-				"Error": "Error: both fields must be filled!",
-			})
-		}
 
 		currentUser, err := svc.UserLogin(c.Context(), email, password)
 		if err != nil {
-			// send html with error message
-			if errors.Is(err, user.ErrUserNotFound) {
-				return c.Render("login-formHTML", fiber.Map{
-					"Error": "Error: user not found!",
-				})
-			} else if errors.Is(err, user.ErrInvalidPassword) {
-				return c.Render("login-formHTML", fiber.Map{
-					"Error": "Error: invalid password!",
-				})
-			}
-			return c.Status(fiber.StatusInternalServerError).SendString("error logging in")
+			return c.Render("login-formHTML", fiber.Map{
+				"Error": err.Error(),
+			})
 		}
 
 		tokenString, err := access.GenerateJWT(currentUser.Id, currentUser.Name, currentUser.Email)
@@ -178,6 +126,10 @@ func GetResetPasswordPage(svc *userservice.UserService) fiber.Handler {
 
 func VerifyOldPassword(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// send the passwords to the user service
+		pw1 := strings.TrimSpace(c.FormValue("password1"))
+		pw2 := strings.TrimSpace(c.FormValue("password2"))
+
 		tokenString := c.Cookies("Authorization")
 		if tokenString == "" {
 			return c.Redirect("/login/")
@@ -189,28 +141,11 @@ func VerifyOldPassword(svc *userservice.UserService) fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 		}
 
-		// send the passwords to the user service
-		pw1 := strings.TrimSpace(c.FormValue("password1"))
-		pw2 := strings.TrimSpace(c.FormValue("password2"))
-
-		if pw1 == "" || pw2 == "" {
-			return c.Render("login-formHTML", fiber.Map{
-				"Error": "Error: both fields must be filled!",
-			})
-		}
-
-		// verify that pw1 and pw2 are the same
-		if pw1 != pw2 {
-			return c.Render("reset-passwordHTML", fiber.Map{
-				"Error": "Error: passwords do not match!",
-			})
-		}
-
 		// verify that the pw is correct
-		err = svc.VerifyOldPassword(c.Context(), userInfo.Id, pw1)
+		err = svc.VerifyOldPassword(c.Context(), userInfo.Id, pw1, pw2)
 		if err != nil {
 			return c.Render("reset-passwordHTML", fiber.Map{
-				"Error": "Error: Incorrect password!",
+				"Error": err.Error(),
 			})
 		}
 
@@ -220,6 +155,10 @@ func VerifyOldPassword(svc *userservice.UserService) fiber.Handler {
 
 func SetNewPassword(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// send the passwords to the user service
+		pw1 := strings.TrimSpace(c.FormValue("new-password1"))
+		pw2 := strings.TrimSpace(c.FormValue("new-password2"))
+
 		tokenString := c.Cookies("Authorization")
 		if tokenString == "" {
 			return c.Redirect("/login/")
@@ -229,20 +168,10 @@ func SetNewPassword(svc *userservice.UserService) fiber.Handler {
 
 		u, err := access.GetUserNameFromToken(tokenString)
 
-		// send the passwords to the user service
-		pw1 := strings.TrimSpace(c.FormValue("new-password1"))
-		pw2 := strings.TrimSpace(c.FormValue("new-password2"))
-
-		if pw1 != pw2 {
-			return c.Render("new-pw-formHTML", fiber.Map{
-				"Error": "Error: passwords do not match!",
-			})
-		}
-
-		err = svc.SetNewPassword(c.Context(), u.Id, pw1)
+		err = svc.SetNewPassword(c.Context(), u.Id, pw1, pw2)
 		if err != nil {
 			return c.Render("new-pw-formHTML", fiber.Map{
-				"Error": "Error: setting new password!",
+				"Error": err.Error(),
 			})
 		}
 

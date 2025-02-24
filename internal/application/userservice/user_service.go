@@ -22,6 +22,10 @@ func NewUserService(userRepo user.UserRepository, projRepo project.ProjectReposi
 }
 
 func (s *UserService) UserLogin(ctx context.Context, email, password string) (*user.User, error) {
+	if email == "" || password == "" {
+		return nil, user.ErrMissingLoginField
+	}
+
 	existingUser, err := s.userRepo.GetUserByEmail(ctx, email)
 
 	// refactor this ordering
@@ -40,8 +44,15 @@ func (s *UserService) UserLogin(ctx context.Context, email, password string) (*u
 	return existingUser, nil
 }
 
-// change to accept user params then build the user object in the service
-func (s *UserService) CreateUser(ctx context.Context, username, email, password string) (*user.User, error) {
+func (s *UserService) CreateUser(ctx context.Context, firstName, lastName, email, password, secondPassword string) (*user.User, error) {
+	// see user_utils.go
+	err := verifyCreateAccountFields(firstName, lastName, email, password, secondPassword)
+	if err != nil {
+		return nil, err
+	}
+
+	username := fmt.Sprintf("%s %s", firstName, lastName)
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("error hashing password: %v", err)
@@ -66,13 +77,19 @@ func (s *UserService) CreateUser(ctx context.Context, username, email, password 
 	return newUser, nil
 }
 
-func (s *UserService) VerifyOldPassword(ctx context.Context, userID uuid.UUID, password string) error {
+func (s *UserService) VerifyOldPassword(ctx context.Context, userID uuid.UUID, pw1, pw2 string) error {
+	// see user_utils.go
+	err := verifyFirstAndSecondPasswords(pw1, pw2)
+	if err != nil {
+		return err
+	}
+
 	existingUser, err := s.userRepo.GetUserById(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("error getting user: %v", err)
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(pw1))
 	if err != nil {
 		return user.ErrInvalidPassword
 	}
@@ -80,8 +97,14 @@ func (s *UserService) VerifyOldPassword(ctx context.Context, userID uuid.UUID, p
 	return nil
 }
 
-func (s *UserService) SetNewPassword(ctx context.Context, userID uuid.UUID, password string) error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+func (s *UserService) SetNewPassword(ctx context.Context, userID uuid.UUID, pw1, pw2 string) error {
+	// see user_utils.go
+	err := verifyFirstAndSecondPasswords(pw1, pw2)
+	if err != nil {
+		return err
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(pw1), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("error hashing password: %v", err)
 	}
