@@ -13,14 +13,15 @@
       placeholder="enter project title"
       name="project-name"
     />
-    <button class="button-std create-proj-btn" type="submit">Create Project</button>
+    <button class="button-std create-proj-btn" type="submit">
+      Create Project
+    </button>
   </form>
   <h2 id="sub-title">Projects that you're a member of:</h2>
   <div id="membership-list">
     {{block "project-list" .}}
     <ul id="project-list-items">
-      {{ range .Accepted }} 
-      {{block "project-list-item" .}}
+      {{ range .Accepted }} {{block "project-list-item" .}}
       <li id="{{.ID}}" class="project-list-item">
         <p
           class="project-title"
@@ -35,8 +36,8 @@
         {{end}} {{$isOwner := false}} {{range .Roles}} {{ if eq . "owner"}}
         {{$isOwner = true}} {{end}} {{end}} {{if $isOwner}}
         <div class="project-delete-{{.ID}}">
-        {{template "clickProjectDeleteHTML" .}}
-        </div> 
+          {{template "clickProjectDeleteHTML" .}}
+        </div>
 
         {{end}}
       </li>

@@ -1,25 +1,33 @@
 {{ define "projectDeleteCancelHTML" }}
 <div id="project-cancel-delete">
-    <i>Are you sure you want to delete {{.Name}}?</i>
-            <button
-          class="button-std confirm-btn"
-          hx-get="/delete-project/{{.ID}}/"
-          type="submit"
-          hx-swap="innerHTML"
-          hx-target="#project-list"
-        >
-        <img src="/static/icons/delete_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" class="std-icon" alt="trash icon" />
-        &nbsp;Yes, Delete
-        </button>
-                <button 
-                    class="button-std cancel-btn"
-                    hx-get="/cancel-delete-project/{{.ID}}/"
-                    type="submit"
-                    hx-swap="outerHTML"
-                    hx-target="[id='{{.ID}}']"
-                    >
-                    <img src="/static/icons/close_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" class="std-icon" alt="close icon" />
-                   &nbsp;No, Cancel
-                </button>
+  <i>Are you sure you want to delete {{.Name}}?</i>
+  <button
+    class="button-std confirm-btn"
+    hx-get="/delete-project/{{.ID}}/"
+    type="submit"
+    hx-swap="innerHTML"
+    hx-target="#project-list"
+  >
+    <img
+      src="/static/icons/delete_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg"
+      class="std-icon"
+      alt="trash icon"
+    />
+    &nbsp;Yes, Delete
+  </button>
+  <button
+    class="button-std cancel-btn"
+    hx-get="/cancel-delete-project/{{.ID}}/"
+    type="submit"
+    hx-swap="outerHTML"
+    hx-target="[id='{{.ID}}']"
+  >
+    <img
+      src="/static/icons/close_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg"
+      class="std-icon"
+      alt="close icon"
+    />
+    &nbsp;No, Cancel
+  </button>
 </div>
 {{end}}
