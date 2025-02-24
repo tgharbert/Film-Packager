@@ -103,7 +103,7 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Post("/set-new-password/", routes.SetNewPassword(userService))
 
 	// member routes
-	s.fiberApp.Post("/search-users/:id", routes.SearchUsers(membershipService))
+	s.fiberApp.Post("/search-users/:id", routes.SearchMembersByName(membershipService))
 	s.fiberApp.Post("/invite-member/:id/:project_id/", routes.InviteMember(membershipService))
 	s.fiberApp.Get("/get-member/:project_id/:member_id/", routes.GetMemberPage(membershipService))
 	s.fiberApp.Post("/update-member-roles/:project_id/:member_id/", routes.UpdateMemberRoles(membershipService))

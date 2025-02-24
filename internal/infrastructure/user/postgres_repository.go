@@ -113,7 +113,7 @@ func (r *PostgresUserRepository) GetUsersByIDs(ctx context.Context, userIds []uu
 	return users, nil
 }
 
-func (r *PostgresUserRepository) GetAllNewUsersByTerm(ctx context.Context, term string, userIDs []uuid.UUID) ([]user.User, error) {
+func (r *PostgresUserRepository) GetAllNewUsersByName(ctx context.Context, term string, userIDs []uuid.UUID) ([]user.User, error) {
 	query := `SELECT id, name, email, password FROM users WHERE name ILIKE '%' || $1 || '%' AND id != ALL($2)`
 	var users []user.User
 	rows, err := r.db.Query(ctx, query, term, userIDs)

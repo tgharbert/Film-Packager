@@ -27,13 +27,12 @@ func (s *UserService) UserLogin(ctx context.Context, email, password string) (*u
 	}
 
 	existingUser, err := s.userRepo.GetUserByEmail(ctx, email)
-
-	// refactor this ordering
-	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
-		return nil, fmt.Errorf("error checking for existing user: %v", err)
-	}
-	if errors.Is(err, user.ErrUserNotFound) {
-		return nil, user.ErrUserNotFound
+	if err != nil {
+		if errors.Is(err, user.ErrUserNotFound) {
+			return nil, user.ErrUserNotFound
+		} else {
+			return nil, fmt.Errorf("error checking for existing user: %v", err)
+		}
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(password))
