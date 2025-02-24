@@ -19,7 +19,7 @@ func NewPostgresUserRepository(db *pgxpool.Pool) *PostgresUserRepository {
 	return &PostgresUserRepository{db: db}
 }
 
-func (r *PostgresUserRepository) GetUserByEmail(ctx context.Context, email string, password string) (*user.User, error) {
+func (r *PostgresUserRepository) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
 	query := `SELECT id, name, email, password FROM users WHERE email = $1`
 
 	var existingUser user.User
@@ -37,7 +37,9 @@ func (r *PostgresUserRepository) GetUserByEmail(ctx context.Context, email strin
 
 func (r *PostgresUserRepository) GetUserById(ctx context.Context, userId uuid.UUID) (*user.User, error) {
 	query := `SELECT id, name, email, password FROM users WHERE id = $1`
+
 	var existingUser user.User
+
 	err := r.db.QueryRow(ctx, query, userId).Scan(&existingUser.Id, &existingUser.Name, &existingUser.Email, &existingUser.Password)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -45,15 +47,18 @@ func (r *PostgresUserRepository) GetUserById(ctx context.Context, userId uuid.UU
 		}
 		return nil, fmt.Errorf("error scanning user: %v", err)
 	}
+
 	return &existingUser, nil
 }
 
 func (r *PostgresUserRepository) CreateNewUser(ctx context.Context, user *user.User) error {
 	query := `INSERT INTO users (id, name, email, password) VALUES ($1, $2, $3, $4) RETURNING id`
+
 	err := r.db.QueryRow(ctx, query, user.Id, user.Name, user.Email, user.Password).Scan(&user.Id)
 	if err != nil {
 		return fmt.Errorf("error creating user: %v", err)
 	}
+
 	return nil
 }
 
@@ -108,7 +113,7 @@ func (r *PostgresUserRepository) GetUsersByIDs(ctx context.Context, userIds []uu
 	return users, nil
 }
 
-func (r *PostgresUserRepository) GetAllNewUsersByTerm(ctx context.Context, term string, userIDs []uuid.UUID) ([]user.User, error) {
+func (r *PostgresUserRepository) GetAllNewUsersByName(ctx context.Context, term string, userIDs []uuid.UUID) ([]user.User, error) {
 	query := `SELECT id, name, email, password FROM users WHERE name ILIKE '%' || $1 || '%' AND id != ALL($2)`
 	var users []user.User
 	rows, err := r.db.Query(ctx, query, term, userIDs)
@@ -125,4 +130,16 @@ func (r *PostgresUserRepository) GetAllNewUsersByTerm(ctx context.Context, term 
 		users = append(users, u)
 	}
 	return users, nil
+}
+
+// change this to update user by ID
+func (r *PostgresUserRepository) UpdateUserByID(ctx context.Context, u *user.User) error {
+	query := `UPDATE users SET password = $1, email = $2, name = $3 WHERE id = $4`
+
+	_, err := r.db.Exec(ctx, query, u.Password, u.Email, u.Name, u.Id)
+	if err != nil {
+		return fmt.Errorf("error updating user: %v", err)
+	}
+
+	return nil
 }

@@ -35,8 +35,7 @@ type UpdateMemberRolesResponse struct {
 	Roles      []string
 }
 
-// search for memberhips based on a term string and a project id
-func (s *MembershipService) SearchForNewMembers(ctx context.Context, term string, projectID uuid.UUID) ([]user.User, error) {
+func (s *MembershipService) SearchForNewMembersByName(ctx context.Context, name string, projectID uuid.UUID) ([]user.User, error) {
 	// get all memberships for the project - could write func to get only the user ids
 	memberships, err := s.memberRepo.GetProjectMemberships(ctx, projectID)
 	if err != nil {
@@ -51,7 +50,7 @@ func (s *MembershipService) SearchForNewMembers(ctx context.Context, term string
 	}
 
 	// get all users with the term in their name and not among the userIDs array
-	users, err := s.userRepo.GetAllNewUsersByTerm(ctx, term, memUserIDs)
+	users, err := s.userRepo.GetAllNewUsersByName(ctx, name, memUserIDs)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users by term: %v", err)
 	}

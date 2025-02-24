@@ -44,3 +44,7 @@ func SortRoles(rolesSlc []string) []string {
 	}
 	return orderedRoles
 }
+
+func (m *Membership) HasLockingStatus() bool {
+	return slices.Contains(m.Roles, "owner") || slices.Contains(m.Roles, "director") || slices.Contains(m.Roles, "producer")
+}

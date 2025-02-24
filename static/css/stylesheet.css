@@ -144,6 +144,11 @@ h2 {
   font-weight: bold;
 }
 
+#user-name:hover {
+  cursor: pointer;
+    color: cadetblue;
+}
+
 #login {
     border: 2px solid rgb(240, 233, 221);
   border-radius: 1rem;
@@ -158,7 +163,7 @@ h2 {
   padding-left: 2rem;
 }
 
-#login-form {
+.login-form {
     display:flex;
     flex-direction: column;
     justify-content: center;
@@ -210,18 +215,18 @@ h2 {
 }
 
 #lock-staged-button {
+    background-color: #5f9e6e;
     border: 1px solid rgb(240, 233, 221);
     color: rgb(240, 233, 221);
     border-radius: 0.5rem;
     padding: 0.4rem;
-    background-color: rgb(90, 71, 106);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 #lock-staged-button:hover {
-    background-color: rgb(118, 102, 131);
+    background-color: #7dc986;
     cursor: pointer;
 }
 
@@ -309,6 +314,7 @@ input::file-selector-button:hover {
     align-items: center;
     padding: 0rem;
     margin-left: 0rem;
+    margin-top: -1rem;
 }
 
 #invited-members {
@@ -363,5 +369,63 @@ input::file-selector-button:hover {
 
 #lock-message {
     padding-left: 1rem;
+}
+
+.doc-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #d95041;
+    font-weight: 300;
+}
+
+.pw-reset-input {
+    margin-bottom: 1rem;
+}
+
+.edit-proj-name-icon {
+    size: .4rem;
+    margin-bottom: .5rem;
+}
+
+.edit-proj-name-icon:hover {
+    cursor: pointer;
+    background-color: #16132e;
+}
+
+#edit-project-form-container {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+}
+
+#back-to-project {
+    margin-top: 1rem;
+    margin-left: 2rem;
+    justify-content: left;
+    display: flex;
+}
+
+#edit-project-form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.edit-project-input {
+    margin-bottom: 1rem;
+}
+
+select {
+    padding: 0.2rem;
+    border-radius: 0.5rem;
+}
+
+.select-role {
+    margin-right: .2rem;
 }
 

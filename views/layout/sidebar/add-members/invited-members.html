@@ -1,10 +1,6 @@
-{{define "invited-membersHTML"}}
-{{ if gt (len .Invited) 0 }}
+{{define "invited-membersHTML"}} {{ if gt (len .Invited) 0 }}
 <ul id="invited-members">
-    <h3 id="sub-header">Invited Members:</h3>
-    {{range .Invited}}
-    {{template "invited-memberHTML" .}}
-  {{end}}
+  <h3 id="sub-header">Invited Members:</h3>
+  {{range .Invited}} {{template "invited-memberHTML" .}} {{end}}
 </ul>
-{{end}}
-{{end}}
+{{end}} {{end}}

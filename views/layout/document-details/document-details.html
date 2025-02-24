@@ -1,57 +1,72 @@
 {{ define "document-detailsHTML" }}
 <div id="doc-details">
-	<div>
-		<button class="button-std"
-			hx-get="/get-project/{{.OrgID}}"
-			hx-swap="innerHTML"
-			hx-target="#main"
-			>
-
-        <img src="/static/icons/arrow_back_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" class="std-icon" alt="trash icon" />
-        &nbsp;Project
-        </button>
-	<h3>Document Details:</h3>
+  <div>
+    <button
+      class="button-std"
+      hx-get="/get-project/{{.OrgID}}"
+      hx-swap="innerHTML"
+      hx-target="#main"
+    >
+      <img
+        src="/static/icons/arrow_back_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg"
+        class="std-icon"
+        alt="trash icon"
+      />
+      &nbsp;Project
+    </button>
+    <h3>Document Details:</h3>
     <div class="doc-data-container">
-        <label>Doc Type: </label>
-	    <p>{{ .DocType }}</p>
+      <p>Doc Type: <b>{{ .DocType }}</b></p>
     </div>
     <div class="doc-data-container">
-        <label>Date Uploaded: </label>
-        <p>{{ .UploadDate }}</p>
+      <p>Date Uploaded: <b>{{ .UploadDate }}</b></p>
     </div>
     <div class="doc-data-container">
-        <label>Filename: </label>
-        <p>{{ .FileName }}</p>
+      <p>Filename: <b>{{ .FileName }}</b></p>
     </div>
     <div class="doc-data-container">
-	    <label>Uploaded By: </label>
-        <p>{{.UploaderName}}</p>
+      <p>Uploaded By: <b>{{.UploaderName}}</b></p>
     </div>
     <div id="document-actions">
-    <button class="button-std doc-action-btn" hx-get="/download-doc/{{.ID}}"
+      <button
+        class="button-std doc-action-btn"
+        hx-get="/download-doc/{{.ID}}"
         hx-on::after-request="downloadDoc(event)"
         hx-swap="none"
-        >
-        <img src="/static/icons/download_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" class="std-icon" alt="trash icon" />
-        &nbsp;Download Document</button>
+      >
+        <img
+          src="/static/icons/download_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg"
+          class="std-icon"
+          alt="trash icon"
+        />
+        &nbsp;Download Document
+      </button>
 
-    {{ if eq .Status "staged" }}
-    <button class="button-std doc-action-btn" hx-get="/delete-doc/{{.ID}}"
+      {{ if eq .Status "staged" }}
+      <button
+        class="button-std doc-action-btn"
+        hx-get="/delete-doc/{{.ID}}"
         hx-swap="innerHTML"
         hx-target="#main"
-        >
-        <img src="/static/icons/delete_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" class="std-icon" alt="trash icon" />
-        &nbsp;Delete Document</button>
+      >
+        <img
+          src="/static/icons/delete_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg"
+          class="std-icon"
+          alt="trash icon"
+        />
+        &nbsp;Delete Document
+      </button>
     </div>
     {{ end }}
-    </div>
-<script>
+  </div>
+  <script>
     function downloadDoc(event) {
-        const url = event.detail.xhr.responseURL;
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = url.split('/').pop();
-        a.click();
+      const url = event.detail.xhr.responseURL;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = url.split("/").pop();
+      a.click();
     }
-</script>
-{{ end }} 
+  </script>
+  {{ end }}
+</div>

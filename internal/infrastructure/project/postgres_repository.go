@@ -101,3 +101,14 @@ func (r *PostgresProjectRepository) UpdateMemberRoles(ctx context.Context, proje
 
 	return nil
 }
+
+func (r *PostgresProjectRepository) UpdateProject(ctx context.Context, p *project.Project) error {
+	query := `UPDATE organizations SET name = $1, updated_at = $2 WHERE id = $3`
+
+	_, err := r.db.Exec(ctx, query, p.Name, p.LastUpdateAt, p.ID)
+	if err != nil {
+		return fmt.Errorf("error updating project: %v", err)
+	}
+
+	return nil
+}

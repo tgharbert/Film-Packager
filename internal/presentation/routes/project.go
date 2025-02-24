@@ -9,6 +9,33 @@ import (
 	"github.com/google/uuid"
 )
 
+func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tokenString := c.Cookies("Authorization")
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/") // Redirect to homepage or desired URL
+			return nil
+		}
+		if tokenString == "" {
+			return c.Redirect("/login/")
+		}
+
+		tokenString = tokenString[len("Bearer "):]
+
+		userInfo, err := access.GetUserNameFromToken(tokenString)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+		}
+
+		rv, err := svc.GetUsersProjects(c.Context(), userInfo)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
+		}
+
+		return c.Render("index", *rv)
+	}
+}
+
 func GetProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// get the user from the cookie
@@ -42,12 +69,22 @@ func ClickDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		return c.Render("projectDeleteCancelHTML", fiber.Map{"ID": projUUID})
+		p, err := svc.GetProject(c.Context(), projUUID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting project data")
+		}
+
+		return c.Render("projectDeleteCancelHTML", p)
 	}
 }
 
 func CancelDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		userInfo, err := access.GetUserDataFromCookie(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
+		}
+
 		projectId := c.Params("project_id")
 
 		projUUID, err := uuid.Parse(projectId)
@@ -55,7 +92,10 @@ func CancelDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		return c.Render("clickProjectDeleteHTML", fiber.Map{"ID": projUUID})
+		// get all the project info for this one project
+		rv, err := svc.GetProjectOverview(c.Context(), projUUID, userInfo.Id)
+
+		return c.Render("project-list-item", fiber.Map{"ID": projUUID, "Roles": rv.Roles, "Name": rv.Name})
 	}
 }
 
@@ -134,5 +174,41 @@ func JoinOrg(svc *projectservice.ProjectService) fiber.Handler {
 		}
 
 		return c.Render("selectOrgHTML", *rv)
+	}
+}
+
+func GetUpdateNameForm(svc *projectservice.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		projectId := c.Params("project_id")
+		projUUID, err := uuid.Parse(projectId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		p, err := svc.GetProject(c.Context(), projUUID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error getting project data")
+		}
+
+		return c.Render("edit-projectHTML", p)
+	}
+}
+
+func UpdateProjectName(svc *projectservice.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		projectName := c.FormValue("project-name")
+		projectId := c.Params("project_id")
+
+		projUUID, err := uuid.Parse(projectId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		p, err := svc.UpdateProjectName(c.Context(), projUUID, projectName)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error updating project name")
+		}
+
+		return c.Render("edit-projectHTML", p)
 	}
 }

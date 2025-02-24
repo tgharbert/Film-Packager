@@ -1,116 +1,97 @@
 {{define "staged-listHTML"}}
 <h3 id="table-title">Staged Documents:</h3>
+{{ if eq .HasStaged false}}
+<div class="doc-message">
+  <i id="no-staged">No documents are currently staged.</i>
+</div>
+{{else}}
 <table id="table">
   <tr>
     {{if .Staged.Script}}
-      <th id="table-header">Script</th>
-      {{end}}
-    {{if .Staged.Logline}}
-      <th id="table-header">Logline</th>
-      {{end}}
-    {{if .Staged.Synopsis}}
+    <th id="table-header">Script</th>
+    {{end}} {{if .Staged.Logline}}
+    <th id="table-header">Logline</th>
+    {{end}} {{if .Staged.Synopsis}}
     <th id="table-header">Synopsis</th>
-      {{end}}
-      {{if .Staged.PitchDeck}}
+    {{end}} {{if .Staged.PitchDeck}}
     <th id="table-header">Pitch Deck</th>
-      {{end}}
-    {{if .Staged.Schedule }}
+    {{end}} {{if .Staged.Schedule }}
     <th id="table-header">Schedule</th>
-    {{end}}
-    {{if .Staged.Budget }}
+    {{end}} {{if .Staged.Budget }}
     <th id="table-header">Budget</th>
-    {{end}}
-    {{if .Staged.Shotlist }}
+    {{end}} {{if .Staged.Shotlist }}
     <th id="table-header">Shotlist</th>
-    {{end}}
-    {{if .Staged.Lookbook }}
+    {{end}} {{if .Staged.Lookbook }}
     <th id="table-header">Lookbook</th>
     {{end}}
   </tr>
   <tr>
     {{ if .Staged.Script }}
     <td
-        class="staged-list-item"
+      class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Script.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
       {{.Staged.Script.Date}}
     </td>
-    {{else}}
-    <td><td>
-    {{ end }} 
-   
-    {{ if .Staged.Logline }}
+    {{ end }} {{ if .Staged.Logline }}
     <td
-        class="staged-list-item"
+      class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Logline.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
       {{.Staged.Logline.Date}}
     </td>
-    {{else}}
-    <td></td>
-    {{ end }} 
-   
-    {{ if .Staged.Synopsis }}
+    {{ end }} {{ if .Staged.Synopsis }}
     <td
-        class="staged-list-item"
+      class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Synopsis.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
       {{.Staged.Synopsis.Date}}
     </td>
-    {{else}}
-    <td></td>
-    {{ end }} 
-   
-    {{ if .Staged.PitchDeck }}
+    {{ end }} {{ if .Staged.PitchDeck }}
     <td
-        class="staged-list-item"
+      class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.PitchDeck.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
       {{.Staged.PitchDeck.Date}}
     </td>
-    {{else}}
-    <td></td>
     {{ end }} {{ if .Staged.Schedule }}
     <td
-        class="staged-list-item"
+      class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Schedule.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
       {{.Staged.Schedule.Date}}
     </td>
-    {{ end }} 
-    {{ if .Staged.Budget }}
+    {{ end }} {{ if .Staged.Budget }}
     <td
-        class="staged-list-item"
+      class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Budget.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
       {{.Staged.Budget.Date}}
     </td>
-    {{ end }} 
-    {{ if .Staged.Shotlist }}
+    {{ end }} {{ if .Staged.Shotlist }}
     <td
-        class="staged-list-item"
+      class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Shotlist.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
       {{.Staged.Shotlist.Date}}
     </td>
-    {{ end }} 
-    {{ if .Staged.Lookbook }}
+    {{ end }} {{ if .Staged.Lookbook }}
     <td
-        class="staged-list-item"
+      class="staged-list-item"
       hx-get="/get-doc-details/{{.Staged.Lookbook.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
@@ -120,4 +101,4 @@
     {{ end }}
   </tr>
 </table>
-{{end}}
+{{end}} {{end}}

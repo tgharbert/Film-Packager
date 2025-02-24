@@ -1,117 +1,114 @@
 {{ define "locked-listHTML" }}
-  <h3 id="table-title">Locked Documents:</h3>
-  <table id="table">
-    <tr>
-        {{ if .Locked.Script }}
-      <td id="table-header">Script</td>
-      <td
-        class="doc-list-item"
-        hx-get="/get-doc-details/{{.Locked.Script.ID}}"
-        hx-target="#doc-list"
-        hx-swap="innerHTML"
-      >
-        {{.Locked.Script.Date}}
-      </td>
-          {{else}}
-          {{ end }}
-    </tr>
-    <tr>
-        {{ if .Locked.Logline }}
-      <td id="table-header">Logline</td>
-      <td
-        class="doc-list-item"
-        hx-get="/get-doc-details/{{.Locked.Logline.ID}}"
-        hx-target="#doc-list"
-        hx-swap="innerHTML"
-      >
-        {{.Locked.Logline.Date}}
-      </td>
-          {{else}}
-          {{ end }}
-    </tr>
-    <tr>
-      {{ if .Locked.Synopsis }}
-      <td id="table-header">Synopsis</td>
-      <td
-        class="doc-list-item"
-        hx-get="/get-doc-details/{{.Locked.Synopsis.ID}}"
-        hx-target="#doc-list"
-        hx-swap="innerHTML"
-      >
-        {{.Locked.Synopsis.Date}}
-      </td>
-          {{else}}
-          {{ end }}
-    </tr>
-    <tr>
+<h3 id="table-title">Locked Documents:</h3>
+{{ if .HasLocked }}
+<table id="table">
+  <tr>
+    {{ if .Locked.Script }}
+    <td id="table-header">Script</td>
+    <td
+      class="doc-list-item"
+      hx-get="/get-doc-details/{{.Locked.Script.ID}}"
+      hx-target="#doc-list"
+      hx-swap="innerHTML"
+    >
+      {{.Locked.Script.Date}}
+    </td>
+    {{else}} {{ end }}
+  </tr>
+  <tr>
+    {{ if .Locked.Logline }}
+    <td id="table-header">Logline</td>
+    <td
+      class="doc-list-item"
+      hx-get="/get-doc-details/{{.Locked.Logline.ID}}"
+      hx-target="#doc-list"
+      hx-swap="innerHTML"
+    >
+      {{.Locked.Logline.Date}}
+    </td>
+    {{else}} {{ end }}
+  </tr>
+  <tr>
+    {{ if .Locked.Synopsis }}
+    <td id="table-header">Synopsis</td>
+    <td
+      class="doc-list-item"
+      hx-get="/get-doc-details/{{.Locked.Synopsis.ID}}"
+      hx-target="#doc-list"
+      hx-swap="innerHTML"
+    >
+      {{.Locked.Synopsis.Date}}
+    </td>
+    {{else}} {{ end }}
+  </tr>
+  <tr>
     {{ if .Locked.PitchDeck }}
-      <td id="table-header">Pitch Deck</td>
-      <td
-        class="doc-list-item"
-        hx-get="/get-doc-details/{{.Locked.PitchDeck.ID}}"
-        hx-target="#doc-list"
-        hx-swap="innerHTML"
-      >
-        {{.Locked.PitchDeck.Date}}
-      </td>
-          {{else}}
-          {{ end }}
-    </tr>
-    <tr>
-      {{ if .Locked.Schedule }}
-      <td id="table-header">Schedule</td>
-      <td
-        class="doc-list-item"
-        hx-get="/get-doc-details/{{.Locked.Schedule.ID}}"
-        hx-target="#doc-list"
-        hx-swap="innerHTML"
-      >
-        {{.Locked.Schedule.Date}}
-      </td>
-          {{else}}
-          {{ end }}
-    </tr>
-    <tr>
-      {{ if .Locked.Budget }}
-      <td id="table-header">Budget</td>
-      <td
-        class="doc-list-item"
-        hx-get="/get-doc-details/{{.Locked.Budget.ID}}"
-        hx-target="#doc-list"
-        hx-swap="innerHTML"
-      >
-        {{.Locked.Budget.Date}}
-      </td>
-          {{else}}
-          {{ end }}
-    </tr>
-    <tr>
-      {{ if .Locked.Shotlist }}
-      <td id="table-header">Shotlist</td>
-      <td
-        class="doc-list-item"
-        hx-get="/get-doc-details/{{.Locked.Shotlist.ID}}"
-        hx-target="#doc-list"
-        hx-swap="innerHTML"
-      >
-        {{.Locked.Shotlist.Date}}
-      </td>
-          {{else}}
-          {{ end }}
-    </tr>
-    <tr>
-      {{ if .Locked.Lookbook }}
-      <td id="table-header">Lookbook</td>
-      <td
-        class="doc-list-item"
-        hx-get="/get-doc-details/{{.Locked.Lookbook.ID}}"
-        hx-target="#doc-list"
-        hx-swap="innerHTML"
-      >
-        {{.Locked.Lookbook.Date}}
-      </td>
-          {{else}}
-          {{ end }}
-    </tr>
-  </table>
-{{end}}
+    <td id="table-header">Pitch Deck</td>
+    <td
+      class="doc-list-item"
+      hx-get="/get-doc-details/{{.Locked.PitchDeck.ID}}"
+      hx-target="#doc-list"
+      hx-swap="innerHTML"
+    >
+      {{.Locked.PitchDeck.Date}}
+    </td>
+    {{else}} {{ end }}
+  </tr>
+  <tr>
+    {{ if .Locked.Schedule }}
+    <td id="table-header">Schedule</td>
+    <td
+      class="doc-list-item"
+      hx-get="/get-doc-details/{{.Locked.Schedule.ID}}"
+      hx-target="#doc-list"
+      hx-swap="innerHTML"
+    >
+      {{.Locked.Schedule.Date}}
+    </td>
+    {{else}} {{ end }}
+  </tr>
+  <tr>
+    {{ if .Locked.Budget }}
+    <td id="table-header">Budget</td>
+    <td
+      class="doc-list-item"
+      hx-get="/get-doc-details/{{.Locked.Budget.ID}}"
+      hx-target="#doc-list"
+      hx-swap="innerHTML"
+    >
+      {{.Locked.Budget.Date}}
+    </td>
+    {{else}} {{ end }}
+  </tr>
+  <tr>
+    {{ if .Locked.Shotlist }}
+    <td id="table-header">Shotlist</td>
+    <td
+      class="doc-list-item"
+      hx-get="/get-doc-details/{{.Locked.Shotlist.ID}}"
+      hx-target="#doc-list"
+      hx-swap="innerHTML"
+    >
+      {{.Locked.Shotlist.Date}}
+    </td>
+    {{else}} {{ end }}
+  </tr>
+  <tr>
+    {{ if .Locked.Lookbook }}
+    <td id="table-header">Lookbook</td>
+    <td
+      class="doc-list-item"
+      hx-get="/get-doc-details/{{.Locked.Lookbook.ID}}"
+      hx-target="#doc-list"
+      hx-swap="innerHTML"
+    >
+      {{.Locked.Lookbook.Date}}
+    </td>
+    {{else}} {{ end }}
+  </tr>
+</table>
+{{else }}
+<div class="doc-message">
+  <i id="no-docs">No documents locked.</i>
+</div>
+{{ end }} {{end}}

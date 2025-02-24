@@ -93,9 +93,9 @@ func GetSidebar(svc *membershipservice.MembershipService) fiber.Handler {
 	}
 }
 
-func SearchUsers(svc *membershipservice.MembershipService) fiber.Handler {
+func SearchMembersByName(svc *membershipservice.MembershipService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		searchTerm := c.FormValue("username")
+		name := c.FormValue("username")
 		projectID := c.Params("id")
 
 		// parse the project id
@@ -105,7 +105,7 @@ func SearchUsers(svc *membershipservice.MembershipService) fiber.Handler {
 		}
 
 		// search for new members
-		users, err := svc.SearchForNewMembers(c.Context(), searchTerm, projUUID)
+		users, err := svc.SearchForNewMembersByName(c.Context(), name, projUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
 		}
@@ -132,15 +132,12 @@ func InviteMember(svc *membershipservice.MembershipService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing user Id from request")
 		}
 
-		var errMess string
-
 		invitedMembers, err := svc.InviteUserToProject(c.Context(), userUUID, projUUID)
 		if err != nil {
 			if err == project.ErrMemberAlreadyInvited {
 				// return the proper html fragment
-				errMess = "You've already invited this user!"
 				return c.Render("project-list", fiber.Map{
-					"Error": errMess,
+					"Error": "You've already invited this user!",
 				})
 			}
 			return c.Status(fiber.StatusInternalServerError).SendString("error inviting user to project")
