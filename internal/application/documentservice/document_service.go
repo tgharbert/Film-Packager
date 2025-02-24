@@ -1,7 +1,5 @@
 package documentservice
 
-// package application
-
 import (
 	"context"
 	"filmPackager/internal/domain/document"

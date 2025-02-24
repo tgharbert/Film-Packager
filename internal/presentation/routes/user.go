@@ -1,8 +1,7 @@
-package interfaces
+package routes
 
 import (
 	"errors"
-	"filmPackager/internal/application/projectservice"
 	"filmPackager/internal/application/userservice"
 	access "filmPackager/internal/auth"
 	"filmPackager/internal/domain/user"
@@ -13,7 +12,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// user handlers:
 func GetLoginPage(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// need to check if cookie is valid, if not render login
@@ -249,32 +247,5 @@ func SetNewPassword(svc *userservice.UserService) fiber.Handler {
 		}
 
 		return c.Redirect("/")
-	}
-}
-
-func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		tokenString := c.Cookies("Authorization")
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Redirect", "/") // Redirect to homepage or desired URL
-			return nil
-		}
-		if tokenString == "" {
-			return c.Redirect("/login/")
-		}
-
-		tokenString = tokenString[len("Bearer "):]
-
-		userInfo, err := access.GetUserNameFromToken(tokenString)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
-		}
-
-		rv, err := svc.GetUsersProjects(c.Context(), userInfo)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
-		}
-
-		return c.Render("index", *rv)
 	}
 }

@@ -9,6 +9,33 @@ import (
 	"github.com/google/uuid"
 )
 
+func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tokenString := c.Cookies("Authorization")
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/") // Redirect to homepage or desired URL
+			return nil
+		}
+		if tokenString == "" {
+			return c.Redirect("/login/")
+		}
+
+		tokenString = tokenString[len("Bearer "):]
+
+		userInfo, err := access.GetUserNameFromToken(tokenString)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+		}
+
+		rv, err := svc.GetUsersProjects(c.Context(), userInfo)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
+		}
+
+		return c.Render("index", *rv)
+	}
+}
+
 func GetProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// get the user from the cookie

@@ -90,7 +90,7 @@ func (s *Server) Start() error {
 
 func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService) {
 	// homepage
-	s.fiberApp.Get("/", routes.GetHomePage(projectService))
+	s.fiberApp.Get("/", GetHomePage(projectService))
 
 	// login routes
 	s.fiberApp.Get("/login/", routes.GetLoginPage(userService))
