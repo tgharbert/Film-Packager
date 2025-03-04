@@ -35,7 +35,6 @@ func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
 
 func GetProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// get the user from the cookie
 		u := auth.GetUserFromContext(c)
 
 		projectId := c.Params("project_id")
@@ -118,11 +117,6 @@ func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 func CreateProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		projectName := c.FormValue("project-name")
-		tokenString := c.Cookies("Authorization")
-		if tokenString == "" {
-			return c.Redirect("/login/")
-		}
-		tokenString = tokenString[len("Bearer "):]
 
 		u := auth.GetUserFromContext(c)
 
