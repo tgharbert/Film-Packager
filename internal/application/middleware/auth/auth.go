@@ -33,9 +33,8 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func GetUserForSession(svc *authservice.AuthService) fiber.Handler {
+func New(svc *authservice.AuthService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		fmt.Println("MIDDLEWARE HIT")
 		tokenString := c.Cookies("filmpackager")
 		if tokenString == "" {
 			return c.Next()
@@ -56,6 +55,7 @@ func GetUserForSession(svc *authservice.AuthService) fiber.Handler {
 		}
 
 		u, err := svc.UserRepo.GetUserById(c.Context(), claims.UserID)
+
 		if err != nil {
 			return c.Next()
 		}

@@ -5,6 +5,7 @@ import (
 	"filmPackager/internal/application/authservice"
 	"filmPackager/internal/application/documentservice"
 	"filmPackager/internal/application/membershipservice"
+	"filmPackager/internal/application/middleware/auth"
 	"filmPackager/internal/application/projectservice"
 	"filmPackager/internal/application/userservice"
 	docInf "filmPackager/internal/infrastructure/document"
@@ -83,22 +84,26 @@ func NewServer(app *fiber.App) *Server {
 	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
 	authService := authservice.NewAuthService(userRepo)
 
+	// register the middleware
+	s.RegisterMiddleware(authService)
 	// register the routes
 	s.RegisterRoutes(userService, projService, docService, memberService, authService)
 
 	return s
 }
 
-func (s *Server) RegisterMiddleware() {
+func (s *Server) RegisterMiddleware(authService *authservice.AuthService) {
 	// add middleware here
 	s.fiberApp.Use(
-		requestid.New(),
-		requestid.Config{
-			Generator: utils.UUIDv4,
-		},
+		requestid.New(
+			requestid.Config{
+				Generator: utils.UUIDv4,
+			},
+		),
 	)
+
 	s.fiberApp.Use(logger.New())
-	// s.fiberApp.Use(auth.New(s.authService.NewAuthService()))
+	s.fiberApp.Use(auth.New(authService))
 }
 
 func (s *Server) Start() error {

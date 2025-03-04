@@ -66,13 +66,9 @@ func LoginUserHandler(svc *authservice.AuthService) fiber.Handler {
 		email := strings.TrimSpace(c.FormValue("email"))
 		password := strings.TrimSpace(c.FormValue("password"))
 
-		u := auth.GetUserFromContext(c)
-
 		// create login token
-		tokenString, err := svc.CreateLoginToken(c.Context(), u.Id, email, password)
-
+		tokenString, err := svc.CreateLoginToken(c.Context(), email, password)
 		if err != nil {
-			fmt.Println("error generating JWT", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 		}
 
@@ -84,6 +80,7 @@ func LoginUserHandler(svc *authservice.AuthService) fiber.Handler {
 			Expires:  time.Now().Add(48 * time.Hour),
 		})
 
+		// I get to here...
 		fmt.Println("redirecting to /")
 		return c.Redirect("/")
 	}

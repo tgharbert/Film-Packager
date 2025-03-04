@@ -39,14 +39,17 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func (s *AuthService) CreateLoginToken(ctx context.Context, userID uuid.UUID, email, password string) (string, error) {
+func (s *AuthService) CreateLoginToken(ctx context.Context, email, password string) (string, error) {
 	// get the user info from the token
 	u, err := s.UserRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return "", fmt.Errorf("error getting user by id: %v", err)
 	}
-	if u.Password != password {
-		return "", fmt.Errorf("invalid password")
+
+	// compare the password
+	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	if err != nil {
+		return "", fmt.Errorf("invalid password: %v", err)
 	}
 
 	token, err := GenerateJWT(u.Id)
