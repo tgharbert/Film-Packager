@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"context"
+	"filmPackager/internal/application/authservice"
 	"filmPackager/internal/application/documentservice"
 	"filmPackager/internal/application/membershipservice"
 	"filmPackager/internal/application/projectservice"
@@ -17,6 +18,9 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
+	"github.com/gofiber/fiber/v2/utils"
 	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 )
@@ -77,25 +81,38 @@ func NewServer(app *fiber.App) *Server {
 	projService := projectservice.NewProjectService(projectRepo, docPGRepo, docS3Repo, userRepo, memberRepo)
 	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo, projectRepo)
 	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
+	authService := authservice.NewAuthService(userRepo)
 
 	// register the routes
-	s.RegisterRoutes(userService, projService, docService, memberService)
+	s.RegisterRoutes(userService, projService, docService, memberService, authService)
 
 	return s
+}
+
+func (s *Server) RegisterMiddleware() {
+	// add middleware here
+	s.fiberApp.Use(
+		requestid.New(),
+		requestid.Config{
+			Generator: utils.UUIDv4,
+		},
+	)
+	s.fiberApp.Use(logger.New())
+	// s.fiberApp.Use(auth.New(s.authService.NewAuthService()))
 }
 
 func (s *Server) Start() error {
 	return s.fiberApp.Listen("0.0.0.0:8080")
 }
 
-func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService) {
+func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService, authService *authservice.AuthService) {
 	// homepage
 	s.fiberApp.Get("/", routes.GetHomePage(projectService))
 
 	// login routes
-	s.fiberApp.Get("/login/", routes.GetLoginPage(userService))
-	s.fiberApp.Post("/post-login/", routes.LoginUserHandler(userService))
-	s.fiberApp.Post("/post-create-account", routes.PostCreateAccount(userService))
+	s.fiberApp.Get("/login/", routes.GetLoginPage(authService))
+	s.fiberApp.Post("/post-login/", routes.LoginUserHandler(authService))
+	s.fiberApp.Post("/post-create-account", routes.PostCreateAccount(authService))
 	s.fiberApp.Get("/get-create-account/", routes.GetCreateAccount(userService))
 	s.fiberApp.Get("/logout/", routes.LogoutUser(userService))
 	s.fiberApp.Get("/reset-password/", routes.GetResetPasswordPage(userService))

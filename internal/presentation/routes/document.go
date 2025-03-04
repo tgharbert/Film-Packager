@@ -2,7 +2,7 @@ package routes
 
 import (
 	"filmPackager/internal/application/documentservice"
-	access "filmPackager/internal/auth"
+	"filmPackager/internal/application/middleware/auth"
 	"filmPackager/internal/domain/document"
 	"fmt"
 	"io"
@@ -13,10 +13,7 @@ import (
 
 func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		u, err := access.GetUserDataFromCookie(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-		}
+		u := auth.GetUserFromContext(c)
 
 		pIDString := c.Params("project_id")
 		pID, err := uuid.Parse(pIDString)
@@ -77,10 +74,7 @@ func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).SendString("File is required")
 		}
 
-		u, err := access.GetUserDataFromCookie(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-		}
+		u := auth.GetUserFromContext(c)
 
 		f, err := file.Open()
 		if err != nil {

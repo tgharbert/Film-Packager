@@ -1,23 +1,26 @@
 package routes
 
 import (
+	"filmPackager/internal/application/authservice"
+	"filmPackager/internal/application/middleware/auth"
 	"filmPackager/internal/application/userservice"
-	access "filmPackager/internal/auth"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func GetLoginPage(svc *userservice.UserService) fiber.Handler {
+func GetLoginPage(svc *authservice.AuthService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// need to check if cookie is valid, if not render login
-		tokenString := c.Cookies("Authorization")
+		tokenString := c.Cookies("filmpackager")
 		if tokenString == "" {
 			return c.Render("login-form", nil)
 		}
 		tokenString = tokenString[len("Bearer "):]
-		err := access.VerifyToken(tokenString)
+
+		err := svc.VerifyToken(tokenString)
 		if err != nil {
 			return c.Render("login-form", nil)
 		}
@@ -25,7 +28,7 @@ func GetLoginPage(svc *userservice.UserService) fiber.Handler {
 	}
 }
 
-func PostCreateAccount(svc *userservice.UserService) fiber.Handler {
+func PostCreateAccount(svc *authservice.AuthService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		firstName := strings.Trim(c.FormValue("firstName"), " ")
 		lastName := strings.Trim(c.FormValue("lastName"), " ")
@@ -33,20 +36,15 @@ func PostCreateAccount(svc *userservice.UserService) fiber.Handler {
 		password := strings.Trim(c.FormValue("password"), " ")
 		secondPassword := strings.Trim(c.FormValue("secondPassword"), " ")
 
-		createdUser, err := svc.CreateUser(c.Context(), firstName, lastName, email, password, secondPassword)
+		tokenString, err := svc.CreateNewUser(c.Context(), firstName, lastName, email, password, secondPassword)
 		if err != nil {
 			return c.Render("create-accountHTML", fiber.Map{
 				"Error": err.Error(),
 			})
 		}
 
-		tokenString, err := access.GenerateJWT(createdUser.Id, createdUser.Name, createdUser.Email)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
-		}
-
 		c.Cookie(&fiber.Cookie{
-			Name:     "Authorization",
+			Name:     "filmpackager",
 			Value:    "Bearer " + tokenString,
 			HTTPOnly: true,
 			Path:     "/",
@@ -63,31 +61,30 @@ func GetCreateAccount(svc *userservice.UserService) fiber.Handler {
 	}
 }
 
-func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
+func LoginUserHandler(svc *authservice.AuthService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		email := strings.TrimSpace(c.FormValue("email"))
 		password := strings.TrimSpace(c.FormValue("password"))
 
-		currentUser, err := svc.UserLogin(c.Context(), email, password)
-		if err != nil {
-			return c.Render("login-formHTML", fiber.Map{
-				"Error": err.Error(),
-			})
-		}
+		u := auth.GetUserFromContext(c)
 
-		tokenString, err := access.GenerateJWT(currentUser.Id, currentUser.Name, currentUser.Email)
+		// create login token
+		tokenString, err := svc.CreateLoginToken(c.Context(), u.Id, email, password)
+
 		if err != nil {
+			fmt.Println("error generating JWT", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("Error generating JWT")
 		}
 
 		c.Cookie(&fiber.Cookie{
-			Name:     "Authorization",
+			Name:     "filmpackager",
 			Value:    "Bearer " + tokenString,
 			HTTPOnly: true,
 			Path:     "/",
 			Expires:  time.Now().Add(48 * time.Hour),
 		})
 
+		fmt.Println("redirecting to /")
 		return c.Redirect("/")
 	}
 }
@@ -95,7 +92,7 @@ func LoginUserHandler(svc *userservice.UserService) fiber.Handler {
 func LogoutUser(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		c.Cookie(&fiber.Cookie{
-			Name:  "Authorization",
+			Name:  "filmpackager",
 			Value: "",
 			// Set expiration to the past to delete the cookie
 			Expires: time.Now().Add(-time.Hour),
@@ -113,7 +110,7 @@ func LogoutUser(svc *userservice.UserService) fiber.Handler {
 func GetResetPasswordPage(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// get the user from the cookie
-		tokenString := c.Cookies("Authorization")
+		tokenString := c.Cookies("filmpackager")
 		if tokenString == "" {
 			return c.Redirect("/login/")
 		}
@@ -130,31 +127,31 @@ func VerifyOldPassword(svc *userservice.UserService) fiber.Handler {
 		pw1 := strings.TrimSpace(c.FormValue("password1"))
 		pw2 := strings.TrimSpace(c.FormValue("password2"))
 
-		tokenString := c.Cookies("Authorization")
+		tokenString := c.Cookies("filmpackager")
 		if tokenString == "" {
 			return c.Redirect("/login/")
 		}
 		tokenString = tokenString[len("Bearer "):]
 
-		userInfo, err := access.GetUserNameFromToken(tokenString)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
-		}
+		u := auth.GetUserFromContext(c)
 
 		// verify that the pw is correct
-		err = svc.VerifyOldPassword(c.Context(), userInfo.Id, pw1, pw2)
+		err := svc.VerifyOldPassword(c.Context(), u.Id, pw1, pw2)
 		if err != nil {
 			return c.Render("reset-passwordHTML", fiber.Map{
 				"Error": err.Error(),
 			})
 		}
 
-		return c.Render("new-pw-formHTML", userInfo)
+		return c.Render("new-pw-formHTML", u)
 	}
 }
 
 func SetNewPassword(svc *userservice.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// get the user from the context
+		u := auth.GetUserFromContext(c)
+
 		// send the passwords to the user service
 		pw1 := strings.TrimSpace(c.FormValue("new-password1"))
 		pw2 := strings.TrimSpace(c.FormValue("new-password2"))
@@ -166,9 +163,7 @@ func SetNewPassword(svc *userservice.UserService) fiber.Handler {
 
 		tokenString = tokenString[len("Bearer "):]
 
-		u, err := access.GetUserNameFromToken(tokenString)
-
-		err = svc.SetNewPassword(c.Context(), u.Id, pw1, pw2)
+		err := svc.SetNewPassword(c.Context(), u.Id, pw1, pw2)
 		if err != nil {
 			return c.Render("new-pw-formHTML", fiber.Map{
 				"Error": err.Error(),

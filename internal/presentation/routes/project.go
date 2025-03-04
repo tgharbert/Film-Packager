@@ -1,8 +1,8 @@
 package routes
 
 import (
+	"filmPackager/internal/application/middleware/auth"
 	"filmPackager/internal/application/projectservice"
-	access "filmPackager/internal/auth"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,7 +11,7 @@ import (
 
 func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		tokenString := c.Cookies("Authorization")
+		tokenString := c.Cookies("filmpackager")
 		if c.Get("HX-Request") == "true" {
 			c.Set("HX-Redirect", "/") // Redirect to homepage or desired URL
 			return nil
@@ -22,12 +22,9 @@ func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
 
 		tokenString = tokenString[len("Bearer "):]
 
-		userInfo, err := access.GetUserNameFromToken(tokenString)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
-		}
+		u := auth.GetUserFromContext(c)
 
-		rv, err := svc.GetUsersProjects(c.Context(), userInfo)
+		rv, err := svc.GetUsersProjects(c.Context(), u)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 		}
@@ -39,10 +36,7 @@ func GetHomePage(svc *projectservice.ProjectService) fiber.Handler {
 func GetProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// get the user from the cookie
-		u, err := access.GetUserDataFromCookie(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-		}
+		u := auth.GetUserFromContext(c)
 
 		projectId := c.Params("project_id")
 
@@ -80,10 +74,7 @@ func ClickDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 
 func CancelDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		userInfo, err := access.GetUserDataFromCookie(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-		}
+		u := auth.GetUserFromContext(c)
 
 		projectId := c.Params("project_id")
 
@@ -93,7 +84,7 @@ func CancelDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 		}
 
 		// get all the project info for this one project
-		rv, err := svc.GetProjectOverview(c.Context(), projUUID, userInfo.Id)
+		rv, err := svc.GetProjectOverview(c.Context(), projUUID, u.Id)
 
 		return c.Render("project-list-item", fiber.Map{"ID": projUUID, "Roles": rv.Roles, "Name": rv.Name})
 	}
@@ -101,10 +92,7 @@ func CancelDeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 
 func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		userInfo, err := access.GetUserDataFromCookie(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-		}
+		u := auth.GetUserFromContext(c)
 
 		projectId := c.Params("project_id")
 		projUUID, err := uuid.Parse(projectId)
@@ -113,12 +101,12 @@ func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		rv, err := svc.DeleteProject(c.Context(), projUUID, userInfo)
+		rv, err := svc.DeleteProject(c.Context(), projUUID, u)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting project")
 		}
 
-		rv, err = svc.GetUsersProjects(c.Context(), userInfo)
+		rv, err = svc.GetUsersProjects(c.Context(), u)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 		}
@@ -136,12 +124,9 @@ func CreateProject(svc *projectservice.ProjectService) fiber.Handler {
 		}
 		tokenString = tokenString[len("Bearer "):]
 
-		userInfo, err := access.GetUserNameFromToken(tokenString)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
-		}
+		u := auth.GetUserFromContext(c)
 
-		project, err := svc.CreateNewProject(c.Context(), projectName, userInfo.Id)
+		project, err := svc.CreateNewProject(c.Context(), projectName, u.Id)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error creating org")
 		}
@@ -158,17 +143,14 @@ func JoinOrg(svc *projectservice.ProjectService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		userInfo, err := access.GetUserDataFromCookie(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("error getting user info from cookie")
-		}
+		u := auth.GetUserFromContext(c)
 
-		err = svc.JoinProject(c.Context(), projUUID, userInfo.Id)
+		err = svc.JoinProject(c.Context(), projUUID, u.Id)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error joining project")
 		}
 
-		rv, err := svc.GetUsersProjects(c.Context(), userInfo)
+		rv, err := svc.GetUsersProjects(c.Context(), u)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString("Error retrieving orgs")
 		}
