@@ -28,7 +28,6 @@ import (
 
 type Server struct {
 	fiberApp *fiber.App
-	// embed the auth service here eventually
 }
 
 func NewServer(app *fiber.App) *Server {
@@ -84,8 +83,9 @@ func NewServer(app *fiber.App) *Server {
 	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
 	authService := authservice.NewAuthService(userRepo)
 
-	// register the middleware
+	// register the middleware BEFORE registering the routes
 	s.RegisterMiddleware(authService)
+
 	// register the routes
 	s.RegisterRoutes(userService, projService, docService, memberService, authService)
 
@@ -114,10 +114,12 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	// homepage
 	s.fiberApp.Get("/", routes.GetHomePage(projectService))
 
-	// login routes
+	// auth routes - only for login
 	s.fiberApp.Get("/login/", routes.GetLoginPage(authService))
 	s.fiberApp.Post("/post-login/", routes.LoginUserHandler(authService))
 	s.fiberApp.Post("/post-create-account", routes.PostCreateAccount(authService))
+
+	// user routes
 	s.fiberApp.Get("/get-create-account/", routes.GetCreateAccount(userService))
 	s.fiberApp.Get("/logout/", routes.LogoutUser(userService))
 	s.fiberApp.Get("/reset-password/", routes.GetResetPasswordPage(userService))

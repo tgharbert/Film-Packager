@@ -4,7 +4,6 @@ import (
 	"filmPackager/internal/application/authservice"
 	"filmPackager/internal/application/middleware/auth"
 	"filmPackager/internal/application/userservice"
-	"fmt"
 	"strings"
 	"time"
 
@@ -18,6 +17,7 @@ func GetLoginPage(svc *authservice.AuthService) fiber.Handler {
 		if tokenString == "" {
 			return c.Render("login-form", nil)
 		}
+
 		tokenString = tokenString[len("Bearer "):]
 
 		err := svc.VerifyToken(tokenString)
@@ -80,8 +80,6 @@ func LoginUserHandler(svc *authservice.AuthService) fiber.Handler {
 			Expires:  time.Now().Add(48 * time.Hour),
 		})
 
-		// I get to here...
-		fmt.Println("redirecting to /")
 		return c.Redirect("/")
 	}
 }
