@@ -296,3 +296,16 @@ func (s *DocumentService) DeleteDocument(ctx context.Context, docID uuid.UUID) (
 	// return the project ID to redirect to the project page
 	return doc.OrganizationID, nil
 }
+
+func (s *DocumentService) GetDocComments(ctx context.Context, docID uuid.UUID) ([]document.Comment, error) {
+	if s.docRepo == nil {
+		return nil, fmt.Errorf("nil repository")
+	}
+
+	comments, err := s.docRepo.GetDocComments(ctx, docID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting comments: %v", err)
+	}
+
+	return comments, nil
+}
