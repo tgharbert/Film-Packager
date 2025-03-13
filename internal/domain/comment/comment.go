@@ -1,4 +1,4 @@
-package doc_comment
+package comment
 
 import (
 	"time"
@@ -6,22 +6,26 @@ import (
 	"github.com/google/uuid"
 )
 
-type DocComment struct {
+type Comment struct {
 	ID       uuid.UUID
 	DocID    uuid.UUID
-	Comment  string
+	Content  string
 	AuthorID uuid.UUID
 	// ADD A CREATED AT FIELD IN THE DB...
 	CreatedAt time.Time
 }
 
-func CreateNewDocComment(docID, authorID uuid.UUID, comment string) *DocComment {
+func CreateNewDocComment(docID, authorID uuid.UUID, comment string) *Comment {
 	id := uuid.New()
-	return &DocComment{
+	return &Comment{
 		ID:        id,
 		DocID:     docID,
-		Comment:   comment,
+		Content:   comment,
 		AuthorID:  authorID,
 		CreatedAt: time.Now(),
 	}
+}
+
+func isByCurrUser(authorID, currUserID uuid.UUID) bool {
+	return authorID == currUserID
 }
