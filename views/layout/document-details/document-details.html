@@ -14,7 +14,17 @@
       />
       &nbsp;Project
     </button>
-    <h3>Document Details:</h3>
+        <div id="doc-info">
+        <h3>Document Details:</h3>
+    <div>
+        <button
+          class="button-std"
+          hx-get="/get-doc-comments/{{.ID}}"
+          hx-swap="innerHTML"
+          hx-target="#doc-info"
+          >
+          Comments</button>
+    </div>
     <div class="doc-data-container">
       <p>Doc Type: <b>{{ .DocType }}</b></p>
     </div>
@@ -58,6 +68,7 @@
       </button>
     </div>
     {{ end }}
+  </div>
   </div>
   <script>
     function downloadDoc(event) {

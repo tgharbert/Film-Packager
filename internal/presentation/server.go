@@ -3,11 +3,13 @@ package interfaces
 import (
 	"context"
 	"filmPackager/internal/application/authservice"
+	"filmPackager/internal/application/commentservice"
 	"filmPackager/internal/application/documentservice"
 	"filmPackager/internal/application/membershipservice"
 	"filmPackager/internal/application/middleware/auth"
 	"filmPackager/internal/application/projectservice"
 	"filmPackager/internal/application/userservice"
+	commInf "filmPackager/internal/infrastructure/comment"
 	docInf "filmPackager/internal/infrastructure/document"
 	memInf "filmPackager/internal/infrastructure/membership"
 	projectInf "filmPackager/internal/infrastructure/project"
@@ -75,19 +77,21 @@ func NewServer(app *fiber.App) *Server {
 	docPGRepo := docInf.NewPostgresDocumentRepository(conn)
 	memberRepo := memInf.NewPostgresMembershipRepository(conn)
 	docS3Repo := docInf.NewS3DocumentRepository(s3Client, bucket)
+	commentRepo := commInf.NewPostgresCommentRepository(conn)
 
 	// instantiate the services
 	userService := userservice.NewUserService(userRepo, projectRepo)
 	projService := projectservice.NewProjectService(projectRepo, docPGRepo, docS3Repo, userRepo, memberRepo)
-	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo, projectRepo)
+	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo, projectRepo, commentRepo)
 	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
 	authService := authservice.NewAuthService(userRepo)
+	commentService := commentservice.NewCommentService(commentRepo)
 
 	// register the middleware BEFORE registering the routes
 	s.RegisterMiddleware(authService)
 
 	// register the routes
-	s.RegisterRoutes(userService, projService, docService, memberService, authService)
+	s.RegisterRoutes(userService, projService, docService, memberService, authService, commentService)
 
 	return s
 }
@@ -110,7 +114,7 @@ func (s *Server) Start() error {
 	return s.fiberApp.Listen("0.0.0.0:8080")
 }
 
-func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService, authService *authservice.AuthService) {
+func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService, authService *authservice.AuthService, commentService *commentservice.CommentService) {
 	// homepage
 	s.fiberApp.Get("/", routes.GetHomePage(projectService))
 
@@ -149,4 +153,7 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Post("/lock-staged-docs/:project_id/", routes.LockStagedDocs(documentService))
 	s.fiberApp.Get("/download-doc/:doc_id", routes.DownloadDocument(documentService))
 	s.fiberApp.Get("/delete-doc/:doc_id", routes.DeleteDocument(documentService))
+
+	// comment routes
+	s.fiberApp.Get("/get-doc-comments/:doc_id", routes.GetDocCommentSection(commentService))
 }

@@ -2,6 +2,7 @@ package documentservice
 
 import (
 	"context"
+	"filmPackager/internal/domain/comment"
 	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/membership"
 	"filmPackager/internal/domain/project"
@@ -15,15 +16,16 @@ import (
 )
 
 type DocumentService struct {
-	docRepo    document.DocumentRepository
-	s3Repo     document.S3Repository
-	userRepo   user.UserRepository
-	memberRepo membership.MembershipRepository
-	projRepo   project.ProjectRepository
+	docRepo     document.DocumentRepository
+	s3Repo      document.S3Repository
+	userRepo    user.UserRepository
+	memberRepo  membership.MembershipRepository
+	projRepo    project.ProjectRepository
+	commentRepo comment.CommentRepository
 }
 
-func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository, memberRepo membership.MembershipRepository, projRepo project.ProjectRepository) *DocumentService {
-	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo, memberRepo: memberRepo, projRepo: projRepo}
+func NewDocumentService(docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository, memberRepo membership.MembershipRepository, projRepo project.ProjectRepository, commRepo comment.CommentRepository) *DocumentService {
+	return &DocumentService{docRepo: docRepo, s3Repo: s3Repo, userRepo: userRepo, memberRepo: memberRepo, projRepo: projRepo, commentRepo: commRepo}
 }
 
 type UploadDocumentResponse struct {
@@ -281,6 +283,12 @@ func (s *DocumentService) DeleteDocument(ctx context.Context, docID uuid.UUID) (
 		return pID, fmt.Errorf("error getting document details: %v", err)
 	}
 
+	// delete the doc comments from PG database
+	err = s.commentRepo.DeleteDocComments(ctx, docID)
+	if err != nil {
+		return pID, fmt.Errorf("error deleting comments: %v", err)
+	}
+
 	// delete the file from the s3 bucket
 	err = s.s3Repo.DeleteFile(ctx, doc)
 	if err != nil {
@@ -295,17 +303,4 @@ func (s *DocumentService) DeleteDocument(ctx context.Context, docID uuid.UUID) (
 
 	// return the project ID to redirect to the project page
 	return doc.OrganizationID, nil
-}
-
-func (s *DocumentService) GetDocComments(ctx context.Context, docID uuid.UUID) ([]document.Comment, error) {
-	if s.docRepo == nil {
-		return nil, fmt.Errorf("nil repository")
-	}
-
-	comments, err := s.docRepo.GetDocComments(ctx, docID)
-	if err != nil {
-		return nil, fmt.Errorf("error getting comments: %v", err)
-	}
-
-	return comments, nil
 }

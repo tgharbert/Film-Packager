@@ -25,7 +25,7 @@ func (r *PostgresCommentRepository) CreateDocComment(ctx context.Context, commen
 }
 
 func (r *PostgresCommentRepository) GetDocComments(ctx context.Context, docID uuid.UUID) ([]comment.Comment, error) {
-	query := `SELECT id, doc_id, user_id, text, date FROM comments WHERE doc_id = $1`
+	query := `SELECT id, document_id, user_id, comment, created_at FROM doc_comments WHERE document_id = $1`
 
 	rows, err := r.db.Query(ctx, query, docID)
 	if err != nil {

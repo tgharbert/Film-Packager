@@ -1,0 +1,15 @@
+{{ define "document-commentsHTML" }}
+<div>
+    {{ range .Comments }}
+    <div class="comment-container">
+        <div class="comment-header">
+            <p>{{ .Author }}</p>
+            <p>{{ .CommentDate }}</p>
+        </div>
+        <div class="comment-body">
+            <p>{{ .Comment }}</p>
+        </div>
+    </div>
+    {{ end }}
+</div>
+{{ end }}

@@ -15,7 +15,7 @@ type Comment struct {
 	CreatedAt time.Time
 }
 
-func CreateNewDocComment(docID, authorID uuid.UUID, comment string) *Comment {
+func CreateNewComment(docID, authorID uuid.UUID, comment string) *Comment {
 	id := uuid.New()
 	return &Comment{
 		ID:        id,

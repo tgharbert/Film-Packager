@@ -1,14 +1,15 @@
 package routes
 
 import (
-	"filmPackager/internal/application/documentservice"
+	"filmPackager/internal/application/commentservice"
 	"filmPackager/internal/application/middleware/auth"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
-func GetDocCommentSection(svc *commentService.CommentService) fiber.Handler {
+func GetDocCommentSection(svc *commentservice.CommentService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		docId := c.Params("doc_id")
 		docUUID, err := uuid.Parse(docId)
@@ -18,16 +19,17 @@ func GetDocCommentSection(svc *commentService.CommentService) fiber.Handler {
 
 		comments, err := svc.GetDocComments(c.Context(), docUUID)
 		if err != nil {
+			fmt.Println("error getting comments: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error getting comments")
 		}
 
-		return c.Render("comment-sectionHTML", fiber.Map{
+		return c.Render("document-commentsHTML", fiber.Map{
 			"Comments": comments,
 		})
 	}
 }
 
-func AddDocComment(svc *documentservice.DocumentService) fiber.Handler {
+func AddDocComment(svc *commentservice.CommentService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		docId := c.Params("doc_id")
 		docUUID, err := uuid.Parse(docId)
@@ -38,11 +40,30 @@ func AddDocComment(svc *documentservice.DocumentService) fiber.Handler {
 		comment := c.FormValue("comment")
 		u := auth.GetUserFromContext(c)
 
-		err = svc.AddComment(c.Context(), docUUID, u.Id, comment)
+		nc, err := svc.CreateComment(c.Context(), comment, u.Id, docUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error adding comment")
 		}
 
+		fmt.Println("new comment created: ", nc)
+
 		return c.Redirect("/get-document/" + docId + "/")
+	}
+}
+
+func DeleteComment(svc *commentservice.CommentService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		commentId := c.Params("comment_id")
+		commentUUID, err := uuid.Parse(commentId)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
+		}
+
+		err = svc.DeleteComment(c.Context(), commentUUID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("error deleting comment")
+		}
+
+		return c.Redirect("/get-document/" + c.Params("doc_id") + "/")
 	}
 }
