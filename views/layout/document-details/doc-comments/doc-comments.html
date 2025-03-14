@@ -11,5 +11,15 @@
         </div>
     </div>
     {{ end }}
+    {{.DocID}}
+    <div id="add-doc-comment-container">
+        <form
+            hx-trigger="submit"
+hx-post="/add-doc-comment/{{.DocID}}" hx-swap="beforeend" hx-target="#main"
+            >
+        <input type="text" id="add-comment" name="comment" placeholder="Add a comment...">
+        <button class="button-std" >Add Comment</button>
+        </form>
+    </div>
 </div>
 {{ end }}

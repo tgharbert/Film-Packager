@@ -25,23 +25,27 @@ func GetDocCommentSection(svc *commentservice.CommentService) fiber.Handler {
 
 		return c.Render("document-commentsHTML", fiber.Map{
 			"Comments": comments,
+			"DocID":    docId,
 		})
 	}
 }
 
 func AddDocComment(svc *commentservice.CommentService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		fmt.Println("hit the add comment route")
 		docId := c.Params("doc_id")
 		docUUID, err := uuid.Parse(docId)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
-
+		fmt.Println("docUUID: ", docUUID)
 		comment := c.FormValue("comment")
+		fmt.Println("comment: ", comment)
 		u := auth.GetUserFromContext(c)
 
 		nc, err := svc.CreateComment(c.Context(), comment, u.Id, docUUID)
 		if err != nil {
+			fmt.Println("error creating comment: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error adding comment")
 		}
 
