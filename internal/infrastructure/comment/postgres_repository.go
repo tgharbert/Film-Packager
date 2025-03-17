@@ -17,7 +17,7 @@ func NewPostgresCommentRepository(db *pgxpool.Pool) *PostgresCommentRepository {
 }
 
 func (r *PostgresCommentRepository) CreateDocComment(ctx context.Context, comment *comment.Comment) error {
-	query := `INSERT INTO comments (id, doc_id, user_id, text, date) VALUES ($1, $2, $3, $4, $5)`
+	query := `INSERT INTO doc_comments (id, document_id, user_id, comment, created_at) VALUES ($1, $2, $3, $4, $5)`
 
 	_, err := r.db.Exec(ctx, query, comment.ID, comment.DocID, comment.AuthorID, comment.Content, comment.CreatedAt)
 
@@ -51,7 +51,7 @@ func (r *PostgresCommentRepository) GetDocComments(ctx context.Context, docID uu
 }
 
 func (r *PostgresCommentRepository) DeleteDocComments(ctx context.Context, docID uuid.UUID) error {
-	query := `DELETE FROM comments WHERE doc_id = $1`
+	query := `DELETE FROM doc_comments WHERE document_id = $1`
 
 	_, err := r.db.Exec(ctx, query, docID)
 
@@ -59,7 +59,7 @@ func (r *PostgresCommentRepository) DeleteDocComments(ctx context.Context, docID
 }
 
 func (r *PostgresCommentRepository) DeleteDocComment(ctx context.Context, commentID uuid.UUID) error {
-	query := `DELETE FROM comments WHERE id = $1`
+	query := `DELETE FROM doc_comments WHERE id = $1`
 
 	_, err := r.db.Exec(ctx, query, commentID)
 

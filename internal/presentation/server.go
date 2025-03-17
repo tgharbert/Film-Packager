@@ -85,7 +85,7 @@ func NewServer(app *fiber.App) *Server {
 	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo, projectRepo, commentRepo)
 	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
 	authService := authservice.NewAuthService(userRepo)
-	commentService := commentservice.NewCommentService(commentRepo)
+	commentService := commentservice.NewCommentService(commentRepo, userRepo)
 
 	// register the middleware BEFORE registering the routes
 	s.RegisterMiddleware(authService)
