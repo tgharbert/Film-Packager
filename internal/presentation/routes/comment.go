@@ -3,6 +3,7 @@ package routes
 import (
 	"filmPackager/internal/application/commentservice"
 	"filmPackager/internal/application/middleware/auth"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -40,6 +41,7 @@ func AddDocComment(svc *commentservice.CommentService) fiber.Handler {
 
 		nc, err := svc.CreateComment(c.Context(), comment, u.Id, docUUID)
 		if err != nil {
+			fmt.Println("error adding comment", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error adding comment")
 		}
 
