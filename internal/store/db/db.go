@@ -17,7 +17,7 @@ func PoolConnect() *pgxpool.Pool {
 	if os.Getenv("ENV") == "DEV" {
 		dbURL = os.Getenv("DEV_DATABASE_URL")
 	} else {
-		dbURL = os.Getenv("RDS_URL")
+		dbURL = os.Getenv("PROD_DB_URL")
 	}
 
 	if dbURL == "" {

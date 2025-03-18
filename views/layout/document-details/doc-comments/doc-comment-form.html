@@ -1,0 +1,21 @@
+{{ define "doc-comment-formHTML" }}
+<form
+  id="add-comment-form"
+  hx-trigger="submit"
+  hx-post="/add-doc-comment/{{.DocID}}"
+  hx-swap="afterbegin"
+  hx-target="#comments"
+  hx-on::after-request="this.reset()"
+>
+  <textarea
+    id="add-comment"
+    max
+    length="250"
+    name="comment"
+    placeholder="Add a comment..."
+  ></textarea>
+  <div id="submit-comment-btn-container">
+    <button class="button-std">Comment</button>
+  </div>
+</form>
+{{end}}

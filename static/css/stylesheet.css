@@ -1,3 +1,6 @@
+@import url("comments-styles.css");
+@import url("doc-details.css");
+
 body {
   display: inline;
   background-color: #16132e;
@@ -347,13 +350,6 @@ input::file-selector-button:hover {
 .std-icon {
     width: 16px;
     height: 16px;
-}
-
-#document-actions {
-    display: flex;
-    justify-content: left;
-    margin-top: 1rem;
-    margin-left: 2rem;
 }
 
 .doc-action-btn {

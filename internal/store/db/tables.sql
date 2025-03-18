@@ -42,6 +42,7 @@ CREATE TABLE "doc_comments" (
     "id" UUID PRIMARY KEY,
     "document_id" UUID,
     "user_id" UUID,
+    "created_at" TIMESTAMP,
     "comment" VARCHAR(250)
 );
 

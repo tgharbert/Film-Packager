@@ -1,0 +1,25 @@
+{{define "doc-commentHTML"}}
+<div class="comment-container">
+  <span class="comment-header">
+    <p>{{ .Author.Name }}</p>
+    <p>{{ .CreatedAt }}</p>
+  </span>
+  <div class="comment-body">
+    <p>{{ .Text }}</p>
+  </div>
+  <div class="delete-doc-comment-btn-container">
+    <button
+      class="button-std comment-delete-btn"
+      hx-delete="/delete-doc-comment/{{.ID}}"
+      hx-swap="innerHTML"
+      hx-target="#comments"
+    >
+      <img
+        src="/static/icons/delete_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg"
+        class="std-icon"
+        alt="trash icon"
+      />
+    </button>
+  </div>
+</div>
+{{end}}

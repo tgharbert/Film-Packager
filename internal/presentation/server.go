@@ -2,10 +2,14 @@ package interfaces
 
 import (
 	"context"
+	"filmPackager/internal/application/authservice"
+	"filmPackager/internal/application/commentservice"
 	"filmPackager/internal/application/documentservice"
 	"filmPackager/internal/application/membershipservice"
+	"filmPackager/internal/application/middleware/auth"
 	"filmPackager/internal/application/projectservice"
 	"filmPackager/internal/application/userservice"
+	commInf "filmPackager/internal/infrastructure/comment"
 	docInf "filmPackager/internal/infrastructure/document"
 	memInf "filmPackager/internal/infrastructure/membership"
 	projectInf "filmPackager/internal/infrastructure/project"
@@ -17,13 +21,15 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
+	"github.com/gofiber/fiber/v2/utils"
 	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 )
 
 type Server struct {
 	fiberApp *fiber.App
-	// embed the auth service here eventually
 }
 
 func NewServer(app *fiber.App) *Server {
@@ -71,31 +77,53 @@ func NewServer(app *fiber.App) *Server {
 	docPGRepo := docInf.NewPostgresDocumentRepository(conn)
 	memberRepo := memInf.NewPostgresMembershipRepository(conn)
 	docS3Repo := docInf.NewS3DocumentRepository(s3Client, bucket)
+	commentRepo := commInf.NewPostgresCommentRepository(conn)
 
 	// instantiate the services
 	userService := userservice.NewUserService(userRepo, projectRepo)
 	projService := projectservice.NewProjectService(projectRepo, docPGRepo, docS3Repo, userRepo, memberRepo)
-	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo, projectRepo)
+	docService := documentservice.NewDocumentService(docPGRepo, docS3Repo, userRepo, memberRepo, projectRepo, commentRepo)
 	memberService := membershipservice.NewMembershipService(memberRepo, userRepo)
+	authService := authservice.NewAuthService(userRepo)
+	commentService := commentservice.NewCommentService(commentRepo, userRepo)
+
+	// register the middleware BEFORE registering the routes
+	s.RegisterMiddleware(authService)
 
 	// register the routes
-	s.RegisterRoutes(userService, projService, docService, memberService)
+	s.RegisterRoutes(userService, projService, docService, memberService, authService, commentService)
 
 	return s
+}
+
+func (s *Server) RegisterMiddleware(authService *authservice.AuthService) {
+	// add middleware here
+	s.fiberApp.Use(
+		requestid.New(
+			requestid.Config{
+				Generator: utils.UUIDv4,
+			},
+		),
+	)
+
+	s.fiberApp.Use(logger.New())
+	s.fiberApp.Use(auth.New(authService))
 }
 
 func (s *Server) Start() error {
 	return s.fiberApp.Listen("0.0.0.0:8080")
 }
 
-func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService) {
+func (s *Server) RegisterRoutes(userService *userservice.UserService, projectService *projectservice.ProjectService, documentService *documentservice.DocumentService, membershipService *membershipservice.MembershipService, authService *authservice.AuthService, commentService *commentservice.CommentService) {
 	// homepage
 	s.fiberApp.Get("/", routes.GetHomePage(projectService))
 
-	// login routes
-	s.fiberApp.Get("/login/", routes.GetLoginPage(userService))
-	s.fiberApp.Post("/post-login/", routes.LoginUserHandler(userService))
-	s.fiberApp.Post("/post-create-account", routes.PostCreateAccount(userService))
+	// auth routes - only for login
+	s.fiberApp.Get("/login/", routes.GetLoginPage(authService))
+	s.fiberApp.Post("/post-login/", routes.LoginUserHandler(authService))
+	s.fiberApp.Post("/post-create-account", routes.PostCreateAccount(authService))
+
+	// user routes
 	s.fiberApp.Get("/get-create-account/", routes.GetCreateAccount(userService))
 	s.fiberApp.Get("/logout/", routes.LogoutUser(userService))
 	s.fiberApp.Get("/reset-password/", routes.GetResetPasswordPage(userService))
@@ -125,4 +153,9 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Post("/lock-staged-docs/:project_id/", routes.LockStagedDocs(documentService))
 	s.fiberApp.Get("/download-doc/:doc_id", routes.DownloadDocument(documentService))
 	s.fiberApp.Get("/delete-doc/:doc_id", routes.DeleteDocument(documentService))
+
+	// comment routes
+	s.fiberApp.Get("/get-doc-comments/:doc_id", routes.GetDocCommentSection(commentService))
+	s.fiberApp.Post("/add-doc-comment/:doc_id", routes.AddDocComment(commentService))
+	s.fiberApp.Delete("/delete-doc-comment/:comment_id", routes.DeleteComment(commentService))
 }
