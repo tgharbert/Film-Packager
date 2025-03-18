@@ -51,9 +51,17 @@
     align-items: center;
 }
 
-
 #submit-comment-btn-container {
     justify-content: right;
     margin-top: .5rem;
     display: flex;
+}
+
+.comment-delete-btn {
+    background-color: #9c2c1f !important;
+}
+
+.comment-delete-btn:hover {
+    background-color: #c44c3d !important;
+    cursor: pointer;
 }
