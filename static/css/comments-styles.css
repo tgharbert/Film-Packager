@@ -1,5 +1,5 @@
 #comments {
-    height: 70vh;
+    height: 60vh;
     overflow-y: auto;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE & Edge */
@@ -15,11 +15,17 @@
     border: 2px solid rgb(240, 233, 221);
     border-radius: 1rem;
     padding: 1rem;
+    margin-right: 2rem;
 }
 
 .comment-header {
     display: flex;
     justify-content: left;
     font-weight: 400;
+}
+
+#back-to-doc-btn-container {
+    display: flex;
+    margin-top: 1rem;
 }
 

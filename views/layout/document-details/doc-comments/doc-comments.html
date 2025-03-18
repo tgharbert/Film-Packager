@@ -1,9 +1,10 @@
 {{ define "document-commentsHTML" }}
 <div id="doc-comments">
+    <div id="back-to-doc-btn-container">
     <button
         hx-get="/get-doc-details/{{.DocID}}"
         hx-swap="innerHTML"
-        hx-target="#doc-details"
+        hx-target="#doc-list"
         class="button-std"
 
         >
@@ -14,6 +15,7 @@
         />
         &nbsp;Document
     </button>
+    </div>
     <div id="add-doc-comment-container">
     {{ template "doc-comment-formHTML" . }}
     </div>
