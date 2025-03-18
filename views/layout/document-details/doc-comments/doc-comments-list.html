@@ -1,7 +1,5 @@
 {{define "doc-comments-listHTML"}}
 <div id="comments">
-    {{ range .Comments }}
-        {{ template "doc-commentHTML" . }}
-    {{ end }}
-    </div>
+  {{ range .Comments }} {{ template "doc-commentHTML" . }} {{ end }}
+</div>
 {{end}}
