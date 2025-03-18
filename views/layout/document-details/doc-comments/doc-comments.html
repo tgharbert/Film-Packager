@@ -1,19 +1,8 @@
 {{ define "document-commentsHTML" }}
 <div>
-    <div id="comments">
-    {{ range .Comments }}
-        {{ template "doc-commentHTML" . }}
-    {{ end }}
-    </div>
+    {{ template "doc-comments-listHTML" . }}
     <div id="add-doc-comment-container">
-        <form
-            hx-trigger="submit"
-hx-post="/add-doc-comment/{{.DocID}}" hx-swap="afterbegin" hx-target="#comments"
- hx-on::after-request="this.reset()"            
->
-        <input type="text" id="add-comment" name="comment" placeholder="Add a comment...">
-        <button class="button-std" >Add Comment</button>
-        </form>
+    {{ template "doc-comment-formHTML" . }}
     </div>
 </div>
 {{ end }}

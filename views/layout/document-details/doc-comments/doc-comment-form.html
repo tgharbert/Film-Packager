@@ -1,0 +1,10 @@
+{{ define "doc-comment-formHTML" }}
+<form
+            hx-trigger="submit"
+hx-post="/add-doc-comment/{{.DocID}}" hx-swap="afterbegin" hx-target="#comments"
+ hx-on::after-request="this.reset()"            
+>
+        <input type="text" id="add-comment" name="comment" placeholder="Add a comment...">
+        <button class="button-std" >Comment</button>
+        </form>
+{{end}}

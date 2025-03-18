@@ -63,7 +63,7 @@ func DeleteComment(svc *commentservice.CommentService) fiber.Handler {
 		}
 
 		// figure out what to return here...
-		return c.Render("document-commentsHTML", fiber.Map{
+		return c.Render("doc-comments-listHTML", fiber.Map{
 			"Comments": rv.Comments,
 			"DocID":    rv.DocID,
 		})
