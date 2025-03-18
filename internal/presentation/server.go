@@ -157,4 +157,5 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	// comment routes
 	s.fiberApp.Get("/get-doc-comments/:doc_id", routes.GetDocCommentSection(commentService))
 	s.fiberApp.Post("/add-doc-comment/:doc_id", routes.AddDocComment(commentService))
+	s.fiberApp.Delete("/delete-doc-comment/:comment_id", routes.DeleteComment(commentService))
 }

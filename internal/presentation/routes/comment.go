@@ -3,6 +3,7 @@ package routes
 import (
 	"filmPackager/internal/application/commentservice"
 	"filmPackager/internal/application/middleware/auth"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -55,11 +56,16 @@ func DeleteComment(svc *commentservice.CommentService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		err = svc.DeleteComment(c.Context(), commentUUID)
+		rv, err := svc.DeleteComment(c.Context(), commentUUID)
 		if err != nil {
+			fmt.Println("error deleting comment", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting comment")
 		}
 
-		return c.Redirect("/get-document/" + c.Params("doc_id") + "/")
+		// figure out what to return here...
+		return c.Render("document-commentsHTML", fiber.Map{
+			"Comments": rv.Comments,
+			"DocID":    rv.DocID,
+		})
 	}
 }

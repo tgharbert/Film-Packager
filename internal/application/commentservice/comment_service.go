@@ -30,6 +30,11 @@ type GetDocCommentsResponse struct {
 	Comments []CommentResponse
 }
 
+type DeleteDocCommentResponse struct {
+	Comments []CommentResponse
+	DocID    uuid.UUID
+}
+
 func (s *CommentService) GetDocComments(ctx context.Context, docID uuid.UUID) (*GetDocCommentsResponse, error) {
 	rv := &GetDocCommentsResponse{}
 
@@ -65,7 +70,6 @@ func (s *CommentService) GetDocComments(ctx context.Context, docID uuid.UUID) (*
 		rv.Comments[i].Author = userMap[c.AuthorID]
 	}
 
-	fmt.Println("rv: ", rv)
 	return rv, nil
 }
 
@@ -93,11 +97,51 @@ func (s *CommentService) CreateComment(ctx context.Context, text string, userID 
 	return rv, nil
 }
 
-func (s *CommentService) DeleteComment(ctx context.Context, commentID uuid.UUID) error {
-	err := s.CommentRepo.DeleteDocComment(ctx, commentID)
+func (s *CommentService) DeleteComment(ctx context.Context, commentID uuid.UUID) (*DeleteDocCommentResponse, error) {
+	rv := &DeleteDocCommentResponse{}
+
+	c, err := s.CommentRepo.GetDocComment(ctx, commentID)
 	if err != nil {
-		return fmt.Errorf("error deleting comment: %v", err)
+		return nil, fmt.Errorf("error getting comment: %v", err)
+	}
+	rv.DocID = c.DocID
+
+	err = s.CommentRepo.DeleteDocComment(ctx, commentID)
+	if err != nil {
+		return nil, fmt.Errorf("error deleting comment: %v", err)
 	}
 
-	return nil
+	comments, err := s.CommentRepo.GetDocComments(ctx, c.DocID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting comments: %v", err)
+	}
+
+	uIDs := []uuid.UUID{}
+
+	for _, c := range comments {
+		rv.Comments = append(rv.Comments, CommentResponse{
+			ID:        c.ID,
+			DocID:     c.DocID,
+			Text:      c.Content,
+			CreatedAt: c.CreatedAt.Format("01-02-2006 -- 15:04"),
+		})
+		uIDs = append(uIDs, c.AuthorID)
+	}
+
+	users, err := s.UserRepo.GetUsersByIDs(ctx, uIDs)
+	if err != nil {
+		return nil, fmt.Errorf("error getting users: %v", err)
+	}
+
+	userMap := map[uuid.UUID]user.User{}
+
+	for _, u := range users {
+		userMap[u.Id] = u
+	}
+
+	for i, c := range comments {
+		rv.Comments[i].Author = userMap[c.AuthorID]
+	}
+
+	return rv, nil
 }

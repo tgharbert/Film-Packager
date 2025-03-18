@@ -67,7 +67,7 @@ func (r *PostgresCommentRepository) DeleteDocComment(ctx context.Context, commen
 }
 
 func (r *PostgresCommentRepository) GetDocComment(ctx context.Context, commentID uuid.UUID) (*comment.Comment, error) {
-	query := `SELECT id, doc_id, user_id, text, date FROM comments WHERE id = $1`
+	query := `SELECT id, document_id, user_id, comment, created_at FROM doc_comments WHERE id = $1`
 
 	row := r.db.QueryRow(ctx, query, commentID)
 
