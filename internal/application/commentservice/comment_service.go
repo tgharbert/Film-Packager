@@ -50,7 +50,7 @@ func (s *CommentService) GetDocComments(ctx context.Context, docID uuid.UUID) (*
 			ID:        c.ID,
 			DocID:     c.DocID,
 			Text:      c.Content,
-			CreatedAt: c.CreatedAt.Format("01-02-2006 -- 15:04"),
+			CreatedAt: c.CreatedAt.Format("01-02-2006 15:04"),
 		})
 		uIDs = append(uIDs, c.AuthorID)
 	}
@@ -79,7 +79,7 @@ func (s *CommentService) CreateComment(ctx context.Context, text string, userID 
 		DocID:     docID,
 		ID:        c.ID,
 		Text:      c.Content,
-		CreatedAt: c.CreatedAt.Format("01-02-2006 -- 15:04"),
+		CreatedAt: c.CreatedAt.Format("01-02-2006 15:04"),
 	}
 
 	err := s.CommentRepo.CreateDocComment(ctx, c)
@@ -123,7 +123,7 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentID uuid.UUID)
 			ID:        c.ID,
 			DocID:     c.DocID,
 			Text:      c.Content,
-			CreatedAt: c.CreatedAt.Format("01-02-2006 -- 15:04"),
+			CreatedAt: c.CreatedAt.Format("01-02-2006 15:04"),
 		})
 		uIDs = append(uIDs, c.AuthorID)
 	}
