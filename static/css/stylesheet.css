@@ -429,3 +429,27 @@ select {
     margin-right: .2rem;
 }
 
+#comments {
+    height: 70vh;
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE & Edge */
+}
+
+#comments::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+.comment-container {
+    margin-top: 1rem;
+    background-color: rgb(20, 56, 88);
+    border: 2px solid rgb(240, 233, 221);
+    border-radius: 1rem;
+    padding: 1rem;
+}
+
+.comment-header {
+    display: flex;
+    justify-content: left;
+}
+

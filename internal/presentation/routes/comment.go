@@ -3,7 +3,6 @@ package routes
 import (
 	"filmPackager/internal/application/commentservice"
 	"filmPackager/internal/application/middleware/auth"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -58,7 +57,6 @@ func DeleteComment(svc *commentservice.CommentService) fiber.Handler {
 
 		rv, err := svc.DeleteComment(c.Context(), commentUUID)
 		if err != nil {
-			fmt.Println("error deleting comment", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting comment")
 		}
 

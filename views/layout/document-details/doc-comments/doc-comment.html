@@ -1,9 +1,9 @@
 {{define "doc-commentHTML"}}
 <div class="comment-container">
-        <div class="comment-header">
+        <span class="comment-header">
+            <p>{{ .CreatedAt }} by: </p> 
             <p>{{ .Author.Name }}</p>
-            <p>{{ .CreatedAt }}</p>
-        </div>
+        </span>
         <div class="comment-body">
             <p>{{ .Text }}</p>
         </div>
