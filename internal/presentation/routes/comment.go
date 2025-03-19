@@ -57,7 +57,9 @@ func DeleteComment(svc *commentservice.CommentService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
-		rv, err := svc.DeleteComment(c.Context(), commentUUID)
+		u := auth.GetUserFromContext(c)
+
+		rv, err := svc.DeleteComment(c.Context(), u.Id, commentUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting comment")
 		}

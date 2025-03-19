@@ -68,6 +68,7 @@ func (s *CommentService) GetDocComments(ctx context.Context, userID, docID uuid.
 	}
 
 	for i, c := range comments {
+		// check if the author is the current user - doing this to conditionally render the delete button
 		if c.AuthorID == userID {
 			rv.Comments[i].IsUsers = true
 		} else {
@@ -99,11 +100,12 @@ func (s *CommentService) CreateComment(ctx context.Context, text string, userID 
 	}
 
 	rv.Author = *u
+	rv.IsUsers = true
 
 	return rv, nil
 }
 
-func (s *CommentService) DeleteComment(ctx context.Context, commentID uuid.UUID) (*DeleteDocCommentResponse, error) {
+func (s *CommentService) DeleteComment(ctx context.Context, userID, commentID uuid.UUID) (*DeleteDocCommentResponse, error) {
 	rv := &DeleteDocCommentResponse{}
 
 	c, err := s.CommentRepo.GetDocComment(ctx, commentID)
@@ -146,6 +148,12 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentID uuid.UUID)
 	}
 
 	for i, c := range comments {
+		// check if the author is the current user - doing this to conditionally render the delete button
+		if c.AuthorID == userID {
+			rv.Comments[i].IsUsers = true
+		} else {
+			rv.Comments[i].IsUsers = false
+		}
 		rv.Comments[i].Author = userMap[c.AuthorID]
 	}
 
