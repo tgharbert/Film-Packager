@@ -1,5 +1,37 @@
+#comments-container {
+    position: relative;
+    height: 50vh;
+    overflow: hidden; /* Hide overflow */
+}
+
+/* Fading Effect */
+#comments-container::before,
+#comments-container::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 20px; /* Adjust fade size */
+    pointer-events: none;
+}
+
+#comments-container::before {
+    top: 0;
+    background: linear-gradient(to bottom, #16132e, rgba(22, 19, 46, 0));
+}
+
+#comments-container::after {
+    bottom: 0;
+    background: linear-gradient(to top, #16132e, rgba(22, 19, 46, 0));
+}
+
+
+
+
+
+
 #comments {
-    height: 60vh;
+    height: 50vh;
     overflow-y: auto;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE & Edge */
