@@ -25,11 +25,6 @@
     background: linear-gradient(to top, #16132e, rgba(22, 19, 46, 0));
 }
 
-
-
-
-
-
 #comments {
     height: 50vh;
     overflow-y: auto;
@@ -54,6 +49,10 @@
     display: flex;
     justify-content: space-between;
     font-weight: 400;
+}
+
+div.comment-header p {
+    margin: 0;
 }
 
 #back-to-doc-btn-container {

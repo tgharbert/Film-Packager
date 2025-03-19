@@ -1,12 +1,13 @@
 {{define "doc-commentHTML"}}
 <div class="comment-container">
-  <span class="comment-header">
+  <div class="comment-header">
     <p>{{ .Author.Name }}</p>
     <p>{{ .CreatedAt }}</p>
-  </span>
+  </div>
   <div class="comment-body">
     <p>{{ .Text }}</p>
   </div>
+  {{ if .IsUsers }}
   <div class="delete-doc-comment-btn-container">
     <button
       class="button-std comment-delete-btn"
@@ -21,5 +22,6 @@
       />
     </button>
   </div>
+  {{end}}
 </div>
 {{end}}

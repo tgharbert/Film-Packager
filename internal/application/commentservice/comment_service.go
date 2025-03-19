@@ -24,6 +24,7 @@ type CommentResponse struct {
 	Text      string
 	Author    user.User
 	CreatedAt string
+	IsUsers   bool
 }
 
 type GetDocCommentsResponse struct {
@@ -35,7 +36,7 @@ type DeleteDocCommentResponse struct {
 	DocID    uuid.UUID
 }
 
-func (s *CommentService) GetDocComments(ctx context.Context, docID uuid.UUID) (*GetDocCommentsResponse, error) {
+func (s *CommentService) GetDocComments(ctx context.Context, userID, docID uuid.UUID) (*GetDocCommentsResponse, error) {
 	rv := &GetDocCommentsResponse{}
 
 	comments, err := s.CommentRepo.GetDocComments(ctx, docID)
@@ -67,6 +68,11 @@ func (s *CommentService) GetDocComments(ctx context.Context, docID uuid.UUID) (*
 	}
 
 	for i, c := range comments {
+		if c.AuthorID == userID {
+			rv.Comments[i].IsUsers = true
+		} else {
+			rv.Comments[i].IsUsers = false
+		}
 		rv.Comments[i].Author = userMap[c.AuthorID]
 	}
 
