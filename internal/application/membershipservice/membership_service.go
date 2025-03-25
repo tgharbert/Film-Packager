@@ -6,6 +6,7 @@ import (
 	"filmPackager/internal/domain/user"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -36,15 +37,22 @@ type UpdateMemberRolesResponse struct {
 }
 
 func (s *MembershipService) SearchForNewMembersByName(ctx context.Context, name string, projectID uuid.UUID) ([]user.User, error) {
+	// remove the whitespace in the name first
+	name = strings.Join(strings.Fields(name), "")
+
+	// return an error if the name is below the search threshold
+	if len(name) < 3 {
+		return nil, membership.ErrSearchTermTooShort
+	}
+
 	// get all memberships for the project - could write func to get only the user ids
 	memberships, err := s.memberRepo.GetProjectMemberships(ctx, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting project memberships: %v", err)
 	}
 
-	memUserIDs := []uuid.UUID{}
-
 	// create an array of user ids from the memberships
+	memUserIDs := []uuid.UUID{}
 	for _, m := range memberships {
 		memUserIDs = append(memUserIDs, m.UserID)
 	}
