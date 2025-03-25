@@ -2,6 +2,7 @@ package routes
 
 import (
 	"filmPackager/internal/application/membershipservice"
+	"filmPackager/internal/domain/membership"
 	"filmPackager/internal/domain/project"
 	"fmt"
 	"slices"
@@ -51,7 +52,6 @@ func UpdateMemberRoles(svc *membershipservice.MembershipService) fiber.Handler {
 
 		m, err := svc.UpdateMemberRoles(c.Context(), projUUID, mUserUUID, role)
 		if err != nil {
-			fmt.Println("error is here: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error updating member roles")
 		}
 
@@ -107,7 +107,21 @@ func SearchMembersByName(svc *membershipservice.MembershipService) fiber.Handler
 		// search for new members
 		users, err := svc.SearchForNewMembersByName(c.Context(), name, projUUID)
 		if err != nil {
+			if err == membership.ErrSearchTermTooShort {
+				return c.Render("search-resultsHTML", fiber.Map{
+					"Error":     "Enter at least 3 characters",
+					"ProjectID": projectID,
+				})
+			}
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
+		}
+
+		// if no users are found, return an error message with the search term
+		if len(users) == 0 {
+			return c.Render("search-resultsHTML", fiber.Map{
+				"Error":     fmt.Sprintf("No users found for '%v'", name),
+				"ProjectID": projectID,
+			})
 		}
 
 		return c.Render("search-resultsHTML", fiber.Map{
