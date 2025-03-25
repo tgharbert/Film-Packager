@@ -1,6 +1,10 @@
 {{define "search-resultsHTML"}}
-<h2 id="sub-header">Search Results:</h2>
+<h3 id="sub-header">Search Results:</h3>
 <ul id="list-found-users">
-  {{template "member-search-resultsHTML" .}}
+    {{ if .Error }}
+    <i class="member-search-error">{{.Error}}</i>
+    {{else}}
+    {{template "member-search-resultsHTML" .}}
+    {{end}}
 </ul>
 {{end}}

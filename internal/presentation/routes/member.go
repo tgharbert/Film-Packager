@@ -51,7 +51,6 @@ func UpdateMemberRoles(svc *membershipservice.MembershipService) fiber.Handler {
 
 		m, err := svc.UpdateMemberRoles(c.Context(), projUUID, mUserUUID, role)
 		if err != nil {
-			fmt.Println("error is here: ", err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error updating member roles")
 		}
 
@@ -108,6 +107,13 @@ func SearchMembersByName(svc *membershipservice.MembershipService) fiber.Handler
 		users, err := svc.SearchForNewMembersByName(c.Context(), name, projUUID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to query users")
+		}
+
+		if len(users) == 0 {
+			return c.Render("search-resultsHTML", fiber.Map{
+				"Error":     fmt.Sprintf("No users found for '%v'", name),
+				"ProjectID": projectID,
+			})
 		}
 
 		return c.Render("search-resultsHTML", fiber.Map{
