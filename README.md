@@ -14,6 +14,5 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-%23000000.svg?&style=for-the-badge&logo=postgresql&logoColor=%23ffffff)
 ![AWS S3](https://img.shields.io/badge/AWS_S3-%23000000.svg?&style=for-the-badge&logo=s3&logoColor=%23ffffff)
 ![Fly](https://img.shields.io/badge/Fly.io-%23000000.svg?&style=for-the-badge&logo=fly.io&logoColor=%23ffffff)
-![RDS](https://img.shields.io/badge/RDS-%23000000.svg?&style=for-the-badge&logo=amazonrds&logoColor=%23ffffff)
 ![Docker](https://img.shields.io/badge/Docker-%23000000.svg?&style=for-the-badge&logo=docker&logoColor=%23ffffff)
 ![HTMX](https://img.shields.io/badge/HTMX-%23000000.svg?&style=for-the-badge&logo=htmx&logoColor=%23ffffff)
