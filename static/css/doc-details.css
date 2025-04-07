@@ -1,18 +1,18 @@
 #see-doc-comments-btn-container {
-    display: flex;
-    justify-content: center;
+  display: flex;
+  justify-content: center;
 }
 
 #document-actions {
-    display: flex;
-    justify-content: center;
-    margin-top: 1rem;
-    margin-left: 2rem;
-    margin-right: 2rem;
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  margin-left: 2rem;
+  margin-right: 2rem;
 }
 
 #doc-details-header {
-    display: flex;
-    justify-content: space-between;
-    padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
 }

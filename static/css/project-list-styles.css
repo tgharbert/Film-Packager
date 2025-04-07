@@ -18,7 +18,7 @@
 }
 
 .project-title:hover {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 #project-role {
@@ -26,44 +26,43 @@
 }
 
 #create-project {
-    display: flex;
-    justify-content: left;
-    align-items: center;
+  display: flex;
+  justify-content: left;
+  align-items: center;
 }
 
 .no-invites-msg {
-    padding-left: 4rem;
-}  
+  padding-left: 4rem;
+}
 
 .create-proj-btn {
-    margin-left: .5rem;
+  margin-left: 0.5rem;
 }
 
 #project-cancel-delete {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .confirm-btn {
-    background-color: #5f9e6e;
-    margin-right: .5rem;
-    margin-left: .5rem;
+  background-color: #5f9e6e;
+  margin-right: 0.5rem;
+  margin-left: 0.5rem;
 }
 
 .confirm-btn:hover {
-    background-color: #7dc986;
-    cursor: pointer;
+  background-color: #7dc986;
+  cursor: pointer;
 }
 
 .cancel-btn {
-    background-color: #9c2c1f;
-    margin-right: .5rem;
-    margin-left: .5rem;
+  background-color: #9c2c1f;
+  margin-right: 0.5rem;
+  margin-left: 0.5rem;
 }
 
 .cancel-btn:hover {
-    background-color: #d95041;
-    cursor: pointer;
+  background-color: #d95041;
+  cursor: pointer;
 }
-
