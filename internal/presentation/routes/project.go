@@ -3,7 +3,6 @@ package routes
 import (
 	"filmPackager/internal/application/middleware/auth"
 	"filmPackager/internal/application/projectservice"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -96,7 +95,6 @@ func DeleteProject(svc *projectservice.ProjectService) fiber.Handler {
 		projectId := c.Params("project_id")
 		projUUID, err := uuid.Parse(projectId)
 		if err != nil {
-			fmt.Println(err)
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
 		}
 
