@@ -2,6 +2,7 @@ package projectservice
 
 import (
 	"context"
+	"filmPackager/internal/domain/comment"
 	"filmPackager/internal/domain/document"
 	"filmPackager/internal/domain/membership"
 	"filmPackager/internal/domain/project"
@@ -14,20 +15,22 @@ import (
 )
 
 type ProjectService struct {
-	projRepo   project.ProjectRepository
-	docRepo    document.DocumentRepository
-	s3Repo     document.S3Repository
-	userRepo   user.UserRepository
-	memberRepo membership.MembershipRepository
+	projRepo    project.ProjectRepository
+	docRepo     document.DocumentRepository
+	s3Repo      document.S3Repository
+	userRepo    user.UserRepository
+	memberRepo  membership.MembershipRepository
+	commentRepo comment.CommentRepository
 }
 
-func NewProjectService(projRepo project.ProjectRepository, docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository, memberRepo membership.MembershipRepository) *ProjectService {
+func NewProjectService(projRepo project.ProjectRepository, docRepo document.DocumentRepository, s3Repo document.S3Repository, userRepo user.UserRepository, memberRepo membership.MembershipRepository, commentRepo comment.CommentRepository) *ProjectService {
 	return &ProjectService{
-		projRepo:   projRepo,
-		docRepo:    docRepo,
-		s3Repo:     s3Repo,
-		userRepo:   userRepo,
-		memberRepo: memberRepo,
+		projRepo:    projRepo,
+		docRepo:     docRepo,
+		s3Repo:      s3Repo,
+		userRepo:    userRepo,
+		memberRepo:  memberRepo,
+		commentRepo: commentRepo,
 	}
 }
 
@@ -189,6 +192,14 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID,
 		keys = append(keys, k)
 	}
 
+	// delete all the comments for the docs
+	for _, d := range docs {
+		err = s.commentRepo.DeleteDocComments(ctx, d.ID)
+		if err != nil {
+			return nil, fmt.Errorf("error deleting comments from db: %v", err)
+		}
+	}
+
 	// delete all the project files from s3
 	err = s.s3Repo.DeleteAllOrgFiles(ctx, keys)
 	if err != nil {
@@ -198,6 +209,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, projectId uuid.UUID,
 	// delete the project from the db
 	err = s.projRepo.DeleteProject(ctx, projectId)
 	if err != nil {
+		fmt.Println("error deleting project from db: it's right here", err)
 		return nil, fmt.Errorf("error deleting projects from db: %v", err)
 	}
 

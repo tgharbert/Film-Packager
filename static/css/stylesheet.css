@@ -60,12 +60,12 @@ body {
   color: rgb(240, 233, 221);
   padding: 0.4rem;
   align-items: center;
-    justify-content: left;
-    width: 100%;
+  justify-content: left;
+  width: 100%;
 }
 
 #file-input {
-    margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 
 form {
@@ -150,11 +150,11 @@ h2 {
 
 #user-name:hover {
   cursor: pointer;
-    color: cadetblue;
+  color: cadetblue;
 }
 
 #login {
-    border: 2px solid rgb(240, 233, 221);
+  border: 2px solid rgb(240, 233, 221);
   border-radius: 1rem;
   text-align: center;
   position: absolute;
@@ -168,23 +168,23 @@ h2 {
 }
 
 .login-form {
-    display:flex;
-    flex-direction: column;
-    justify-content: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .login-input {
   text-align: right;
   margin-right: 4rem;
   margin-bottom: 1rem;
-    align-self: flex-end;
+  align-self: flex-end;
 }
 
 #sub-login {
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-    align-items: center;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
 }
 
 #form-inputs {
@@ -219,210 +219,205 @@ h2 {
 }
 
 #lock-staged-button {
-    background-color: #5f9e6e;
-    border: 1px solid rgb(240, 233, 221);
-    color: rgb(240, 233, 221);
-    border-radius: 0.5rem;
-    padding: 0.4rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  background-color: #5f9e6e;
+  border: 1px solid rgb(240, 233, 221);
+  color: rgb(240, 233, 221);
+  border-radius: 0.5rem;
+  padding: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #lock-staged-button:hover {
-    background-color: #7dc986;
-    cursor: pointer;
+  background-color: #7dc986;
+  cursor: pointer;
 }
 
 input::file-selector-button {
-    color: rgb(240, 233, 221);
-    background-color: rgb(90, 71, 106);
-    padding: 0.4rem;
-    margin-top: 1rem;
-    border: 1px solid rgb(240, 233, 221);
-    border-radius: 0.5rem;
+  color: rgb(240, 233, 221);
+  background-color: rgb(90, 71, 106);
+  padding: 0.4rem;
+  margin-top: 1rem;
+  border: 1px solid rgb(240, 233, 221);
+  border-radius: 0.5rem;
 }
 
 input::file-selector-button:hover {
-    background-color: rgb(118, 102, 131);
-    cursor: pointer;
+  background-color: rgb(118, 102, 131);
+  cursor: pointer;
 }
 
 .doc-data-container {
-    display: flex;
-    justify-content: left;
-    align-items: left;
-    margin-top: 1rem;
+  display: flex;
+  justify-content: left;
+  align-items: left;
+  margin-top: 1rem;
 }
 
 .member-list {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 0rem;
-    margin: 0rem;
-    list-style-type: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0rem;
+  margin: 0rem;
+  list-style-type: none;
 }
 
 .invite-member {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0rem;
-    margin: 0rem;
-    list-style-type: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0rem;
+  margin: 0rem;
+  list-style-type: none;
 }
 
 .invite-btn {
-    margin-left: 1rem;
+  margin-left: 1rem;
 }
 
 .doc-list-item {
-    font-weight: 300;
-    color: #7dc986;
-    align-items: center;
-}
-
-#doc-details {
-    padding-top: 1rem;
+  font-weight: 300;
+  color: #7dc986;
+  align-items: center;
 }
 
 .doc-list-item:hover {
-    color: cadetblue;
-    cursor: pointer;
+  color: cadetblue;
+  cursor: pointer;
 }
 
 .staged-list-item {
-    font-weight: 300;
-    font-size: smaller;
-    color: #f7ce81;
-    text-align: center;
+  font-weight: 300;
+  font-size: smaller;
+  color: #f7ce81;
+  text-align: center;
 }
 
 .staged-list-item:hover {
-    color: cadetblue;
-    cursor: pointer;
+  color: cadetblue;
+  cursor: pointer;
 }
 
 .member-name:hover {
-    color: cadetblue;
-    cursor: pointer;
+  color: cadetblue;
+  cursor: pointer;
 }
 
 .user-details-roles {
-    list-style-type: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 0rem;
-    margin-left: 0rem;
-    margin-top: -1rem;
+  list-style-type: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0rem;
+  margin-left: 0rem;
+  margin-top: -1rem;
 }
 
 #invited-members {
-    list-style-type: none;
-    margin-left: 0rem;
-    padding: 0rem;
+  list-style-type: none;
+  margin-left: 0rem;
+  padding: 0rem;
 }
 
 .accept-invite {
-    background-color: #206934;
-    margin-left: 1rem;
+  background-color: #206934;
+  margin-left: 1rem;
 }
 
 .stage-file-btn {
-    margin-left: 1rem;
-    background-color: #b58502;
+  margin-left: 1rem;
+  background-color: #b58502;
 }
 
-.stage-file-btn:hover { 
-    background-color: #694f0a;
+.stage-file-btn:hover {
+  background-color: #694f0a;
 }
 
 .back-to-sidebar {
-    margin-top: 1rem;
-    margin-left: 2rem;
-    justify-content: left;
-    display: flex;
+  margin-top: 1rem;
+  margin-left: 2rem;
+  justify-content: left;
+  display: flex;
 }
 
 .std-icon {
-    width: 16px;
-    height: 16px;
+  width: 16px;
+  height: 16px;
 }
 
 .doc-action-btn {
-    margin-left: 1rem;
+  margin-left: 1rem;
 }
 
 #lock-docs {
-    display: flex;
-    justify-content: left;
-    align-items: center;
-    margin-top: 1rem;
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  margin-top: 1rem;
 }
 
 #lock-message {
-    padding-left: 1rem;
+  padding-left: 1rem;
 }
 
 .doc-message {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #d95041;
-    font-weight: 300;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #d95041;
+  font-weight: 300;
 }
 
 .pw-reset-input {
-    margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 
 .edit-proj-name-icon {
-    size: .4rem;
-    margin-bottom: .5rem;
+  size: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 .edit-proj-name-icon:hover {
-    cursor: pointer;
-    background-color: #16132e;
+  cursor: pointer;
+  background-color: #16132e;
 }
 
 #edit-project-form-container {
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-    justify-content: center;
-    align-items: center;
-    margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2rem;
 }
 
 #back-to-project {
-    margin-top: 1rem;
-    margin-left: 2rem;
-    justify-content: left;
-    display: flex;
+  margin-top: 1rem;
+  margin-left: 2rem;
+  justify-content: left;
+  display: flex;
 }
 
 #edit-project-form {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .edit-project-input {
-    margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 
 select {
-    padding: 0.2rem;
-    border-radius: 0.5rem;
+  padding: 0.2rem;
+  border-radius: 0.5rem;
 }
 
 .select-role {
-    margin-right: .2rem;
+  margin-right: 0.2rem;
 }
-
