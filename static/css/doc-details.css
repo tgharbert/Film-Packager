@@ -14,5 +14,6 @@
 #doc-details-header {
   display: flex;
   justify-content: space-between;
-  padding: 1rem;
+  padding-top: 1rem;
+  padding-right: 2rem;
 }

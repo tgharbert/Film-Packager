@@ -284,10 +284,6 @@ input::file-selector-button:hover {
   align-items: center;
 }
 
-#doc-details {
-  padding-top: 1rem;
-}
-
 .doc-list-item:hover {
   color: cadetblue;
   cursor: pointer;
