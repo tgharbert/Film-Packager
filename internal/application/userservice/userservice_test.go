@@ -39,6 +39,47 @@ func (m *MockUserRepository) CreateNewUser(ctx context.Context, u *user.User) er
 	return args.Error(1)
 }
 
+func (m *MockUserRepository) GetAllNewUsersByName(ctx context.Context, name string, ids []uuid.UUID) ([]user.User, error) {
+	args := m.Called(ctx, name, ids)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]user.User), args.Error(1)
+}
+
+func (m *MockUserRepository) GetAllUsersByName(ctx context.Context, name string) ([]user.User, error) {
+	args := m.Called(ctx, name)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]user.User), args.Error(1)
+}
+
+func (m *MockUserRepository) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*user.User), args.Error(1)
+}
+
+func (m *MockUserRepository) GetUserByName(ctx context.Context, name string) (*user.User, error) {
+	args := m.Called(ctx, name)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*user.User), args.Error(1)
+}
+
+func (m *MockUserRepository) GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]user.User, error) {
+	args := m.Called(ctx, ids)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]user.User), args.Error(1)
+}
+
+// SHOULD ALL THIS BE ABSTRACTED ELSEWHERE....?
 type MockProjectRepository struct {
 	mock.Mock
 }
@@ -48,7 +89,7 @@ func (m *MockProjectRepository) CreateNewProject(ctx context.Context, p *project
 	return args.Error(0)
 }
 
-func (m *MockProjectRepository) GetProjectByID(ctx context.Context, id string) (*project.Project, error) {
+func (m *MockProjectRepository) GetProjectByID(ctx context.Context, id uuid.UUID) (*project.Project, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -62,6 +103,39 @@ func (m *MockProjectRepository) GetProjectsByUserID(ctx context.Context, userID 
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]*project.Project), args.Error(1)
+}
+
+func (m *MockProjectRepository) DeleteProject(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockProjectRepository) UpdateProject(ctx context.Context, p *project.Project) error {
+	args := m.Called(ctx, p)
+	return args.Error(0)
+}
+
+func (m *MockProjectRepository) GetProjectsByMembershipIDs(ctx context.Context, ids []uuid.UUID) ([]project.Project, error) {
+	args := m.Called(ctx, ids)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]project.Project), args.Error(1)
+}
+
+func (m *MockProjectRepository) InviteMember(ctx context.Context, pID uuid.UUID, uID uuid.UUID) error {
+	args := m.Called(ctx, pID, uID)
+	return args.Error(0)
+}
+
+func (m *MockProjectRepository) JoinProject(ctx context.Context, pID uuid.UUID, uID uuid.UUID) error {
+	args := m.Called(ctx, pID, uID)
+	return args.Error(0)
+}
+
+func (m *MockProjectRepository) UpdateMemberRoles(ctx context.Context, pID uuid.UUID, uID uuid.UUID, role string) error {
+	args := m.Called(ctx, pID, uID, role)
+	return args.Error(0)
 }
 
 // Helper function to create a test user with a password
