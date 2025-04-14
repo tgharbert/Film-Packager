@@ -153,6 +153,8 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Post("/lock-staged-docs/:project_id/", routes.LockStagedDocs(documentService))
 	s.fiberApp.Get("/download-doc/:doc_id", routes.DownloadDocument(documentService))
 	s.fiberApp.Get("/delete-doc/:doc_id", routes.DeleteDocument(documentService))
+	s.fiberApp.Get("/preview-doc-page/:doc_id", routes.PreviewDocumentPage(documentService))
+	s.fiberApp.Get("/preview-doc/:doc_id", routes.PreviewDocument(documentService))
 
 	// comment routes
 	s.fiberApp.Get("/get-doc-comments/:doc_id", routes.GetDocCommentSection(commentService))

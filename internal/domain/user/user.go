@@ -15,6 +15,7 @@ type User struct {
 	CreatedAt time.Time
 }
 
+// this takes in the string of the hashed password
 func CreateNewUser(name, email, password string) *User {
 	id := uuid.New()
 	return &User{

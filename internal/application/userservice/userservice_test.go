@@ -141,7 +141,8 @@ func (m *MockProjectRepository) UpdateMemberRoles(ctx context.Context, pID uuid.
 // Helper function to create a test user with a password
 func createTestUserWithPassword(password string) *user.User {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	u := user.CreateNewUser("Test Name", "test@test.com", string(hashedPassword))
+	hashedString := string(hashedPassword)
+	u := user.CreateNewUser("Test Name", "test@test.com", hashedString)
 	return u
 }
 
@@ -241,7 +242,9 @@ func TestSetNewPassword(t *testing.T) {
 			Return(testUser, nil).Once()
 		mockUserRepo.On("UpdateUserByID", mock.Anything, mock.MatchedBy(func(u *user.User) bool {
 			// Verify the password was updated (can't check exact hash)
-			return u.Id == testUser.Id && u.Password != testUser.Password
+			// FIX -- THIS IS WHERE THE ERROR LIVES... COMPARING THE U AND TESTUSER PWS
+			// return u.Id == testUser.Id && u.Password != testUser.Password
+			return u.Id == testUser.Id
 		})).Return(errors.New("database error")).Once()
 
 		err := service.SetNewPassword(context.Background(), testUser.Id, "newpassword", "newpassword")
@@ -251,21 +254,21 @@ func TestSetNewPassword(t *testing.T) {
 		mockUserRepo.AssertExpectations(t)
 	})
 
-	// t.Run("successful password update", func(t *testing.T) {
-	// 	userID := uuid.New()
-	// 	testUser := createTestUserWithPassword("oldpassword")
+	t.Run("successful password update", func(t *testing.T) {
+		userID := uuid.New()
+		testUser := createTestUserWithPassword("oldpassword")
 
-	// 	mockUserRepo.On("GetUserById", mock.AnythingOfType("context.Context"), userID).
-	// 		Return(testUser, nil).Once()
-	// 	mockUserRepo.On("UpdateUserByID", mock.AnythingOfType("context.Context"), mock.MatchedBy(func(u *user.User) bool {
-	// 		// Verify password was changed and can be verified with bcrypt
-	// 		err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte("newpassword"))
-	// 		return u.Id == testUser.Id && err == nil
-	// 	})).Return(nil).Once()
+		mockUserRepo.On("GetUserById", mock.Anything, userID).
+			Return(testUser, nil).Once()
+		mockUserRepo.On("UpdateUserByID", mock.Anything, mock.MatchedBy(func(u *user.User) bool {
+			// Verify password was changed and can be verified with bcrypt
+			err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte("newpassword"))
+			return u.Id == testUser.Id && err == nil
+		})).Return(nil).Once()
 
-	// 	err := service.SetNewPassword(context.Background(), userID, "newpassword", "newpassword")
+		err := service.SetNewPassword(context.Background(), userID, "newpassword", "newpassword")
 
-	// 	assert.NoError(t, err)
-	// 	mockUserRepo.AssertExpectations(t)
-	// })
+		assert.NoError(t, err)
+		mockUserRepo.AssertExpectations(t)
+	})
 }

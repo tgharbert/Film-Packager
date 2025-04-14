@@ -15,7 +15,17 @@
       />
       &nbsp;Project
     </button>
-     <span id="see-doc-comments-btn-container">
+        <button class="button-std" hx-get="/preview-doc-page/{{.ID}}" hx-target="#doc-details" hx-swap="innerHTML">
+      <img
+        src="/static/icons/preview_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg"
+        class="std-icon"
+        alt="back icon"
+      />
+      &nbsp;
+            Preview 
+          </button>
+
+
         <button
           class="button-std see-comments-btn"
           hx-get="/get-doc-comments/{{.ID}}"
@@ -29,8 +39,7 @@
         alt="forward icon"
         />
         </button>
-    </span>  
-      </div>
+         </div>
         <div id="doc-info">
         <h3>Document Details:</h3>
     <div class="doc-data-container">
@@ -45,7 +54,7 @@
     <div class="doc-data-container">
       <p>Uploaded By: <b>{{.UploaderName}}</b></p>
     </div>
-    <div id="document-actions">
+          <div id="document-actions">
       <button
         class="button-std doc-action-btn"
         hx-get="/download-doc/{{.ID}}"
