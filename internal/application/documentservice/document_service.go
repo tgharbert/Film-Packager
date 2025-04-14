@@ -47,6 +47,7 @@ type GetDocumentDetailsResponse struct {
 	UploadDate   string
 	DocType      string
 	Status       string
+	IsPDF        bool
 }
 
 // map of access tiers and the file types they can access
@@ -81,9 +82,10 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 		return nil, fmt.Errorf("error getting project: %v", err)
 	}
 
+	// gets the extension of the file - later used to conditionally render a preview
 	ext := filepath.Ext(fileName)
-	fmt.Println("Detected MIME type:", ext)
 
+	// build the file name with extension
 	fileName = fmt.Sprintf("%s_%s_%s%s", project.Name, fileType, time.Now().Format("01-02-2006"), ext)
 
 	// create a new document object
@@ -189,6 +191,11 @@ func (s *DocumentService) GetDocumentDetails(ctx context.Context, docID uuid.UUI
 		UploadDate:   doc.Date.Format("01-02-2006, 15:04"),
 		DocType:      doc.FileType,
 		Status:       doc.Status,
+	}
+
+	ext := filepath.Ext(doc.FileName)
+	if ext == ".pdf" {
+		rv.IsPDF = true
 	}
 
 	return rv, nil

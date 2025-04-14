@@ -140,7 +140,6 @@ func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
 		// fmt.Println("Detected MIME type:", detectedType)
 		// log.Printf("Detected MIME: %s, Extension: %s", detectedType, ext)
 
-		// OLD
 		orgUUID, err := uuid.Parse(orgID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
