@@ -15,6 +15,7 @@
         />
         &nbsp;Project
       </button>
+      {{ if .IsPDF }}
       <button
         class="button-std"
         hx-get="/preview-doc-page/{{.ID}}"
@@ -28,7 +29,7 @@
         />
         &nbsp; Preview
       </button>
-
+      {{end}}
       <button
         class="button-std see-comments-btn"
         hx-get="/get-doc-comments/{{.ID}}"

@@ -27,7 +27,7 @@ func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
 				// alert the user that they don't have permission to lock the documents
 				return c.Status(fiber.StatusOK).SendString("Access denied.")
 			}
-			//return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
+			return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
 		}
 
 		return c.Redirect("/get-project/" + pIDString + "/")
@@ -78,6 +78,7 @@ func PreviewDocument(svc *documentservice.DocumentService) fiber.Handler {
 		}
 		defer rv.DocStream.Body.Close()
 
+		// set different headers for docx
 		c.Set("Content-Type", "application/pdf") // Adjust Content-Type as needed
 		c.Set("Content-Disposition", "inline; filename="+rv.FileName)
 
@@ -117,6 +118,7 @@ func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
 
 		u := auth.GetUserFromContext(c)
 
+		// send the file to the service??
 		f, err := file.Open()
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error opening file")
@@ -131,6 +133,7 @@ func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
 		// returns a map of staged documents
 		documents, err := svc.UploadDocument(c.Context(), orgUUID, u.Id, file.Filename, fileType, f)
 		if err != nil {
+			fmt.Println("Error uploading document:", err)
 			// if the user doesn't have permission to upload the document type
 			if err == document.ErrAccessDenied {
 				// UPDATE: this should send the template for the access error
