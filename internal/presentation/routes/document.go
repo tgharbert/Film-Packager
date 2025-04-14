@@ -125,21 +125,6 @@ func UploadDocumentHandler(svc *documentservice.DocumentService) fiber.Handler {
 		}
 		defer f.Close()
 
-		// NEW
-		// Read first 512 bytes to determine content type
-		// buf := make([]byte, 512)
-		// _, err = f.Read(buf)
-		// if err != nil && err != io.EOF {
-		// 	return c.Status(fiber.StatusInternalServerError).SendString("Error reading file for type detection")
-		// }
-
-		// // Detect actual MIME type
-		// detectedType := http.DetectContentType(buf)
-
-		// ext := filepath.Ext(file.Filename)
-		// fmt.Println("Detected MIME type:", detectedType)
-		// log.Printf("Detected MIME: %s, Extension: %s", detectedType, ext)
-
 		orgUUID, err := uuid.Parse(orgID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("error parsing Id from request")
