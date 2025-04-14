@@ -8,6 +8,7 @@ import (
 	"filmPackager/internal/domain/project"
 	"filmPackager/internal/domain/user"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"time"
 
@@ -80,7 +81,10 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 		return nil, fmt.Errorf("error getting project: %v", err)
 	}
 
-	fileName = fmt.Sprintf("%s_%s_%s", project.Name, fileType, time.Now().Format("01-02-2006"))
+	ext := filepath.Ext(fileName)
+	fmt.Println("Detected MIME type:", ext)
+
+	fileName = fmt.Sprintf("%s_%s_%s%s", project.Name, fileType, time.Now().Format("01-02-2006"), ext)
 
 	// create a new document object
 	now := time.Now()
