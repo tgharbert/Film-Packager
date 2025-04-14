@@ -112,6 +112,12 @@ func (s *DocumentService) UploadDocument(ctx context.Context, orgID, userID uuid
 			return nil, fmt.Errorf("error uploading file: %v", err)
 		}
 
+		// delete the old document comments from the db
+		err = s.commentRepo.DeleteDocComments(ctx, oldDoc.ID)
+		if err != nil {
+			return nil, fmt.Errorf("error deleting comments: %v", err)
+		}
+
 		// update the document in the PG database
 		err = s.docRepo.UpdateDocument(ctx, d)
 		if err != nil {
