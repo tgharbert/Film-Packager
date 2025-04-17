@@ -2,7 +2,7 @@
 <div>
   <div id="doc-details-header">
     <button
-      hx-get="/get-doc-details/{{.ID}}"
+      hx-get="/doc-details/{{.ID}}"
       hx-swap="innerHTML"
       hx-target="#doc-list"
       class="button-std"
@@ -17,7 +17,7 @@
     <span id="see-doc-comments-btn-container">
       <button
         class="button-std see-comments-btn"
-        hx-get="/get-doc-comments/{{.ID}}"
+        hx-get="/doc-comments/{{.ID}}"
         hx-swap="innerHTML"
         hx-target="#doc-list"
       >

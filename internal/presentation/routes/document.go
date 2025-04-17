@@ -30,7 +30,7 @@ func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
 			//return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
 		}
 
-		return c.Redirect("/get-project/" + pIDString + "/")
+		return c.Redirect("/project/" + pIDString + "/")
 	}
 }
 

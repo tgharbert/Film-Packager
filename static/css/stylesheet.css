@@ -28,6 +28,28 @@ body {
   margin-top: 1rem;
 }
 
+.htmx-indicator {
+    opacity: 0;
+    display: inline-block;
+}
+
+.htmx-request .htmx-indicator {
+    opacity: 1;
+    animation: spin 1s linear infinite;
+}
+
+.htmx-request.htmx-indicator {
+    opacity: 1;
+    animation: spin 1s linear infinite;
+}
+
+/* Rotation keyframes */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
 #table-header {
   border: 1px solid rgb(240, 233, 221);
   font-size: smaller;

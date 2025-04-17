@@ -3,7 +3,7 @@
   <div class="back-to-sidebar">
     <button
       class="button-std"
-      hx-get="/get-sidebar/{{.Member.ProjectID}}/"
+      hx-get="/sidebar/{{.Member.ProjectID}}/"
       hx-target="#sidebar"
       hx-swap="outerHTML"
     >
@@ -28,7 +28,7 @@
     </div>
     <form
       name="update-roles-form"
-      hx-post="/update-member-roles/{{.Member.ProjectID}}/{{.Member.UserID}}/"
+      hx-post="/member-roles/{{.Member.ProjectID}}/{{.Member.UserID}}/"
       hx-target="#sidebar"
       hx-swap="innerHTML"
     >
