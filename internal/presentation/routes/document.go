@@ -176,7 +176,7 @@ func DeleteDocument(svc *documentservice.DocumentService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting document")
 		}
 
-		url := fmt.Sprintf("/get-project/%s/", pID)
+		url := fmt.Sprintf("/project/%s/", pID)
 		return c.Redirect(url)
 	}
 }
