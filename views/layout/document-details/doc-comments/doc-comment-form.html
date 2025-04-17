@@ -2,7 +2,7 @@
 <form
   id="add-comment-form"
   hx-trigger="submit"
-  hx-post="/add-doc-comment/{{.DocID}}"
+  hx-post="/doc-comment/{{.DocID}}"
   hx-swap="afterbegin"
   hx-target="#comments"
   hx-on::after-request="this.reset()"

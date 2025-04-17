@@ -21,7 +21,7 @@
       <option value="Shotlist">Shotlist</option>
       <option value="Lookbook">Lookbook</option>
     </select>
-    <button class="button-std stage-file-btn" type="submit">
+    <button class="button-std stage-file-btn" hx-indicator="#spinner" type="submit">
       <img
         src="/static/icons/cloud_upload_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg"
         class="std-icon"
@@ -29,6 +29,7 @@
       />
       &nbsp;Stage File
     </button>
+    <img id="spinner" class="htmx-indicator" src="/static/icons/progress_activity_32dp_E8EAED_FILL0_wght400_GRAD0_opsz40.svg" />
   </form>
 </div>
 <script>

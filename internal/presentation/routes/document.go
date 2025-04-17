@@ -30,7 +30,7 @@ func LockStagedDocs(svc *documentservice.DocumentService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error locking documents")
 		}
 
-		return c.Redirect("/get-project/" + pIDString + "/")
+		return c.Redirect("/project/" + pIDString + "/")
 	}
 }
 
@@ -179,7 +179,7 @@ func DeleteDocument(svc *documentservice.DocumentService) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("error deleting document")
 		}
 
-		url := fmt.Sprintf("/get-project/%s/", pID)
+		url := fmt.Sprintf("/project/%s/", pID)
 		return c.Redirect(url)
 	}
 }

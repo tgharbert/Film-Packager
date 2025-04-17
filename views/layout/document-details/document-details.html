@@ -4,7 +4,7 @@
     <div id="doc-details-header">
       <button
         class="button-std"
-        hx-get="/get-project/{{.OrgID}}"
+        hx-get="/project/{{.OrgID}}"
         hx-swap="innerHTML"
         hx-target="#main"
       >
@@ -32,7 +32,7 @@
       {{end}}
       <button
         class="button-std see-comments-btn"
-        hx-get="/get-doc-comments/{{.ID}}"
+        hx-get="/doc-comments/{{.ID}}"
         hx-swap="innerHTML"
         hx-target="#doc-list"
       >

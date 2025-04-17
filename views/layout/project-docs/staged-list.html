@@ -29,7 +29,7 @@
     {{ if .Staged.Script }}
     <td
       class="staged-list-item"
-      hx-get="/get-doc-details/{{.Staged.Script.ID}}"
+      hx-get="/doc-details/{{.Staged.Script.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
@@ -38,7 +38,7 @@
     {{ end }} {{ if .Staged.Logline }}
     <td
       class="staged-list-item"
-      hx-get="/get-doc-details/{{.Staged.Logline.ID}}"
+      hx-get="/doc-details/{{.Staged.Logline.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
@@ -47,7 +47,7 @@
     {{ end }} {{ if .Staged.Synopsis }}
     <td
       class="staged-list-item"
-      hx-get="/get-doc-details/{{.Staged.Synopsis.ID}}"
+      hx-get="/doc-details/{{.Staged.Synopsis.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
@@ -56,7 +56,7 @@
     {{ end }} {{ if .Staged.PitchDeck }}
     <td
       class="staged-list-item"
-      hx-get="/get-doc-details/{{.Staged.PitchDeck.ID}}"
+      hx-get="/doc-details/{{.Staged.PitchDeck.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
@@ -65,7 +65,7 @@
     {{ end }} {{ if .Staged.Schedule }}
     <td
       class="staged-list-item"
-      hx-get="/get-doc-details/{{.Staged.Schedule.ID}}"
+      hx-get="/doc-details/{{.Staged.Schedule.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
@@ -74,7 +74,7 @@
     {{ end }} {{ if .Staged.Budget }}
     <td
       class="staged-list-item"
-      hx-get="/get-doc-details/{{.Staged.Budget.ID}}"
+      hx-get="/doc-details/{{.Staged.Budget.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
@@ -83,7 +83,7 @@
     {{ end }} {{ if .Staged.Shotlist }}
     <td
       class="staged-list-item"
-      hx-get="/get-doc-details/{{.Staged.Shotlist.ID}}"
+      hx-get="/doc-details/{{.Staged.Shotlist.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >
@@ -92,7 +92,7 @@
     {{ end }} {{ if .Staged.Lookbook }}
     <td
       class="staged-list-item"
-      hx-get="/get-doc-details/{{.Staged.Lookbook.ID}}"
+      hx-get="/doc-details/{{.Staged.Lookbook.ID}}"
       hx-target="#doc-list"
       hx-swap="innerHTML"
     >

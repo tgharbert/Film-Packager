@@ -120,35 +120,35 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 
 	// auth routes - only for login
 	s.fiberApp.Get("/login/", routes.GetLoginPage(authService))
-	s.fiberApp.Post("/post-login/", routes.LoginUserHandler(authService))
-	s.fiberApp.Post("/post-create-account", routes.PostCreateAccount(authService))
+	s.fiberApp.Post("/login/", routes.LoginUserHandler(authService))
+	s.fiberApp.Post("/create-account", routes.PostCreateAccount(authService))
 
 	// user routes
-	s.fiberApp.Get("/get-create-account/", routes.GetCreateAccount(userService))
+	s.fiberApp.Get("/create-account/", routes.GetCreateAccount(userService))
 	s.fiberApp.Get("/logout/", routes.LogoutUser(userService))
 	s.fiberApp.Get("/reset-password/", routes.GetResetPasswordPage(userService))
 	s.fiberApp.Get("/verify-old-password/", routes.VerifyOldPassword(userService))
-	s.fiberApp.Post("/set-new-password/", routes.SetNewPassword(userService))
+	s.fiberApp.Post("/new-password/", routes.SetNewPassword(userService))
 
 	// member routes
 	s.fiberApp.Post("/search-users/:id", routes.SearchMembersByName(membershipService))
 	s.fiberApp.Post("/invite-member/:id/:project_id/", routes.InviteMember(membershipService))
-	s.fiberApp.Get("/get-member/:project_id/:member_id/", routes.GetMemberPage(membershipService))
-	s.fiberApp.Post("/update-member-roles/:project_id/:member_id/", routes.UpdateMemberRoles(membershipService))
-	s.fiberApp.Get("/get-sidebar/:project_id/", routes.GetSidebar(membershipService))
+	s.fiberApp.Get("/member/:project_id/:member_id/", routes.GetMemberPage(membershipService))
+	s.fiberApp.Post("/member-roles/:project_id/:member_id/", routes.UpdateMemberRoles(membershipService))
+	s.fiberApp.Get("/sidebar/:project_id/", routes.GetSidebar(membershipService))
 
 	// project routes
 	s.fiberApp.Get("/create-project/", routes.CreateProject(projectService))
 	s.fiberApp.Post("/join-org/:project_id/:role", routes.JoinOrg(projectService))
-	s.fiberApp.Get("/get-project/:project_id/", routes.GetProject(projectService))
+	s.fiberApp.Get("/project/:project_id/", routes.GetProject(projectService))
 	s.fiberApp.Get("/delete-project/:project_id/", routes.DeleteProject(projectService))
 	s.fiberApp.Get("/click-delete-project/:project_id/", routes.ClickDeleteProject(projectService))
 	s.fiberApp.Get("/cancel-delete-project/:project_id/", routes.CancelDeleteProject(projectService))
-	s.fiberApp.Get("/get-project-name-form/:project_id/", routes.GetUpdateNameForm(projectService))
-	s.fiberApp.Post("/edit-project/:project_id/", routes.UpdateProjectName(projectService))
+	s.fiberApp.Get("/project-name-form/:project_id/", routes.GetUpdateNameForm(projectService))
+	s.fiberApp.Post("/project-name/:project_id/", routes.UpdateProjectName(projectService))
 
 	// document routes
-	s.fiberApp.Get("/get-doc-details/:doc_id", routes.GetDocDetails(documentService))
+	s.fiberApp.Get("/doc-details/:doc_id", routes.GetDocDetails(documentService))
 	s.fiberApp.Post("/file-submit/:project_id", routes.UploadDocumentHandler(documentService))
 	s.fiberApp.Post("/lock-staged-docs/:project_id/", routes.LockStagedDocs(documentService))
 	s.fiberApp.Get("/download-doc/:doc_id", routes.DownloadDocument(documentService))
@@ -157,7 +157,7 @@ func (s *Server) RegisterRoutes(userService *userservice.UserService, projectSer
 	s.fiberApp.Get("/preview-doc/:doc_id", routes.PreviewDocument(documentService))
 
 	// comment routes
-	s.fiberApp.Get("/get-doc-comments/:doc_id", routes.GetDocCommentSection(commentService))
-	s.fiberApp.Post("/add-doc-comment/:doc_id", routes.AddDocComment(commentService))
-	s.fiberApp.Delete("/delete-doc-comment/:comment_id", routes.DeleteComment(commentService))
+	s.fiberApp.Get("/doc-comments/:doc_id", routes.GetDocCommentSection(commentService))
+	s.fiberApp.Post("/doc-comment/:doc_id", routes.AddDocComment(commentService))
+	s.fiberApp.Delete("/doc-comment/:comment_id", routes.DeleteComment(commentService))
 }
